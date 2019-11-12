@@ -85,6 +85,12 @@ class Viewer(object):
         self.transform = Transform()
 
         glEnable(GL_BLEND)
+        # tricks from OpenAI's multiagent particle env repo:
+        # glEnable(GL_MULTISAMPLE)
+        glEnable(GL_LINE_SMOOTH)
+        # glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE)
+        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+        glLineWidth(2.0)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     def close(self):
@@ -351,8 +357,8 @@ class SimpleImageViewer(object):
                 scale = self.maxwidth / width
                 width = int(scale * width)
                 height = int(scale * height)
-            self.window = pyglet.window.Window(width=width, height=height, 
-                display=self.display, vsync=False, resizable=True)            
+            self.window = pyglet.window.Window(width=width, height=height,
+                display=self.display, vsync=False, resizable=True)
             self.width = width
             self.height = height
             self.isopen = True
@@ -367,9 +373,9 @@ class SimpleImageViewer(object):
                 self.isopen = False
 
         assert len(arr.shape) == 3, "You passed in an image with the wrong number shape"
-        image = pyglet.image.ImageData(arr.shape[1], arr.shape[0], 
+        image = pyglet.image.ImageData(arr.shape[1], arr.shape[0],
             'RGB', arr.tobytes(), pitch=arr.shape[1]*-3)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, 
+        gl.glTexParameteri(gl.GL_TEXTURE_2D,
             gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
         texture = image.get_texture()
         texture.width = self.width
