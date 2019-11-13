@@ -9,6 +9,8 @@ setup(
         # don't need TensorFlow yet (but will need an old TF copy when I do
         # imitation)
         # 'tensorflow>=1.13,<1.16',
-        'pymunk==5.6.0',
-        'pyglet==1.4.6',
+        'pymunk~=5.6.0',
+        'pyglet~=1.4.6',
+        'Click~=7.0',
+        'numpy~=1.17.4',
     ])
