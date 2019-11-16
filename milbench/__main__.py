@@ -18,13 +18,10 @@ import milbench.entities as en
 def main(width, height, fps):
     # set up physics
     space = pymunk.Space()
-    # no gravity, this is top-down
-    space.gravity = (0.0, 0.0)
-    # TODO: remove damping. Seems kind of hacky.
-    space.damping = 0.95
+    space.iterations = 10
 
     # set up robot and arena
-    robot = en.Robot(radius=0.1, init_pos=(0, 0), init_angle=0.0, mass=1.0)
+    robot = en.Robot(radius=0.18, init_pos=(0, 0), init_angle=0.0, mass=1.0)
     arena = en.ArenaBoundaries(left=-1.0, right=1.0, bottom=-1.0, top=1.0)
     entities = [robot, arena]
 

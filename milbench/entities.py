@@ -17,9 +17,6 @@ class Entity(abc.ABC):
         self.viewer = weakref.proxy(viewer)
         self.space = weakref.proxy(space)
 
-    def set_action(self):
-        """Set a persistent action to be used during .update(). Not all objects
-        will have actions."""
     def update(self, dt):
         """Do an logic/physics update at some (most likely fixed) time
         interval."""
@@ -43,34 +40,40 @@ class Robot(Entity):
         self.init_pos = init_pos
         self.init_angle = init_angle
         self.mass = mass
-        # computed from current action
-        self.left_force = None
-        self.right_force = None
+        self.rel_turn_angle = 0.0
+        self.target_speed = 0.0
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
 
-        # physics setup
+        # physics setup, starting with main body
         # signature: moment_for_circle(mass, inner_rad, outer_rad, offset)
         inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0, 0))
         self.robot_body = body = pm.Body(self.mass, inertia)
         body.position = self.init_pos
         body.angle = self.init_angle
+        self.space.add(body)
+
         # for control
-        # TODO: rewrite this to follow the tank example.
-        control_body = pm.Body(2.0 * self.mass, 3 * inertia)
+        self.control_body = control_body = pm.Body(body_type=pm.Body.KINEMATIC)
         control_body.position = self.init_pos
         control_body.angle = self.init_angle
-        control_joint = pm.PivotJoint(body, control_body, (0, 0), (0, 0))
-        control_joint.max_force = 10
-        control_joint.bias_coef = 0
-        trans_joint = pm.DampedRotarySpring(body, control_body, 0.0, 10.0,
-                                            0.99)
-        # collision setup
+        self.space.add(control_body)
+        pos_control_joint = pm.PivotJoint(control_body, body, (0, 0), (0, 0))
+        pos_control_joint.max_bias = 0
+        pos_control_joint.max_force = 3
+        self.space.add(pos_control_joint)
+        rot_control_joint = pm.GearJoint(control_body, body, 0.0, 1.0)
+        rot_control_joint.error_bias = 0.0
+        rot_control_joint.max_bias = 2.5
+        rot_control_joint.max_force = 1
+        self.space.add(rot_control_joint)
+
+        # for collision
         # signature: Circle(body, radius, offset)
         body_shape = pm.Circle(body, self.radius, (0, 0))
         body_shape.friction = 0.5
-        self.space.add(body, body_shape, control_joint, trans_joint)
+        self.space.add(body_shape)
 
         # graphics setup
         # draw a circular body
@@ -86,7 +89,8 @@ class Robot(Entity):
             pupil = r.make_circle(radius=0.05 * self.radius, res=10)
             pupil.set_color(0.1, 0.1, 0.1)
             pupil.add_attr(r.Transform().set_translation(
-                x_sign * self.radius * 0.4, self.radius * 0.3))
+                x_sign * self.radius * 0.4 + x_sign * self.radius * 0.03,
+                self.radius * 0.3 + x_sign * self.radius * 0.03))
             eye_shapes.extend([eye, pupil])
         # join them together
         self.robot_xform = r.Transform()
@@ -95,29 +99,27 @@ class Robot(Entity):
         self.viewer.add_geom(robot_compound)
 
     def set_action(self, action):
-        force_unit = 2.0
-        self.left_force = 0.0
-        self.right_force = 0.0
+        self.rel_turn_angle = 0.0
+        self.target_speed = 0.0
         if action & RobotAction.UP:
-            self.left_force += force_unit
-            self.right_force += force_unit
+            self.target_speed += 4.0 * self.radius
         if action & RobotAction.DOWN:
-            self.left_force -= force_unit
-            self.right_force -= force_unit
+            self.target_speed -= 3.0 * self.radius
+        if (action & RobotAction.UP) and (action & RobotAction.DOWN):
+            self.target_speed = 0.0
         if action & RobotAction.LEFT:
-            self.left_force += force_unit / 2
-            self.right_force -= force_unit / 2
+            self.rel_turn_angle += 1.5
         if action & RobotAction.RIGHT:
-            self.left_force -= force_unit / 2
-            self.right_force += force_unit / 2
+            self.rel_turn_angle -= 1.5
 
     def update(self, dt):
-        if self.right_force:
-            self.robot_body.apply_force_at_local_point((0, self.right_force),
-                                                       (-self.radius / 2, 0))
-        if self.left_force:
-            self.robot_body.apply_force_at_local_point((0, self.left_force),
-                                                       (self.radius / 2, 0))
+        # target heading
+        self.control_body.angle = self.robot_body.angle + self.rel_turn_angle
+
+        # target speed
+        x_vel_vector = pm.vec2d.Vec2d(0.0, self.target_speed)
+        vel_vector = self.robot_body.rotation_vector.cpvrotate(x_vel_vector)
+        self.control_body.velocity = vel_vector
 
     def pre_draw(self):
         self.robot_xform.set_translation(*self.robot_body.position)
@@ -150,6 +152,19 @@ class ArenaBoundaries(Entity):
             arena_segments.append(segment)
         self.space.add(*arena_segments)
 
+
+# Here's an example from the tank demo showing how to make boxes that have
+# proper friction etc.:
+#
+# body = add_box(space, 20, 1)
+# pivot = pm.PivotJoint(space.static_body, body, (0,0), (0,0))
+# space.add(pivot)
+# pivot.max_bias = 0
+# pivot.max_Force = 1000
+# gear = pm.GearJoint(space.static_body, body, 0.0, 1.0)
+# space.add(gear)
+# gear.max_bias = 0
+# gear.max_force = 5000
 
 # class Shape(Entity):
 #     """A shape that can be pushed around."""
