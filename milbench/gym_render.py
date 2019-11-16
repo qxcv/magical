@@ -208,9 +208,11 @@ class Geom(object):
 
     def add_attr(self, attr):
         self.attrs.append(attr)
+        return self
 
     def set_color(self, r, g, b):
         self._color.vec4 = (r, g, b, 1)
+        return self
 
 
 class Attr(object):
@@ -239,12 +241,15 @@ class Transform(Attr):
 
     def set_translation(self, newx, newy):
         self.translation = (float(newx), float(newy))
+        return self
 
     def set_rotation(self, new):
         self.rotation = float(new)
+        return self
 
     def set_scale(self, newx, newy):
         self.scale = (float(newx), float(newy))
+        return self
 
 
 class Color(Attr):
@@ -338,8 +343,6 @@ class Compound(Geom):
     def __init__(self, gs):
         Geom.__init__(self)
         self.gs = gs
-        for g in self.gs:
-            g.attrs = [a for a in g.attrs if not isinstance(a, Color)]
 
     def render1(self):
         for g in self.gs:
