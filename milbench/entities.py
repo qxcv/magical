@@ -57,6 +57,9 @@ class Robot(Entity):
         self.mass = mass
         self.rel_turn_angle = 0.0
         self.target_speed = 0.0
+        # max angle from vertical on inner side and outer
+        self.finger_rot_limit_outer = math.pi / 8
+        self.finger_rot_limit_inner = math.pi / 8
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
@@ -117,8 +120,14 @@ class Robot(Entity):
             finger_pin.error_bias = 0.0
             self.space.add(finger_pin)
             # rotary limit joint to stop it from getting too far out of line
-            finger_limit = pm.RotaryLimitJoint(body, finger_body, -math.pi / 4,
-                                               math.pi / 4)
+            if finger_side < 0:
+                lower_rot_lim = -self.finger_rot_limit_inner
+                upper_rot_lim = self.finger_rot_limit_outer
+            if finger_side > 0:
+                lower_rot_lim = -self.finger_rot_limit_outer
+                upper_rot_lim = self.finger_rot_limit_inner
+            finger_limit = pm.RotaryLimitJoint(body, finger_body,
+                                               lower_rot_lim, upper_rot_lim)
             finger_limit.error_bias = 0.0
             self.space.add(finger_limit)
             # motor to move the fingers around (very limited in power so as not
@@ -126,7 +135,7 @@ class Robot(Entity):
             finger_motor = pm.SimpleMotor(body, finger_body, 0.0)
             finger_motor.rate = 0.0
             finger_motor.max_bias = 0.0
-            finger_motor.max_force = 1
+            finger_motor.max_force = 2
             self.space.add(finger_motor)
             self.finger_motors.append(finger_motor)
 
@@ -231,9 +240,11 @@ class Robot(Entity):
         if move_action & RobotAction.RIGHT:
             self.rel_turn_angle -= 1.5
         if (move_action & RobotAction.OPEN):
-            self.target_finger_angle = math.pi / 4
+            # setting target for LEFT finger
+            # (for right finger you'll need to flip across main axis)
+            self.target_finger_angle = self.finger_rot_limit_outer
         elif move_action & RobotAction.CLOSE:
-            self.target_finger_angle = -math.pi / 4
+            self.target_finger_angle = -self.finger_rot_limit_inner
 
     def update(self, dt):
         # target heading
@@ -245,9 +256,8 @@ class Robot(Entity):
         self.control_body.velocity = vel_vector
 
         # target finger positions, relative to body
-        for finger_body, finger_motor, finger_side in zip(self.finger_bodies,
-                                                          self.finger_motors,
-                                                          [-1, 1]):
+        for finger_body, finger_motor, finger_side in zip(
+                self.finger_bodies, self.finger_motors, [-1, 1]):
             rel_angle = finger_body.angle - self.robot_body.angle
             # for the left finger, the target angle is measured
             # counterclockwise; for the right, it's measured clockwise
