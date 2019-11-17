@@ -318,6 +318,20 @@ def make_circle(radius=10, res=30, filled=True):
         return PolyLine(points, True)
 
 
+def make_square(side_length=10, filled=True):
+    rad = side_length / 2
+    points = [
+        (-rad, rad),
+        (rad, rad),
+        (rad, -rad),
+        (-rad, -rad)
+    ]
+    if filled:
+        return FilledPolygon(points)
+    else:
+        return PolyLine(points, True)
+
+
 def make_polygon(v, filled=True):
     if filled:
         return FilledPolygon(v)

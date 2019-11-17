@@ -2,6 +2,7 @@
 
 import sys
 import time
+import math
 
 import click
 from pyglet.window import key
@@ -21,9 +22,34 @@ def main(width, height, fps):
     space.iterations = 10
 
     # set up robot and arena
-    robot = en.Robot(radius=0.18, init_pos=(0, 0), init_angle=0.0, mass=1.0)
+    robot_rad = 0.18
+    shape_rad = robot_rad * 2 / 3
+    robot = en.Robot(radius=robot_rad,
+                     init_pos=(0, 0),
+                     init_angle=math.pi / 9,
+                     mass=1.0)
     arena = en.ArenaBoundaries(left=-1.0, right=1.0, bottom=-1.0, top=1.0)
-    entities = [robot, arena]
+    square = en.Shape(shape_type=en.ShapeType.SQUARE,
+                      colour_name='red',
+                      shape_size=shape_rad,
+                      init_pos=(0.4, -0.3),
+                      init_angle=0.13 * math.pi)
+    circle = en.Shape(shape_type=en.ShapeType.CIRCLE,
+                      colour_name='yellow',
+                      shape_size=shape_rad,
+                      init_pos=(-0.7, -0.5),
+                      init_angle=-0.5 * math.pi)
+    triangle = en.Shape(shape_type=en.ShapeType.TRIANGLE,
+                        colour_name='green',
+                        shape_size=shape_rad,
+                        init_pos=(-0.5, 0.25),
+                        init_angle=0.05 * math.pi)
+    pentagon = en.Shape(shape_type=en.ShapeType.PENTAGON,
+                        colour_name='blue',
+                        shape_size=shape_rad,
+                        init_pos=(0.4, 0.3),
+                        init_angle=0.8 * math.pi)
+    entities = [circle, square, triangle, pentagon, robot, arena]
 
     # set up graphics
     viewer = r.Viewer(width, height)
