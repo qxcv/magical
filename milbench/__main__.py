@@ -72,11 +72,21 @@ def main(width, height, fps):
         frame_start = time.time()
 
         # handle keyboard input for actions
-        action_names = ['LEFT', 'RIGHT', 'UP', 'DOWN']
         action_flag = en.RobotAction.NONE
-        for action_name in action_names:
-            if key_map[getattr(key, action_name)]:
-                action_flag |= getattr(en.RobotAction, action_name)
+        if key_map[key.LEFT]:
+            action_flag |= en.RobotAction.LEFT
+        if key_map[key.RIGHT]:
+            action_flag |= en.RobotAction.RIGHT
+        if key_map[key.UP]:
+            action_flag |= en.RobotAction.UP
+        if key_map[key.DOWN]:
+            action_flag |= en.RobotAction.DOWN
+        # holding down the space key closes the gripper, and releasing it opens
+        # the gripper (maybe I can improve these ergonomics somehow?)
+        if key_map[key.SPACE]:
+            action_flag |= en.RobotAction.CLOSE
+        else:
+            action_flag |= en.RobotAction.OPEN
         robot.set_action(action_flag)
 
         # step forward physics

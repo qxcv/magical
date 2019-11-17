@@ -44,6 +44,8 @@ class RobotAction(enum.IntFlag):
     DOWN = 2
     LEFT = 4
     RIGHT = 8
+    OPEN = 16
+    CLOSE = 32
 
 
 class Robot(Entity):
@@ -63,8 +65,10 @@ class Robot(Entity):
         # signature: moment_for_circle(mass, inner_rad, outer_rad, offset)
         inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0, 0))
         self.robot_body = body = pm.Body(self.mass, inertia)
-        body.position = self.init_pos
-        body.angle = self.init_angle
+        # FIXME: set up subsequent code for fingers etc. so that it can deal
+        # with arbitrary robot initial positions
+        # body.position = (0, 0)
+        # body.angle = self.init_angle
         self.space.add(body)
 
         # For control. The rough joint setup was taken form tank.py in the
@@ -86,17 +90,19 @@ class Robot(Entity):
         # finger bodies/controls (annoying)
         buffer_width = 2 * self.radius
         buffer_thickness = 0.25 * self.radius
-        finger_length = 1 * self.radius
+        finger_length = 1.2 * self.radius
         finger_dy = pm.vec2d.Vec2d(0, finger_length / 2)
         finger_dx = pm.vec2d.Vec2d(buffer_thickness / 2, 0)
         buffer_pos = pm.vec2d.Vec2d(0, self.radius)
         buffer_dy = pm.vec2d.Vec2d(0, buffer_thickness / 2)
         buffer_dx = pm.vec2d.Vec2d(buffer_width / 2, 0)
         self.finger_bodies = []
+        self.finger_motors = []
+        self.target_finger_angle = 0.0
         for finger_side in [-1, 1]:
             # basic finger body
             finger_loc = buffer_pos + finger_side * buffer_dx - buffer_dy \
-                         + finger_side * finger_dx + finger_dy
+                         - finger_side * finger_dx + finger_dy
             finger_mass = self.mass / 8
             finger_inertia = pm.moment_for_box(
                 finger_mass, (buffer_thickness, finger_length))
@@ -105,22 +111,24 @@ class Robot(Entity):
             self.space.add(finger_body)
             self.finger_bodies.append(finger_body)
 
-            # also need a groove constraint
-            # (TODO)
-            # (a, b, groove_a, groove_b, anchor_a, anchor_b)
-            groove_top = pm.constraint.GrooveJoint(
-                body, finger_body, finger_loc + buffer_dy,
-                finger_loc + finger_side * (buffer_dx - finger_dx) + buffer_dy,
-                buffer_dy)
-            groove_top.error_bias = 0.01
-            groove_top.max_force = 10000
-            groove_bot = pm.constraint.GrooveJoint(
-                body, finger_body, finger_loc - buffer_dy,
-                finger_loc - finger_side * (buffer_dx - finger_dx) - buffer_dy,
-                -buffer_dy)
-            groove_bot.error_bias = 0.01
-            groove_bot.max_force = 10000
-            self.space.add(groove_top, groove_bot)
+            # pin joint to keep it in place (it will rotate around this point)
+            finger_pin = pm.PinJoint(body, finger_body, finger_loc - finger_dy,
+                                     -finger_dy)
+            finger_pin.error_bias = 0.0
+            self.space.add(finger_pin)
+            # rotary limit joint to stop it from getting too far out of line
+            finger_limit = pm.RotaryLimitJoint(body, finger_body, -math.pi / 4,
+                                               math.pi / 4)
+            finger_limit.error_bias = 0.0
+            self.space.add(finger_limit)
+            # motor to move the fingers around (very limited in power so as not
+            # to conflict with rotary limit joint)
+            finger_motor = pm.SimpleMotor(body, finger_body, 0.0)
+            finger_motor.rate = 0.0
+            finger_motor.max_bias = 0.0
+            finger_motor.max_force = 1
+            self.space.add(finger_motor)
+            self.finger_motors.append(finger_motor)
 
         # For collision. Main body circle. Signature: Circle(body, radius,
         # offset).
@@ -137,7 +145,8 @@ class Robot(Entity):
             buffer_pos - buffer_dy - buffer_dx,
         ])
         buffer_shape.filter = pm.ShapeFilter(group=robot_group)
-        buffer_shape.friction = 0.5
+        # grippy buffer
+        buffer_shape.friction = 2.0
         self.space.add(buffer_shape)
         finger_shapes = []
         # the fingers
@@ -149,7 +158,8 @@ class Robot(Entity):
                 -finger_dx - finger_dy,
             ])
             finger_shape.filter = pm.ShapeFilter(group=robot_group)
-            finger_shape.friction = 0.5
+            # grippy fingers
+            finger_shape.friction = 2.0
             self.space.add(finger_shape)
             finger_shapes.append(finger_shape)
 
@@ -207,19 +217,23 @@ class Robot(Entity):
         for finger_geom in finger_geoms:
             self.viewer.add_geom(finger_geom)
 
-    def set_action(self, action):
+    def set_action(self, move_action):
         self.rel_turn_angle = 0.0
         self.target_speed = 0.0
-        if action & RobotAction.UP:
+        if move_action & RobotAction.UP:
             self.target_speed += 4.0 * self.radius
-        if action & RobotAction.DOWN:
+        if move_action & RobotAction.DOWN:
             self.target_speed -= 3.0 * self.radius
-        if (action & RobotAction.UP) and (action & RobotAction.DOWN):
+        if (move_action & RobotAction.UP) and (move_action & RobotAction.DOWN):
             self.target_speed = 0.0
-        if action & RobotAction.LEFT:
+        if move_action & RobotAction.LEFT:
             self.rel_turn_angle += 1.5
-        if action & RobotAction.RIGHT:
+        if move_action & RobotAction.RIGHT:
             self.rel_turn_angle -= 1.5
+        if (move_action & RobotAction.OPEN):
+            self.target_finger_angle = math.pi / 4
+        elif move_action & RobotAction.CLOSE:
+            self.target_finger_angle = -math.pi / 4
 
     def update(self, dt):
         # target heading
@@ -229,6 +243,21 @@ class Robot(Entity):
         x_vel_vector = pm.vec2d.Vec2d(0.0, self.target_speed)
         vel_vector = self.robot_body.rotation_vector.cpvrotate(x_vel_vector)
         self.control_body.velocity = vel_vector
+
+        # target finger positions, relative to body
+        for finger_body, finger_motor, finger_side in zip(self.finger_bodies,
+                                                          self.finger_motors,
+                                                          [-1, 1]):
+            rel_angle = finger_body.angle - self.robot_body.angle
+            # for the left finger, the target angle is measured
+            # counterclockwise; for the right, it's measured clockwise
+            # (chipmunk is always counterclockwise)
+            angle_error = rel_angle + finger_side * self.target_finger_angle
+            # TODO: tune the rate at which these correct themselves
+            target_rate = max(-1, min(1, angle_error * 10))
+            if abs(target_rate) < 1e-4:
+                target_rate = 0.0
+            finger_motor.rate = target_rate
 
     def pre_draw(self):
         # TODO: handle finger state
@@ -357,7 +386,7 @@ class Shape(Entity):
         self.space.add(trans_joint)
         rot_joint = pm.GearJoint(self.space.static_body, body, 0.0, 1.0)
         rot_joint.max_bias = 0
-        rot_joint.max_force = 1
+        rot_joint.max_force = 0.1
         self.space.add(rot_joint)
 
         # Drawing
