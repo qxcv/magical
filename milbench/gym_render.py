@@ -318,18 +318,23 @@ def make_circle(radius=10, res=30, filled=True):
         return PolyLine(points, True)
 
 
-def make_square(side_length=10, filled=True):
-    rad = side_length / 2
+def make_rect(width=10, height=10, filled=True):
+    rad_h = height / 2
+    rad_w = width / 2
     points = [
-        (-rad, rad),
-        (rad, rad),
-        (rad, -rad),
-        (-rad, -rad)
+        (-rad_w, rad_h),
+        (rad_w, rad_h),
+        (rad_w, -rad_h),
+        (-rad_w, -rad_h)
     ]
     if filled:
         return FilledPolygon(points)
     else:
         return PolyLine(points, True)
+
+
+def make_square(side_length=10, filled=True):
+    return make_rect(side_length, side_length, filled)
 
 
 def make_polygon(v, filled=True):

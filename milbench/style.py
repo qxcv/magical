@@ -31,5 +31,5 @@ def darken_rgb(rgb):
 def lighten_rgb(rgb):
     """Produce a lighter version of a given base colour."""
     h, l, s = colorsys.rgb_to_hls(*rgb)
-    hls_new = (h, min(0, l * 1.1), s)
+    hls_new = (h, min(1, l * 1.1), s)
     return colorsys.hls_to_rgb(*hls_new)

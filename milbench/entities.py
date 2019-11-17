@@ -7,7 +7,7 @@ import math
 import weakref
 
 import milbench.gym_render as r
-from milbench.style import LINE_THICKNESS, COLOURS_RGB, darken_rgb
+from milbench.style import LINE_THICKNESS, COLOURS_RGB, darken_rgb, lighten_rgb
 import milbench.geom as gtools
 import pymunk as pm
 
@@ -83,19 +83,108 @@ class Robot(Entity):
         rot_control_joint.max_force = 1
         self.space.add(rot_control_joint)
 
-        # for collision
-        # signature: Circle(body, radius, offset)
+        # finger bodies/controls (annoying)
+        buffer_width = 2 * self.radius
+        buffer_thickness = 0.25 * self.radius
+        finger_length = 1 * self.radius
+        finger_dy = pm.vec2d.Vec2d(0, finger_length / 2)
+        finger_dx = pm.vec2d.Vec2d(buffer_thickness / 2, 0)
+        buffer_pos = pm.vec2d.Vec2d(0, self.radius)
+        buffer_dy = pm.vec2d.Vec2d(0, buffer_thickness / 2)
+        buffer_dx = pm.vec2d.Vec2d(buffer_width / 2, 0)
+        self.finger_bodies = []
+        for finger_side in [-1, 1]:
+            # basic finger body
+            finger_loc = buffer_pos + finger_side * buffer_dx - buffer_dy \
+                         + finger_side * finger_dx + finger_dy
+            finger_mass = self.mass / 8
+            finger_inertia = pm.moment_for_box(
+                finger_mass, (buffer_thickness, finger_length))
+            finger_body = pm.Body(finger_mass, finger_inertia)
+            finger_body.position = finger_loc
+            self.space.add(finger_body)
+            self.finger_bodies.append(finger_body)
+
+            # also need a groove constraint
+            # (TODO)
+            # (a, b, groove_a, groove_b, anchor_a, anchor_b)
+            groove_top = pm.constraint.GrooveJoint(
+                body, finger_body, finger_loc + buffer_dy,
+                finger_loc + finger_side * (buffer_dx - finger_dx) + buffer_dy,
+                buffer_dy)
+            groove_top.error_bias = 0.01
+            groove_top.max_force = 10000
+            groove_bot = pm.constraint.GrooveJoint(
+                body, finger_body, finger_loc - buffer_dy,
+                finger_loc - finger_side * (buffer_dx - finger_dx) - buffer_dy,
+                -buffer_dy)
+            groove_bot.error_bias = 0.01
+            groove_bot.max_force = 10000
+            self.space.add(groove_top, groove_bot)
+
+        # For collision. Main body circle. Signature: Circle(body, radius,
+        # offset).
+        robot_group = 1
         body_shape = pm.Circle(body, self.radius, (0, 0))
+        body_shape.filter = pm.ShapeFilter(group=robot_group)
         body_shape.friction = 0.5
         self.space.add(body_shape)
+        # a flat buffer at the front
+        buffer_shape = pm.Poly(body, [
+            buffer_pos + buffer_dy - buffer_dx,
+            buffer_pos + buffer_dy + buffer_dx,
+            buffer_pos - buffer_dy + buffer_dx,
+            buffer_pos - buffer_dy - buffer_dx,
+        ])
+        buffer_shape.filter = pm.ShapeFilter(group=robot_group)
+        buffer_shape.friction = 0.5
+        self.space.add(buffer_shape)
+        finger_shapes = []
+        # the fingers
+        for finger_body, finger_side in zip(self.finger_bodies, [-1, 1]):
+            finger_shape = pm.Poly(finger_body, [
+                -finger_dx + finger_dy,
+                finger_dx + finger_dy,
+                finger_dx - finger_dy,
+                -finger_dx - finger_dy,
+            ])
+            finger_shape.filter = pm.ShapeFilter(group=robot_group)
+            finger_shape.friction = 0.5
+            self.space.add(finger_shape)
+            finger_shapes.append(finger_shape)
 
         # graphics setup
         # draw a circular body
         circ_body_in = r.make_circle(radius=self.radius - LINE_THICKNESS,
                                      res=100)
         circ_body_out = r.make_circle(radius=self.radius, res=100)
-        circ_body_in.set_color(*COLOURS_RGB['grey'])
-        circ_body_out.set_color(*darken_rgb(COLOURS_RGB['grey']))
+        grey = COLOURS_RGB['grey']
+        dark_grey = darken_rgb(grey)
+        light_grey = lighten_rgb(grey)
+        circ_body_in.set_color(*grey)
+        circ_body_out.set_color(*dark_grey)
+
+        # draw the buffer at the front
+        # TODO: add outline shading to the buffer
+        buffer_geom = r.make_rect(buffer_width, buffer_thickness)
+        buffer_geom.set_color(*light_grey)
+        buffer_xform = r.Transform()
+        buffer_xform.set_translation(0, self.radius)
+        buffer_geom.add_attr(buffer_xform)
+
+        # draw the two fingers
+        # TODO: add outline shading to the fingers
+        finger_geoms = []
+        self.finger_xforms = []
+        for finger_shape, finger_side in zip(finger_shapes, [-1, 1]):
+            vertices = [(v.x, v.y) for v in finger_shape.get_vertices()]
+            finger_geom = r.make_polygon(vertices)
+            finger_geom.set_color(*light_grey)
+            finger_xform = r.Transform()
+            finger_geom.add_attr(finger_xform)
+            finger_geoms.append(finger_geom)
+            self.finger_xforms.append(finger_xform)
+
         # draw some cute eyes
         eye_shapes = []
         for x_sign in [-1, 1]:
@@ -111,9 +200,12 @@ class Robot(Entity):
             eye_shapes.extend([eye, pupil])
         # join them together
         self.robot_xform = r.Transform()
-        robot_compound = r.Compound([circ_body_out, circ_body_in, *eye_shapes])
+        robot_compound = r.Compound(
+            [buffer_geom, circ_body_out, circ_body_in, *eye_shapes])
         robot_compound.add_attr(self.robot_xform)
         self.viewer.add_geom(robot_compound)
+        for finger_geom in finger_geoms:
+            self.viewer.add_geom(finger_geom)
 
     def set_action(self, action):
         self.rel_turn_angle = 0.0
@@ -139,8 +231,13 @@ class Robot(Entity):
         self.control_body.velocity = vel_vector
 
     def pre_draw(self):
+        # TODO: handle finger state
         self.robot_xform.set_translation(*self.robot_body.position)
         self.robot_xform.set_rotation(self.robot_body.angle)
+        for finger_xform, finger_body in zip(self.finger_xforms,
+                                             self.finger_bodies):
+            finger_xform.set_translation(*finger_body.position)
+            finger_xform.set_rotation(finger_body.angle)
 
 
 class ArenaBoundaries(Entity):
