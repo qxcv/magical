@@ -108,6 +108,20 @@ class Robot(Entity):
         rot_control_joint.max_force = 1
         self.space.add(rot_control_joint)
 
+        # googly eye control bodies & joints
+        self.pupil_bodies = []
+        for eye_side in [-1, 1]:
+            eye_mass = self.mass / 10
+            eye_radius = self.radius
+            eye_inertia = pm.moment_for_circle(eye_mass, 0, eye_radius, (0, 0))
+            eye_body = pm.Body(eye_mass, eye_inertia)
+            eye_body.angle = self.init_angle
+            eye_joint = pm.DampedRotarySpring(body, eye_body, 0, 0.1, 1e-3)
+            eye_joint.max_bias = 3.0
+            eye_joint.max_force = 0.001
+            self.pupil_bodies.append(eye_body)
+            self.space.add(eye_body, eye_joint)
+
         # finger bodies/controls (annoying)
         finger_thickness = 0.25 * self.radius
         finger_upper_length = 1.4 * self.radius
@@ -241,18 +255,23 @@ class Robot(Entity):
             self.viewer.add_geom(geom)
 
         # draw some cute eyes
-        # TODO: add googly eyes
         eye_shapes = []
+        self.pupil_transforms = []
         for x_sign in [-1, 1]:
             eye = r.make_circle(radius=0.2 * self.radius, res=20)
             eye.set_color(1.0, 1.0, 1.0)
-            eye.add_attr(r.Transform().set_translation(
-                x_sign * 0.4 * self.radius, 0.3 * self.radius))
-            pupil = r.make_circle(radius=0.1 * self.radius, res=10)
+            eye_base_transform = r.Transform().set_translation(
+                x_sign * 0.4 * self.radius, 0.3 * self.radius)
+            eye.add_attr(eye_base_transform)
+            pupil = r.make_circle(radius=0.12 * self.radius, res=10)
             pupil.set_color(0.1, 0.1, 0.1)
+            # The pupils point forward slightly
+            pupil_transform = r.Transform()
             pupil.add_attr(r.Transform().set_translation(
-                x_sign * self.radius * 0.4 + x_sign * self.radius * 0.03,
-                self.radius * 0.3 + x_sign * self.radius * 0.03))
+                0, self.radius * 0.07))
+            pupil.add_attr(pupil_transform)
+            pupil.add_attr(eye_base_transform)
+            self.pupil_transforms.append(pupil_transform)
             eye_shapes.extend([eye, pupil])
         # join them together
         self.robot_xform = r.Transform()
@@ -309,6 +328,9 @@ class Robot(Entity):
                                              self.finger_bodies):
             finger_xform.set_translation(*finger_body.position)
             finger_xform.set_rotation(finger_body.angle)
+        for pupil_xform, pupil_body in zip(self.pupil_transforms,
+                                           self.pupil_bodies):
+            pupil_xform.set_rotation(pupil_body.angle - self.robot_body.angle)
 
 
 class ArenaBoundaries(Entity):
