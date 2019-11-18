@@ -25,7 +25,7 @@ def main(width, height, fps):
     robot_rad = 0.18
     shape_rad = robot_rad * 2 / 3
     robot = en.Robot(radius=robot_rad,
-                     init_pos=(0, 0),
+                     init_pos=(0.1, -0.1),
                      init_angle=math.pi / 9,
                      mass=1.0)
     arena = en.ArenaBoundaries(left=-1.0, right=1.0, bottom=-1.0, top=1.0)

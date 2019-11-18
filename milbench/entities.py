@@ -48,6 +48,69 @@ class RobotAction(enum.IntFlag):
     CLOSE = 32
 
 
+def rect_verts(w, h):
+    # counterclockwise from top right
+    return [
+        pm.vec2d.Vec2d(w / 2, h / 2),
+        pm.vec2d.Vec2d(-w / 2, h / 2),
+        pm.vec2d.Vec2d(-w / 2, -h / 2),
+        pm.vec2d.Vec2d(w / 2, -h / 2),
+    ]
+
+
+def make_finger_vertices(upper_arm_len, forearm_len, thickness, side_sign):
+    """Make annoying finger polygons coordinates. Corresponding composite shape
+    will have origin in the middle of the upper arm, with upper arm oriented
+    straight upwards and forearm above it."""
+    upper_arm_vertices = rect_verts(thickness, upper_arm_len)
+    forearm_vertices = rect_verts(thickness, forearm_len)
+    # now rotate upper arm into place & then move it to correct position
+    upper_start = pm.vec2d.Vec2d(side_sign * thickness / 2, upper_arm_len / 2)
+    forearm_offset_unrot = pm.vec2d.Vec2d(-side_sign * thickness / 2,
+                                          forearm_len / 2)
+    rot_angle = side_sign * math.pi / 8
+    forearm_trans = upper_start + forearm_offset_unrot.rotated(rot_angle)
+    forearm_vertices_trans = [
+        v.rotated(rot_angle) + forearm_trans for v in forearm_vertices
+    ]
+    upper_arm_verts_final = [(v.x, v.y) for v in upper_arm_vertices]
+    forearm_verts_final = [(v.x, v.y) for v in forearm_vertices_trans]
+    return upper_arm_verts_final, forearm_verts_final
+
+
+def _convert_vec(v):
+    if isinstance(v, pm.vec2d.Vec2d):
+        return v.x, v.y
+    if isinstance(v, (float, int)):
+        return (v, v)
+    x, y = v
+    return (x, y)
+
+
+def add_vecs(vec1, vec2):
+    """Elementwise add vectors represented as vec2ds or tuples or whatever
+    (even scalars, in which case they get broadcast). Return result as
+    tuple."""
+    x1, y1 = _convert_vec(vec1)
+    x2, y2 = _convert_vec(vec2)
+    return (x1 + x2, y1 + y2)
+
+
+def mul_vecs(vec1, vec2):
+    """Elementwise multiply vectors represented as vec2ds or tuples or
+    whatever. Return result as tuple."""
+    x1, y1 = _convert_vec(vec1)
+    x2, y2 = _convert_vec(vec2)
+    return (x1 * x2, y1 * y2)
+
+
+def rotate_vec(vec, angle):
+    if not isinstance(vec, pm.vec2d.Vec2d):
+        vec = pm.vec2d.Vec2d(*_convert_vec(vec))
+    vec_r = vec.rotated(angle)
+    return (vec_r.x, vec_r.y)
+
+
 class Robot(Entity):
     """Robot body controlled by the agent."""
     def __init__(self, radius, init_pos, init_angle, mass=1.0):
@@ -59,7 +122,7 @@ class Robot(Entity):
         self.target_speed = 0.0
         # max angle from vertical on inner side and outer
         self.finger_rot_limit_outer = math.pi / 8
-        self.finger_rot_limit_inner = math.pi / 8
+        self.finger_rot_limit_inner = 0.0
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
@@ -68,10 +131,8 @@ class Robot(Entity):
         # signature: moment_for_circle(mass, inner_rad, outer_rad, offset)
         inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0, 0))
         self.robot_body = body = pm.Body(self.mass, inertia)
-        # FIXME: set up subsequent code for fingers etc. so that it can deal
-        # with arbitrary robot initial positions
-        # body.position = (0, 0)
-        # body.angle = self.init_angle
+        body.position = self.init_pos
+        body.angle = self.init_angle
         self.space.add(body)
 
         # For control. The rough joint setup was taken form tank.py in the
@@ -91,32 +152,55 @@ class Robot(Entity):
         self.space.add(rot_control_joint)
 
         # finger bodies/controls (annoying)
-        buffer_width = 2 * self.radius
-        buffer_thickness = 0.25 * self.radius
-        finger_length = 1.2 * self.radius
-        finger_dy = pm.vec2d.Vec2d(0, finger_length / 2)
-        finger_dx = pm.vec2d.Vec2d(buffer_thickness / 2, 0)
-        buffer_pos = pm.vec2d.Vec2d(0, self.radius)
-        buffer_dy = pm.vec2d.Vec2d(0, buffer_thickness / 2)
-        buffer_dx = pm.vec2d.Vec2d(buffer_width / 2, 0)
+        finger_thickness = 0.25 * self.radius
+        finger_upper_length = 1.4 * self.radius
+        finger_lower_length = 0.7 * self.radius
         self.finger_bodies = []
         self.finger_motors = []
+        finger_vertices = []
+        finger_inner_vertices = []
         self.target_finger_angle = 0.0
         for finger_side in [-1, 1]:
             # basic finger body
-            finger_loc = buffer_pos + finger_side * buffer_dx - buffer_dy \
-                         - finger_side * finger_dx + finger_dy
+            finger_verts = make_finger_vertices(
+                upper_arm_len=finger_upper_length,
+                forearm_len=finger_lower_length,
+                thickness=finger_thickness,
+                side_sign=finger_side)
+            finger_vertices.append(finger_verts)
+            # this is just for drawing
+            finger_inner_verts = make_finger_vertices(
+                upper_arm_len=finger_upper_length - LINE_THICKNESS * 2,
+                forearm_len=finger_lower_length - LINE_THICKNESS * 2,
+                thickness=finger_thickness - LINE_THICKNESS * 2,
+                side_sign=finger_side)
+            finger_inner_verts = [[(x, y + LINE_THICKNESS) for x, y in box]
+                                  for box in finger_inner_verts]
+            finger_inner_vertices.append(finger_inner_verts)
+            # now create body
             finger_mass = self.mass / 8
-            finger_inertia = pm.moment_for_box(
-                finger_mass, (buffer_thickness, finger_length))
+            finger_inertia = pm.moment_for_poly(finger_mass,
+                                                sum(finger_verts, []))
             finger_body = pm.Body(finger_mass, finger_inertia)
-            finger_body.position = finger_loc
+            finger_body.angle = self.init_angle
+            # attach somewhere on the inner side of actual finger position
+            finger_attach_delta = pm.vec2d.Vec2d(
+                -finger_side * self.radius * 0.5, -self.radius * 0.8)
+            # position of finger relative to body
+            finger_rel_pos = (finger_side * self.radius * 0.6,
+                              self.radius * 0.8)
+            finger_rel_pos_rot = rotate_vec(finger_rel_pos, self.init_angle)
+            finger_body.position = add_vecs(body.position, finger_rel_pos_rot)
             self.space.add(finger_body)
             self.finger_bodies.append(finger_body)
 
             # pin joint to keep it in place (it will rotate around this point)
-            finger_pin = pm.PinJoint(body, finger_body, finger_loc - finger_dy,
-                                     -finger_dy)
+            finger_pin = pm.PinJoint(
+                body,
+                finger_body,
+                add_vecs(finger_rel_pos, finger_attach_delta),
+                finger_attach_delta,
+            )
             finger_pin.error_bias = 0.0
             self.space.add(finger_pin)
             # rotary limit joint to stop it from getting too far out of line
@@ -135,7 +219,7 @@ class Robot(Entity):
             finger_motor = pm.SimpleMotor(body, finger_body, 0.0)
             finger_motor.rate = 0.0
             finger_motor.max_bias = 0.0
-            finger_motor.max_force = 2
+            finger_motor.max_force = 4
             self.space.add(finger_motor)
             self.finger_motors.append(finger_motor)
 
@@ -146,65 +230,59 @@ class Robot(Entity):
         body_shape.filter = pm.ShapeFilter(group=robot_group)
         body_shape.friction = 0.5
         self.space.add(body_shape)
-        # a flat buffer at the front
-        buffer_shape = pm.Poly(body, [
-            buffer_pos + buffer_dy - buffer_dx,
-            buffer_pos + buffer_dy + buffer_dx,
-            buffer_pos - buffer_dy + buffer_dx,
-            buffer_pos - buffer_dy - buffer_dx,
-        ])
-        buffer_shape.filter = pm.ShapeFilter(group=robot_group)
-        # grippy buffer
-        buffer_shape.friction = 2.0
-        self.space.add(buffer_shape)
-        finger_shapes = []
         # the fingers
-        for finger_body, finger_side in zip(self.finger_bodies, [-1, 1]):
-            finger_shape = pm.Poly(finger_body, [
-                -finger_dx + finger_dy,
-                finger_dx + finger_dy,
-                finger_dx - finger_dy,
-                -finger_dx - finger_dy,
-            ])
-            finger_shape.filter = pm.ShapeFilter(group=robot_group)
-            # grippy fingers
-            finger_shape.friction = 2.0
-            self.space.add(finger_shape)
-            finger_shapes.append(finger_shape)
+        finger_shapes = []
+        for finger_body, finger_verts, finger_side in zip(
+                self.finger_bodies, finger_vertices, [-1, 1]):
+            finger_subshapes = []
+            for finger_subverts in finger_verts:
+                finger_subshape = pm.Poly(finger_body, finger_subverts)
+                finger_subshape.filter = pm.ShapeFilter(group=robot_group)
+                # grippy fingers
+                finger_subshape.friction = 4.0
+                finger_subshapes.append(finger_subshape)
+            self.space.add(*finger_subshapes)
+            finger_shapes.append(finger_subshapes)
 
         # graphics setup
         # draw a circular body
         circ_body_in = r.make_circle(radius=self.radius - LINE_THICKNESS,
                                      res=100)
         circ_body_out = r.make_circle(radius=self.radius, res=100)
-        grey = COLOURS_RGB['grey']
-        dark_grey = darken_rgb(grey)
-        light_grey = lighten_rgb(grey)
-        circ_body_in.set_color(*grey)
-        circ_body_out.set_color(*dark_grey)
-
-        # draw the buffer at the front
-        # TODO: add outline shading to the buffer
-        buffer_geom = r.make_rect(buffer_width, buffer_thickness)
-        buffer_geom.set_color(*light_grey)
-        buffer_xform = r.Transform()
-        buffer_xform.set_translation(0, self.radius)
-        buffer_geom.add_attr(buffer_xform)
+        robot_colour = COLOURS_RGB['grey']
+        dark_robot_colour = darken_rgb(robot_colour)
+        light_robot_colour = lighten_rgb(robot_colour)
+        circ_body_in.set_color(*robot_colour)
+        circ_body_out.set_color(*dark_robot_colour)
 
         # draw the two fingers
-        # TODO: add outline shading to the fingers
-        finger_geoms = []
         self.finger_xforms = []
-        for finger_shape, finger_side in zip(finger_shapes, [-1, 1]):
-            vertices = [(v.x, v.y) for v in finger_shape.get_vertices()]
-            finger_geom = r.make_polygon(vertices)
-            finger_geom.set_color(*light_grey)
+        finger_outer_geoms = []
+        finger_inner_geoms = []
+        for finger_outer_subshapes, finger_inner_verts, finger_side in zip(
+                finger_shapes, finger_inner_vertices, [-1, 1]):
             finger_xform = r.Transform()
-            finger_geom.add_attr(finger_xform)
-            finger_geoms.append(finger_geom)
             self.finger_xforms.append(finger_xform)
+            for finger_subshape in finger_outer_subshapes:
+                vertices = [(v.x, v.y) for v in finger_subshape.get_vertices()]
+                finger_outer_geom = r.make_polygon(vertices)
+                finger_outer_geom.set_color(*robot_colour)
+                finger_outer_geom.add_attr(finger_xform)
+                finger_outer_geoms.append(finger_outer_geom)
+
+            for vertices in finger_inner_verts:
+                finger_inner_geom = r.make_polygon(vertices)
+                finger_inner_geom.set_color(*light_robot_colour)
+                finger_inner_geom.add_attr(finger_xform)
+                finger_inner_geoms.append(finger_inner_geom)
+
+        for geom in finger_outer_geoms:
+            self.viewer.add_geom(geom)
+        for geom in finger_inner_geoms:
+            self.viewer.add_geom(geom)
 
         # draw some cute eyes
+        # TODO: add googly eyes
         eye_shapes = []
         for x_sign in [-1, 1]:
             eye = r.make_circle(radius=0.2 * self.radius, res=20)
@@ -219,12 +297,9 @@ class Robot(Entity):
             eye_shapes.extend([eye, pupil])
         # join them together
         self.robot_xform = r.Transform()
-        robot_compound = r.Compound(
-            [buffer_geom, circ_body_out, circ_body_in, *eye_shapes])
+        robot_compound = r.Compound([circ_body_out, circ_body_in, *eye_shapes])
         robot_compound.add_attr(self.robot_xform)
         self.viewer.add_geom(robot_compound)
-        for finger_geom in finger_geoms:
-            self.viewer.add_geom(finger_geom)
 
     def set_action(self, move_action):
         self.rel_turn_angle = 0.0
@@ -263,14 +338,12 @@ class Robot(Entity):
             # counterclockwise; for the right, it's measured clockwise
             # (chipmunk is always counterclockwise)
             angle_error = rel_angle + finger_side * self.target_finger_angle
-            # TODO: tune the rate at which these correct themselves
             target_rate = max(-1, min(1, angle_error * 10))
             if abs(target_rate) < 1e-4:
                 target_rate = 0.0
             finger_motor.rate = target_rate
 
     def pre_draw(self):
-        # TODO: handle finger state
         self.robot_xform.set_translation(*self.robot_body.position)
         self.robot_xform.set_rotation(self.robot_body.angle)
         for finger_xform, finger_body in zip(self.finger_xforms,

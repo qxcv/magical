@@ -7,7 +7,7 @@ def rgb(r, g, b):
     return (r / 255.0, g / 255.0, b / 255.0)
 
 
-LINE_THICKNESS = 0.015
+LINE_THICKNESS = 0.01
 COLOURS_RGB = {
     # Most of these colours are from Wikipedia. They are all pastel base
     # colours useful for shape bodies; use darken_rgb to get highlights (e.g.
@@ -31,5 +31,5 @@ def darken_rgb(rgb):
 def lighten_rgb(rgb):
     """Produce a lighter version of a given base colour."""
     h, l, s = colorsys.rgb_to_hls(*rgb)
-    hls_new = (h, min(1, l * 1.1), s)
+    hls_new = (h, min(1, l * 1.3), s)
     return colorsys.hls_to_rgb(*hls_new)
