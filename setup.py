@@ -10,7 +10,8 @@ setup(
         # imitation)
         # 'tensorflow>=1.13,<1.16',
         'pymunk~=5.6.0',
-        'pyglet~=1.4.6',
+        'pyglet~=1.3.2',
+        'gym~=0.15.0',
         'Click~=7.0',
         'numpy~=1.17.4',
     ])

@@ -85,8 +85,7 @@ class Viewer(object):
                                            display=display)
         self.window.on_close = self.window_closed_by_user
         self.isopen = True
-        self.geoms = []
-        self.onetime_geoms = []
+        self.reset_geoms()
         self.transform = Transform()
 
         gl.glEnable(gl.GL_BLEND)
@@ -97,6 +96,10 @@ class Viewer(object):
         gl.glHint(gl.GL_LINE_SMOOTH_HINT, gl.GL_NICEST)
         gl.glLineWidth(2.0)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
+    def reset_geoms(self):
+        self.geoms = []
+        self.onetime_geoms = []
 
     def close(self):
         self.window.close()
@@ -321,12 +324,8 @@ def make_circle(radius=10, res=30, filled=True):
 def make_rect(width=10, height=10, filled=True):
     rad_h = height / 2
     rad_w = width / 2
-    points = [
-        (-rad_w, rad_h),
-        (rad_w, rad_h),
-        (rad_w, -rad_h),
-        (-rad_w, -rad_h)
-    ]
+    points = [(-rad_w, rad_h), (rad_w, rad_h), (rad_w, -rad_h),
+              (-rad_w, -rad_h)]
     if filled:
         return FilledPolygon(points)
     else:

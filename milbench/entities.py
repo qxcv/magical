@@ -2,7 +2,6 @@
 
 import abc
 import enum
-from enum import auto
 import math
 import weakref
 
@@ -116,7 +115,7 @@ class Robot(Entity):
             eye_inertia = pm.moment_for_circle(eye_mass, 0, eye_radius, (0, 0))
             eye_body = pm.Body(eye_mass, eye_inertia)
             eye_body.angle = self.init_angle
-            eye_joint = pm.DampedRotarySpring(body, eye_body, 0, 0.1, 1e-3)
+            eye_joint = pm.DampedRotarySpring(body, eye_body, 0, 0.1, 3e-3)
             eye_joint.max_bias = 3.0
             eye_joint.max_force = 0.001
             self.pupil_bodies.append(eye_body)
@@ -158,8 +157,8 @@ class Robot(Entity):
             finger_attach_delta = pm.vec2d.Vec2d(
                 -finger_side * self.radius * 0.5, -self.radius * 0.8)
             # position of finger relative to body
-            finger_rel_pos = (finger_side * self.radius * 0.6,
-                              self.radius * 0.8)
+            finger_rel_pos = (finger_side * self.radius * 0.35,
+                              self.radius * 0.5)
             finger_rel_pos_rot = gtools.rotate_vec(finger_rel_pos,
                                                    self.init_angle)
             finger_body.position = gtools.add_vecs(body.position,
@@ -366,10 +365,17 @@ class ArenaBoundaries(Entity):
 
 
 class ShapeType(enum.Enum):
-    CIRCLE = auto()
-    SQUARE = auto()
-    TRIANGLE = auto()
-    PENTAGON = auto()
+    TRIANGLE = 'triangle'
+    SQUARE = 'square'
+    PENTAGON = 'pentagon'
+    OCTAGON = 'octagon'
+    HEXAGON = 'hexagon'
+    CIRCLE = 'circle'
+
+
+# limited set of types and colours to use for random generation
+SHAPE_TYPES = [ShapeType.SQUARE, ShapeType.PENTAGON]
+SHAPE_COLOURS = ['red', 'green', 'blue']
 
 
 class Shape(Entity):
@@ -419,15 +425,23 @@ class Shape(Entity):
             body.angle = self.init_angle
             self.space.add(body)
             shape = pm.Circle(body, self.shape_size, (0, 0))
-        elif self.shape_type == ShapeType.TRIANGLE \
-                or self.shape_type == ShapeType.PENTAGON:
+        else:
             # these are free-form shapes b/c no helpers exist in Pymunk
             if self.shape_type == ShapeType.TRIANGLE:
-                factor = 0.85  # shrink to make it look more sensible
+                factor = 0.8  # shrink to make it look more sensible
                 num_sides = 3
             elif self.shape_type == ShapeType.PENTAGON:
                 factor = 1.0
                 num_sides = 5
+            elif self.shape_type == ShapeType.HEXAGON:
+                factor = 1.0
+                num_sides = 6
+            elif self.shape_type == ShapeType.OCTAGON:
+                factor = 1.0
+                num_sides = 8
+            else:
+                raise NotImplementedError("haven't implemented",
+                                          self.shape_type)
             side_len = factor * gtools.regular_poly_circ_rad_to_side_length(
                 num_sides, self.shape_size)
             poly_verts = gtools.compute_regular_poly_verts(num_sides, side_len)
@@ -437,8 +451,6 @@ class Shape(Entity):
             body.angle = self.init_angle
             self.space.add(body)
             shape = pm.Poly(body, poly_verts)
-        else:
-            raise NotImplementedError("haven't implemented", self.shape_type)
 
         shape.friction = 0.5
         self.space.add(shape)
@@ -461,8 +473,10 @@ class Shape(Entity):
             geom_inner = r.make_circle(radius=self.shape_size - LINE_THICKNESS,
                                        res=100)
             geom_outer = r.make_circle(radius=self.shape_size, res=100)
-        elif self.shape_type == ShapeType.TRIANGLE \
-                or self.shape_type == ShapeType.PENTAGON:
+        elif self.shape_type == ShapeType.OCTAGON \
+                or self.shape_type == ShapeType.HEXAGON \
+                or self.shape_type == ShapeType.PENTAGON \
+                or self.shape_type == ShapeType.TRIANGLE:
             apothem = gtools.regular_poly_side_length_to_apothem(
                 num_sides, side_len)
             short_side_len = gtools.regular_poly_apothem_to_side_legnth(
