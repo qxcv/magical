@@ -39,3 +39,46 @@ def compute_regular_poly_verts(n_sides, side_length):
         vertices.append(first_vertex.rotated(angle))
     vertices = [(v.x, v.y) for v in vertices]
     return vertices
+
+
+def _convert_vec(v):
+    if isinstance(v, pm.vec2d.Vec2d):
+        return v.x, v.y
+    if isinstance(v, (float, int)):
+        return (v, v)
+    x, y = v
+    return (x, y)
+
+
+def add_vecs(vec1, vec2):
+    """Elementwise add vectors represented as vec2ds or tuples or whatever
+    (even scalars, in which case they get broadcast). Return result as
+    tuple."""
+    x1, y1 = _convert_vec(vec1)
+    x2, y2 = _convert_vec(vec2)
+    return (x1 + x2, y1 + y2)
+
+
+def mul_vecs(vec1, vec2):
+    """Elementwise multiply vectors represented as vec2ds or tuples or
+    whatever. Return result as tuple."""
+    x1, y1 = _convert_vec(vec1)
+    x2, y2 = _convert_vec(vec2)
+    return (x1 * x2, y1 * y2)
+
+
+def rotate_vec(vec, angle):
+    if not isinstance(vec, pm.vec2d.Vec2d):
+        vec = pm.vec2d.Vec2d(*_convert_vec(vec))
+    vec_r = vec.rotated(angle)
+    return (vec_r.x, vec_r.y)
+
+
+def rect_verts(w, h):
+    # counterclockwise from top right
+    return [
+        pm.vec2d.Vec2d(w / 2, h / 2),
+        pm.vec2d.Vec2d(-w / 2, h / 2),
+        pm.vec2d.Vec2d(-w / 2, -h / 2),
+        pm.vec2d.Vec2d(w / 2, -h / 2),
+    ]

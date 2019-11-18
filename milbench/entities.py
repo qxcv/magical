@@ -48,22 +48,12 @@ class RobotAction(enum.IntFlag):
     CLOSE = 32
 
 
-def rect_verts(w, h):
-    # counterclockwise from top right
-    return [
-        pm.vec2d.Vec2d(w / 2, h / 2),
-        pm.vec2d.Vec2d(-w / 2, h / 2),
-        pm.vec2d.Vec2d(-w / 2, -h / 2),
-        pm.vec2d.Vec2d(w / 2, -h / 2),
-    ]
-
-
 def make_finger_vertices(upper_arm_len, forearm_len, thickness, side_sign):
     """Make annoying finger polygons coordinates. Corresponding composite shape
     will have origin in the middle of the upper arm, with upper arm oriented
     straight upwards and forearm above it."""
-    upper_arm_vertices = rect_verts(thickness, upper_arm_len)
-    forearm_vertices = rect_verts(thickness, forearm_len)
+    upper_arm_vertices = gtools.rect_verts(thickness, upper_arm_len)
+    forearm_vertices = gtools.rect_verts(thickness, forearm_len)
     # now rotate upper arm into place & then move it to correct position
     upper_start = pm.vec2d.Vec2d(side_sign * thickness / 2, upper_arm_len / 2)
     forearm_offset_unrot = pm.vec2d.Vec2d(-side_sign * thickness / 2,
@@ -76,39 +66,6 @@ def make_finger_vertices(upper_arm_len, forearm_len, thickness, side_sign):
     upper_arm_verts_final = [(v.x, v.y) for v in upper_arm_vertices]
     forearm_verts_final = [(v.x, v.y) for v in forearm_vertices_trans]
     return upper_arm_verts_final, forearm_verts_final
-
-
-def _convert_vec(v):
-    if isinstance(v, pm.vec2d.Vec2d):
-        return v.x, v.y
-    if isinstance(v, (float, int)):
-        return (v, v)
-    x, y = v
-    return (x, y)
-
-
-def add_vecs(vec1, vec2):
-    """Elementwise add vectors represented as vec2ds or tuples or whatever
-    (even scalars, in which case they get broadcast). Return result as
-    tuple."""
-    x1, y1 = _convert_vec(vec1)
-    x2, y2 = _convert_vec(vec2)
-    return (x1 + x2, y1 + y2)
-
-
-def mul_vecs(vec1, vec2):
-    """Elementwise multiply vectors represented as vec2ds or tuples or
-    whatever. Return result as tuple."""
-    x1, y1 = _convert_vec(vec1)
-    x2, y2 = _convert_vec(vec2)
-    return (x1 * x2, y1 * y2)
-
-
-def rotate_vec(vec, angle):
-    if not isinstance(vec, pm.vec2d.Vec2d):
-        vec = pm.vec2d.Vec2d(*_convert_vec(vec))
-    vec_r = vec.rotated(angle)
-    return (vec_r.x, vec_r.y)
 
 
 class Robot(Entity):
@@ -189,8 +146,10 @@ class Robot(Entity):
             # position of finger relative to body
             finger_rel_pos = (finger_side * self.radius * 0.6,
                               self.radius * 0.8)
-            finger_rel_pos_rot = rotate_vec(finger_rel_pos, self.init_angle)
-            finger_body.position = add_vecs(body.position, finger_rel_pos_rot)
+            finger_rel_pos_rot = gtools.rotate_vec(finger_rel_pos,
+                                                   self.init_angle)
+            finger_body.position = gtools.add_vecs(body.position,
+                                                   finger_rel_pos_rot)
             self.space.add(finger_body)
             self.finger_bodies.append(finger_body)
 
@@ -198,7 +157,7 @@ class Robot(Entity):
             finger_pin = pm.PinJoint(
                 body,
                 finger_body,
-                add_vecs(finger_rel_pos, finger_attach_delta),
+                gtools.add_vecs(finger_rel_pos, finger_attach_delta),
                 finger_attach_delta,
             )
             finger_pin.error_bias = 0.0
