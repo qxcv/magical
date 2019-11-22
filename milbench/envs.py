@@ -38,7 +38,9 @@ class ShapePushingEnv(gym.Env):
         self._entities = None
         self._space = None
         self._robot = None
+        # this is for background rendering
         self.viewer = None
+        self.human_viewer = None
 
     # def seed(self, seed=None):
     #     """No randomness for now (except in action spaces, which must be
@@ -53,7 +55,7 @@ class ShapePushingEnv(gym.Env):
             self._robot = None
         if self.viewer is None:
             res_h, res_w = self.res_hw
-            self.viewer = r.Viewer(res_w, res_h)
+            self.viewer = r.Viewer(res_w, res_h, visible=False)
         else:
             # these will get added back later
             self.viewer.reset_geoms()
@@ -137,12 +139,21 @@ class ShapePushingEnv(gym.Env):
             return None
         for ent in self._entities:
             ent.pre_draw()
+        if mode == 'human':
+            if self.human_viewer is None:
+                self.human_viewer = r.SlaveViewer(self.viewer, visible=True)
+            self.human_viewer.render(return_rgb_array=False)
+        else:
+            assert mode == 'rgb_array'
         return self.viewer.render(return_rgb_array=mode == 'rgb_array')
 
     def close(self):
         if self.viewer:
             self.viewer.close()
             self.viewer = None
+        if self.human_viewer:
+            self.human_viewer.close()
+            self.human_viewer = None
 
 
 def register():

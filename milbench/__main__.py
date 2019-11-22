@@ -37,20 +37,22 @@ def main(record):
     envs.register()
     env_name = 'ShapePushLoResStack-v0'
     env = gym.make(env_name)
-
-    obs = env.reset()
-    if record:
-        traj_accum.add_step(0, {"obs": obs})
-
-    # keys that are depressed will end up in key_map
-    key_map = key.KeyStateHandler()
-    env.viewer.window.push_handlers(key_map)
-
-    # render loop
-    spf = 1.0 / env.fps
-    saved = False
     try:
-        while env.viewer.isopen:
+        obs = env.reset()
+        if record:
+            traj_accum.add_step(0, {"obs": obs})
+
+        # first render to open window
+        env.render(mode='human')
+
+        # keys that are depressed will end up in key_map
+        key_map = key.KeyStateHandler()
+        env.human_viewer.window.push_handlers(key_map)
+
+        # render loop
+        spf = 1.0 / env.fps
+        saved = False
+        while env.human_viewer.isopen:
             if key_map[key.R]:
                 # drop traj and don't save
                 obs = env.reset()
@@ -110,7 +112,7 @@ def main(record):
                 time.sleep(spf - elapsed)
     finally:
         # once done, close the window
-        env.viewer.close()
+        env.close()
 
 
 if __name__ == '__main__':

@@ -75,18 +75,20 @@ def get_display(spec):
 
 
 class Viewer(object):
-    def __init__(self, width, height, display=None):
+    def __init__(self, width, height, visible, display=None, slave=False):
         display = get_display(display)
 
         self.width = width
         self.height = height
         self.window = pyglet.window.Window(width=width,
                                            height=height,
-                                           display=display)
+                                           display=display,
+                                           visible=visible)
         self.window.on_close = self.window_closed_by_user
         self.isopen = True
-        self.reset_geoms()
-        self.transform = Transform()
+        if not slave:
+            self.reset_geoms()
+            self.transform = Transform()
 
         gl.glEnable(gl.GL_BLEND)
         # tricks from OpenAI's multiagent particle env repo:
@@ -185,6 +187,43 @@ class Viewer(object):
 
     def __del__(self):
         self.close()
+
+
+class SlaveViewer(Viewer):
+    """Offers another window on a different viewer."""
+    def __init__(self, master_viewer, **kwargs):
+        width = master_viewer.width
+        height = master_viewer.height
+        super().__init__(width=width, height=height, slave=True, **kwargs)
+        self.master_viewer = master_viewer
+
+    def reset_geoms(self):
+        pass
+
+    @property
+    def geoms(self):
+        return list(self.master_viewer.geoms)
+
+    @geoms.setter
+    def geoms(self, new_value):
+        raise NotImplementedError()
+
+    @property
+    def onetime_geoms(self):
+        return list(self.master_viewer.geoms)
+
+    @onetime_geoms.setter
+    def onetime_geoms(self, new_value):
+        # this happens during render()
+        pass
+
+    @property
+    def transform(self):
+        return self.master_viewer.transform
+
+    @transform.setter
+    def transform(self, new_value):
+        raise NotImplementedError()
 
 
 def _add_attrs(geom, attrs):
