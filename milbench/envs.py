@@ -4,6 +4,7 @@ import math
 
 import gym
 from gym import spaces
+from gym.wrappers import FrameStack, ResizeObservation
 import numpy as np
 import pymunk as pm
 
@@ -72,22 +73,23 @@ class ShapePushingEnv(gym.Env):
                           shape_size=shape_rad,
                           init_pos=(0.4, -0.4),
                           init_angle=0.13 * math.pi)
-        circle = en.Shape(shape_type=en.ShapeType.CIRCLE,
-                          colour_name='yellow',
-                          shape_size=shape_rad,
-                          init_pos=(-0.7, -0.5),
-                          init_angle=-0.5 * math.pi)
-        triangle = en.Shape(shape_type=en.ShapeType.HEXAGON,
-                            colour_name='green',
-                            shape_size=shape_rad,
-                            init_pos=(-0.5, 0.35),
-                            init_angle=0.05 * math.pi)
-        pentagon = en.Shape(shape_type=en.ShapeType.PENTAGON,
-                            colour_name='blue',
-                            shape_size=shape_rad,
-                            init_pos=(0.4, 0.35),
-                            init_angle=0.8 * math.pi)
-        self._entities = [circle, square, triangle, pentagon, robot, arena]
+        # circle = en.Shape(shape_type=en.ShapeType.CIRCLE,
+        #                   colour_name='yellow',
+        #                   shape_size=shape_rad,
+        #                   init_pos=(-0.7, -0.5),
+        #                   init_angle=-0.5 * math.pi)
+        # triangle = en.Shape(shape_type=en.ShapeType.HEXAGON,
+        #                     colour_name='green',
+        #                     shape_size=shape_rad,
+        #                     init_pos=(-0.5, 0.35),
+        #                     init_angle=0.05 * math.pi)
+        # pentagon = en.Shape(shape_type=en.ShapeType.PENTAGON,
+        #                     colour_name='blue',
+        #                     shape_size=shape_rad,
+        #                     init_pos=(0.4, 0.35),
+        #                     init_angle=0.8 * math.pi)
+        # self._entities = [circle, square, triangle, pentagon, robot, arena]
+        self._entities = [square, robot, arena]
 
         for ent in self._entities:
             ent.setup(self.viewer, self._space)
@@ -103,6 +105,8 @@ class ShapePushingEnv(gym.Env):
         # forward_frames = int(math.ceil(forward_time * self.fps))
         # for _ in range(forward_frames):
         #     self._phys_steps_on_frame()
+
+        return self.render(mode='rgb_array')
 
     def _phys_steps_on_frame(self):
         phys_steps = 10
@@ -142,9 +146,27 @@ class ShapePushingEnv(gym.Env):
 
 
 def register():
-    gym.register(
-        'ShapePushingEnv-v0',
-        entry_point='milbench.envs:ShapePushingEnv',
-        # about 25s
-        max_episode_steps=500,
-        kwargs=dict(res_hw=(256, 256), fps=20, phys_steps=10, phys_iter=10))
+    default_res = (256, 256)
+    small_res = (96, 96)
+    default_kwargs = dict(res_hw=default_res,
+                          fps=15,
+                          phys_steps=10,
+                          phys_iter=10)
+    # 250 frames is 20s at 15fps
+    ep_len = 200
+    gym.register('ShapePush-v0',
+                 entry_point='milbench.envs:ShapePushingEnv',
+                 max_episode_steps=ep_len,
+                 kwargs=default_kwargs)
+
+    def make_lores_stack(**kwargs):
+        base_env = ShapePushingEnv(**kwargs)
+        resize_env = ResizeObservation(base_env, small_res)
+        stack_env = FrameStack(resize_env, 4)
+        return stack_env
+
+    # images downsampled to 128x128, four adjacent frames stacked together
+    gym.register('ShapePushLoResStack-v0',
+                 entry_point=make_lores_stack,
+                 max_episode_steps=ep_len,
+                 kwargs=default_kwargs)

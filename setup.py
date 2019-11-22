@@ -6,12 +6,18 @@ setup(
     version='0.0.1',
     packages=['milbench'],
     install_requires=[
-        # don't need TensorFlow yet (but will need an old TF copy when I do
-        # imitation)
-        # 'tensorflow>=1.13,<1.16',
         'pymunk~=5.6.0',
         'pyglet~=1.3.2',
         'gym~=0.15.0',
         'Click~=7.0',
         'numpy~=1.17.4',
-    ])
+        'dill~=0.3.1.1',
+    ],
+    extras_require={
+        # for imitation baselines
+        'baselines': [
+            ('imitation @ '
+             'git+https://github.com/HumanCompatibleAI/imitation.git'
+             '#43e23fa0386d37b532ef58baae19ec67852ae8e4'),
+        ],
+    })
