@@ -47,12 +47,12 @@ def main(record):
 
         # keys that are depressed will end up in key_map
         key_map = key.KeyStateHandler()
-        env.human_viewer.window.push_handlers(key_map)
+        env.viewer.window.push_handlers(key_map)
 
         # render loop
         spf = 1.0 / env.fps
         saved = False
-        while env.human_viewer.isopen:
+        while env.viewer.isopen:
             if key_map[key.R]:
                 # drop traj and don't save
                 obs = env.reset()
