@@ -86,7 +86,7 @@ def main(record):
                     "rews": rew,
                     "obs": obs,
                     "acts": action,
-                    "infos": info
+                    "infos": info,
                 })
                 if done and not saved:
                     traj = traj_accum.finish_trajectory(0)
