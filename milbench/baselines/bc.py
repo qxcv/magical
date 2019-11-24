@@ -146,9 +146,9 @@ def test(snapshot, env_name):
                 # for limiting FPS
                 frame_start = time.time()
                 # return value is actions, values, states, neglogp
-                actions, _, _, _ = policy.step(obs[None])
-                action, = actions
+                (action, ), _, _, _ = policy.step(obs[None])
                 obs, rew, done, info = env.step(action)
+                obs = np.asarray(obs)
                 env.render(mode='human')
                 if done:
                     obs = env.reset()

@@ -56,6 +56,9 @@ except ImportError:
 import math  # noqa: E402
 import numpy as np  # noqa: E402
 
+from milbench.pyglet_backport.image import Framebuffer, \
+    Renderbuffer, Texture  # noqa: E402
+
 RAD2DEG = 57.29577951308232
 
 
@@ -74,8 +77,51 @@ def get_display(spec):
             format(spec))
 
 
+def get_offscreen_fbo(width, height, msaa_samples=4):
+    fbo = Framebuffer()
+    # using None for the format specifier in Texture.create means we have to
+    # allocate memory ourselves, which is important here because we seem to
+    # need to pass nullptr to allocation routine's destination arg (why?).
+    if msaa_samples > 1:
+        fbo._colour_texture = Texture.create(
+            width,
+            height,
+            target=gl.GL_TEXTURE_2D_MULTISAMPLE,
+            internalformat=None)
+        gl.glTexImage2DMultisample(gl.GL_TEXTURE_2D_MULTISAMPLE, msaa_samples,
+                                   gl.GL_RGB, width, height, True)
+    else:
+        fbo._colour_texture = Texture.create(width,
+                                             height,
+                                             internalformat=None)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height, 0,
+                        gl.GL_RGB, gl.GL_UNSIGNED_BYTE, None)
+    fbo.attach_texture(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0,
+                       fbo._colour_texture)
+    fbo._depth_rb = Renderbuffer(width,
+                                 height,
+                                 gl.GL_DEPTH_COMPONENT,
+                                 samples=msaa_samples)
+    fbo.attach_renderbuffer(gl.GL_FRAMEBUFFER, gl.GL_DEPTH_ATTACHMENT,
+                            fbo._depth_rb)
+    assert fbo.is_complete, \
+        "FramebufferObject not complete after attaching all buffers (?)"
+    return fbo
+
+
+def blit_fbo(width, height, src_id, target_id, target_image=gl.GL_BACK):
+    # For drawing a multisampled FBO to a non-multisampled FBO or to the
+    # screen. See
+    # https://www.khronos.org/opengl/wiki/Multisampling#Allocating_a_Multisample_Render_Target
+    gl.glBindFramebuffer(gl.GL_READ_FRAMEBUFFER, src_id)
+    gl.glBindFramebuffer(gl.GL_DRAW_FRAMEBUFFER, target_id)
+    gl.glDrawBuffer(target_image)
+    gl.glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
+                         gl.GL_COLOR_BUFFER_BIT, gl.GL_NEAREST)
+
+
 class Viewer(object):
-    def __init__(self, width, height, visible, display=None, slave=False):
+    def __init__(self, width, height, visible, display=None):
         display = get_display(display)
 
         self.width = width
@@ -84,11 +130,18 @@ class Viewer(object):
                                            height=height,
                                            display=display,
                                            visible=visible)
+        if not visible:
+            # get around stupid bug (?) where OpenGL refuses to render anything
+            # to FBOs until the window is displayed
+            self.window.set_visible(True)
+            self.window.set_visible(False)
+        # need to use a second FBO to actually get image data
+        self.render_fbo = get_offscreen_fbo(width, height, msaa_samples=4)
+        self.no_msaa_fbo = get_offscreen_fbo(width, height, msaa_samples=1)
         self.window.on_close = self.window_closed_by_user
         self.isopen = True
-        if not slave:
-            self.reset_geoms()
-            self.transform = Transform()
+        self.reset_geoms()
+        self.transform = Transform()
 
         gl.glEnable(gl.GL_BLEND)
         # tricks from OpenAI's multiagent particle env repo:
@@ -124,9 +177,13 @@ class Viewer(object):
         self.onetime_geoms.append(geom)
 
     def render(self, return_rgb_array=False):
+        # switch to window and ONLY render to FBO
+        self.window.switch_to()
+        self.render_fbo.bind()
+
+        # actual rendering
         gl.glClearColor(1, 1, 1, 1)
         self.window.clear()
-        self.window.switch_to()
         self.window.dispatch_events()
         self.transform.enable()
         for geom in self.geoms:
@@ -134,21 +191,27 @@ class Viewer(object):
         for geom in self.onetime_geoms:
             geom.render()
         self.transform.disable()
+        self.onetime_geoms = []
+
+        # done, don't need FBO in main context
+        self.render_fbo.unbind()
+
+        # optionally write RGB array
         arr = None
         if return_rgb_array:
-            buffer = pyglet.image.get_buffer_manager().get_color_buffer()
-            image_data = buffer.get_image_data()
+            blit_fbo(self.width, self.height, self.render_fbo.id,
+                     self.no_msaa_fbo.id, gl.GL_COLOR_ATTACHMENT0)
+            image_data = self.no_msaa_fbo._colour_texture.get_image_data(
+                fmt='RGB', gl_format=gl.GL_RGB)
             arr = np.frombuffer(image_data.data, dtype=np.uint8)
-            # In https://github.com/openai/gym-http-api/issues/2, we
-            # discovered that someone using Xmonad on Arch was having
-            # a window of size 598 x 398, though a 600 x 400 window
-            # was requested. (Guess Xmonad was preserving a pixel for
-            # the boundary.) So we use the buffer height/width rather
-            # than the requested one.
-            arr = arr.reshape(buffer.height, buffer.width, 4)
-            arr = arr[::-1, :, 0:3]
+            arr = arr.reshape(self.height, self.width, 3)[::-1]
+
+        # also draw to main window
+        gl.glClearColor(1, 1, 1, 1)
+        self.window.clear()
+        blit_fbo(self.width, self.height, self.render_fbo.id, 0)
         self.window.flip()
-        self.onetime_geoms = []
+
         return arr if return_rgb_array else self.isopen
 
     # Convenience
@@ -178,8 +241,8 @@ class Viewer(object):
 
     def get_array(self):
         self.window.flip()
-        image_data = pyglet.image.get_buffer_manager().get_color_buffer(
-        ).get_image_data()
+        image_data = pyglet.image.get_buffer_manager() \
+            .get_color_buffer().get_image_data()
         self.window.flip()
         arr = np.fromstring(image_data.data, dtype=np.uint8, sep='')
         arr = arr.reshape(self.height, self.width, 4)
@@ -187,43 +250,6 @@ class Viewer(object):
 
     def __del__(self):
         self.close()
-
-
-class SlaveViewer(Viewer):
-    """Offers another window on a different viewer."""
-    def __init__(self, master_viewer, **kwargs):
-        width = master_viewer.width
-        height = master_viewer.height
-        super().__init__(width=width, height=height, slave=True, **kwargs)
-        self.master_viewer = master_viewer
-
-    def reset_geoms(self):
-        pass
-
-    @property
-    def geoms(self):
-        return list(self.master_viewer.geoms)
-
-    @geoms.setter
-    def geoms(self, new_value):
-        raise NotImplementedError()
-
-    @property
-    def onetime_geoms(self):
-        return list(self.master_viewer.geoms)
-
-    @onetime_geoms.setter
-    def onetime_geoms(self, new_value):
-        # this happens during render()
-        pass
-
-    @property
-    def transform(self):
-        return self.master_viewer.transform
-
-    @transform.setter
-    def transform(self, new_value):
-        raise NotImplementedError()
 
 
 def _add_attrs(geom, attrs):
