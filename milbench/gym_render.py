@@ -136,7 +136,7 @@ class Viewer(object):
             self.window.set_visible(True)
             self.window.set_visible(False)
         # need to use a second FBO to actually get image data
-        self.render_fbo = get_offscreen_fbo(width, height, msaa_samples=4)
+        self.render_fbo = get_offscreen_fbo(width, height, msaa_samples=1)
         self.no_msaa_fbo = get_offscreen_fbo(width, height, msaa_samples=1)
         self.window.on_close = self.window_closed_by_user
         self.isopen = True

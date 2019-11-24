@@ -182,7 +182,7 @@ class Framebuffer:
                 point named by attachment.
         """
         self.bind()
-        glFramebufferTexture(target, attachment, texture.id, texture.level)
+        glFramebufferTexture2D(target, attachment, texture.target, texture.id, texture.level)
         # glFramebufferTexture2D(target, attachment, texture.target, texture.id, texture.level)
         self._attachment_types |= attachment
         self._width = max(texture.width, self._width)
