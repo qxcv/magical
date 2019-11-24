@@ -5,20 +5,19 @@ import os
 import sys
 import time
 
-import gym
-import click
 # TODO: replace dill with cloudpickle (that's what SB uses, so I don't have to
 # introduce another dep)
+import click
 import dill
+import gym
 from imitation.algorithms.bc import BCTrainer
-from imitation.policies.serialize import save_stable_model
 from imitation.util import rollout as roll_util
 import numpy as np
+from stable_baselines.a2c.utils import conv, conv_to_fc, linear
 from stable_baselines.common.policies import CnnPolicy
-from stable_baselines.a2c.utils import conv, linear, conv_to_fc
 import tensorflow as tf
 
-from milbench.envs import register
+from milbench.benchmarks import register_envs
 
 
 @click.group()
@@ -130,7 +129,7 @@ def train(demos, scratch, batch_size, nholdout, nepochs):
               help="path to saved policy")
 @click.option("--env",
               "env_name",
-              default="ShapePushLoResStack-v0",
+              default="MoveToCornerLoResStack-v0",
               help="name of env to instantiate")
 def test(snapshot, env_name):
     """Roll out the given SNAPSHOT in the environment."""
@@ -160,7 +159,7 @@ def test(snapshot, env_name):
 
 
 if __name__ == '__main__':
-    register()
+    register_envs()
     try:
         with cli.make_context(sys.argv[0], sys.argv[1:]) as ctx:
             result = cli.invoke(ctx)

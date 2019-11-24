@@ -1,10 +1,9 @@
 """Gym wrapper for shape-pushing environment."""
 
-import math
+import abc
 
 import gym
 from gym import spaces
-from gym.wrappers import FrameStack, ResizeObservation
 import numpy as np
 import pymunk as pm
 
@@ -12,7 +11,12 @@ import milbench.entities as en
 import milbench.gym_render as r
 
 
-class ShapePushingEnv(gym.Env):
+class BaseEnv(gym.Env, abc.ABC):
+    # constants for all envs
+    ROBOT_RAD = 0.2
+    SHAPE_RAD = ROBOT_RAD * 2 / 3
+    ARENA_BOUNDS_LRBT = [-1, 1, -1, 1]
+
     def __init__(self, res_hw=(256, 256), fps=20, phys_steps=10, phys_iter=10):
         self.phys_iter = phys_iter
         self.phys_steps = phys_steps
@@ -27,10 +31,14 @@ class ShapePushingEnv(gym.Env):
         # of [none, left, right], third axis is gripper state of [open, close].
         self.action_space = spaces.MultiDiscrete([3, 3, 2])
         self._ac_flags_ud = [
-            en.RobotAction.NONE, en.RobotAction.UP, en.RobotAction.DOWN
+            en.RobotAction.NONE,
+            en.RobotAction.UP,
+            en.RobotAction.DOWN,
         ]
         self._ac_flags_lr = [
-            en.RobotAction.NONE, en.RobotAction.LEFT, en.RobotAction.RIGHT
+            en.RobotAction.NONE,
+            en.RobotAction.LEFT,
+            en.RobotAction.RIGHT,
         ]
         self._ac_flags_grip = [en.RobotAction.OPEN, en.RobotAction.CLOSE]
 
@@ -41,10 +49,43 @@ class ShapePushingEnv(gym.Env):
         # this is for background rendering
         self.viewer = None
 
-    # def seed(self, seed=None):
-    #     """No randomness for now (except in action spaces, which must be
-    #     seeded separately)."""
-    #     return []
+        self.seed()
+
+    def seed(self, seed=None):
+        """Initialise the PRNG and return seed necessary to reproduce results.
+
+        (TODO: should I also seed action/observation spaces? Not clear.)"""
+        if seed is None:
+            seed = np.random.randint(0, (1 << 31) - 1)
+        self.rng = np.random.RandomState(seed=seed)
+        return [seed]
+
+    @classmethod
+    @abc.abstractmethod
+    def make_name(cls, suffix=None):
+        """Return a name for an env based on this one, but using the supplied
+        suffix. For instance, if an environment were called 'CircleMove' and
+        its version were v0, then env_cls.make_name('Hard') would return
+        'CircleMoveHard-v0'. If no suffix is supplied then it will just return
+        the base name with a version.
+
+        Args:
+            suffix (str): the suffix to append to the base name for this
+            env.
+
+        Returns:
+            name (str): full, Gym-compatible name for this env, with the
+                included name suffix."""
+
+    @abc.abstractmethod
+    def _reinit_entities(self):
+        """Set up entities necessary for this environment.
+
+        Returns: a tuple with the following elements:
+            robot (en.Robot): an initialised robot to be controlled by the
+                user.
+            ents (en.Entity): other entities necessary for this environment."""
+        pass
 
     def reset(self):
         if self._entities is not None:
@@ -62,48 +103,23 @@ class ShapePushingEnv(gym.Env):
         self._space.iterations = self.phys_iter
 
         # set up robot and arena
-        robot_rad = 0.2
-        shape_rad = robot_rad * 2 / 3
-        self._robot = robot = en.Robot(radius=robot_rad,
-                                       init_pos=(0.1, -0.1),
-                                       init_angle=math.pi / 9,
-                                       mass=1.0)
-        arena = en.ArenaBoundaries(left=-1.0, right=1.0, bottom=-1.0, top=1.0)
-        square = en.Shape(shape_type=en.ShapeType.SQUARE,
-                          colour_name='red',
-                          shape_size=shape_rad,
-                          init_pos=(0.4, -0.4),
-                          init_angle=0.13 * math.pi)
-        # square2 = en.Shape(shape_type=en.ShapeType.SQUARE,
-        #                    colour_name='red',
-        #                    shape_size=shape_rad,
-        #                    init_pos=(0.25, -0.65),
-        #                    init_angle=0.23 * math.pi)
-        # circle = en.Shape(shape_type=en.ShapeType.CIRCLE,
-        #                   colour_name='yellow',
-        #                   shape_size=shape_rad,
-        #                   init_pos=(-0.7, -0.5),
-        #                   init_angle=-0.5 * math.pi)
-        # triangle = en.Shape(shape_type=en.ShapeType.HEXAGON,
-        #                     colour_name='green',
-        #                     shape_size=shape_rad,
-        #                     init_pos=(-0.5, 0.35),
-        #                     init_angle=0.05 * math.pi)
-        # pentagon = en.Shape(shape_type=en.ShapeType.PENTAGON,
-        #                     colour_name='blue',
-        #                     shape_size=shape_rad,
-        #                     init_pos=(0.4, 0.35),
-        #                     init_angle=0.8 * math.pi)
-        # self._entities = [circle, square, triangle, pentagon, robot, arena]
-        self._entities = [square, robot, arena]
+        arena_l, arena_r, arena_b, arena_t = self.ARENA_BOUNDS_LRBT
+        self._arena = en.ArenaBoundaries(left=arena_l,
+                                         right=arena_r,
+                                         bottom=arena_b,
+                                         top=arena_t)
+        self._robot, self._misc_ents = self._reinit_entities()
+        assert isinstance(self._misc_ents, (tuple, list))
+        assert isinstance(self._robot, en.Robot)
+        self._entities = [*self._misc_ents, self._robot, self._arena]
 
         for ent in self._entities:
             ent.setup(self.viewer, self._space)
 
-        self.viewer.set_bounds(left=arena.left,
-                               right=arena.right,
-                               bottom=arena.bottom,
-                               top=arena.top)
+        self.viewer.set_bounds(left=self._arena.left,
+                               right=self._arena.right,
+                               bottom=self._arena.bottom,
+                               top=self._arena.top)
 
         # # step forward by one second so PyMunk can recover from bad initial
         # # conditions
@@ -153,30 +169,3 @@ class ShapePushingEnv(gym.Env):
         if self.viewer:
             self.viewer.close()
             self.viewer = None
-
-
-def register():
-    default_res = (256, 256)
-    small_res = (96, 96)
-    default_kwargs = dict(res_hw=default_res,
-                          fps=15,
-                          phys_steps=10,
-                          phys_iter=10)
-    # 250 frames is 20s at 15fps
-    ep_len = 200
-    gym.register('ShapePush-v0',
-                 entry_point='milbench.envs:ShapePushingEnv',
-                 max_episode_steps=ep_len,
-                 kwargs=default_kwargs)
-
-    def make_lores_stack(**kwargs):
-        base_env = ShapePushingEnv(**kwargs)
-        resize_env = ResizeObservation(base_env, small_res)
-        stack_env = FrameStack(resize_env, 4)
-        return stack_env
-
-    # images downsampled to 128x128, four adjacent frames stacked together
-    gym.register('ShapePushLoResStack-v0',
-                 entry_point=make_lores_stack,
-                 max_episode_steps=ep_len,
-                 kwargs=default_kwargs)

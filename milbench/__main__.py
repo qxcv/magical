@@ -11,7 +11,7 @@ import dill
 import gym
 from pyglet.window import key
 
-from milbench import envs
+from milbench.benchmarks import register_envs
 
 
 def get_unique_fn(env_name):
@@ -25,7 +25,10 @@ def get_unique_fn(env_name):
               type=str,
               default=None,
               help="directory to record demos to, if any")
-def main(record):
+@click.option("--env-name",
+              default='MoveToCornerLoResStack-v0',
+              help='name of environment')
+def main(record, env_name):
     if record:
         record_dir = os.path.abspath(record)
         print(f"Will record demos to '{record_dir}'")
@@ -34,8 +37,7 @@ def main(record):
         from imitation.util.rollout import _TrajectoryAccumulator
         traj_accum = _TrajectoryAccumulator()
 
-    envs.register()
-    env_name = 'ShapePushLoResStack-v0'
+    register_envs()
     env = gym.make(env_name)
     try:
         obs = env.reset()
