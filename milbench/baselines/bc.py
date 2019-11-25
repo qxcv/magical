@@ -115,7 +115,13 @@ def train(demos, scratch, batch_size, nholdout, nepochs):
                         expert_demos=train_transitions,
                         policy_class=policy_class,
                         batch_size=batch_size)
-    trainer.train(n_epochs=nepochs)
+
+    def save_snapshot(trainer_locals):
+        # intermediate policy, can delete later
+        save_path = os.path.join(scratch, "policy-intermediate.pkl")
+        trainer.save_policy(save_path)
+
+    trainer.train(n_epochs=nepochs, on_epoch_end=save_snapshot)
 
     # save policy
     save_path = os.path.join(scratch, "policy.pkl")
