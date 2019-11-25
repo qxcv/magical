@@ -84,7 +84,7 @@ def main(record, env_name):
             obs, rew, done, info = env.step(action)
 
             if done and not was_done_on_prev_step:
-                print(f"Trajectory done, score {info['eval_score']:.4g}/1.0")
+                print(f"Done, score {info['eval_score']:.4g}/1.0")
 
             if record:
                 traj_accum.add_step(0, {

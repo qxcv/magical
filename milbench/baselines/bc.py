@@ -127,9 +127,8 @@ def train(demos, scratch, batch_size, nholdout, nepochs):
 @click.option("--snapshot",
               default="scratch/policy.pkl",
               help="path to saved policy")
-@click.option("--env",
-              "env_name",
-              default="MoveToCornerLoResStack-v0",
+@click.option("--env-name",
+              default="MoveToCorner-Demo-LoResStack-v0",
               help="name of env to instantiate")
 def test(snapshot, env_name):
     """Roll out the given SNAPSHOT in the environment."""
@@ -150,6 +149,7 @@ def test(snapshot, env_name):
                 obs = np.asarray(obs)
                 env.render(mode='human')
                 if done:
+                    print(f"Done, score {info['eval_score']:.4g}/1.0")
                     obs = env.reset()
                 elapsed = time.time() - frame_start
                 if elapsed < spf:
