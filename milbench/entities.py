@@ -5,10 +5,11 @@ import enum
 import math
 import weakref
 
-import milbench.gym_render as r
-from milbench.style import LINE_THICKNESS, COLOURS_RGB, darken_rgb, lighten_rgb
-import milbench.geom as gtools
 import pymunk as pm
+
+import milbench.geom as gtools
+import milbench.gym_render as r
+from milbench.style import COLOURS_RGB, LINE_THICKNESS, darken_rgb, lighten_rgb
 
 # #############################################################################
 # Entity ABC
