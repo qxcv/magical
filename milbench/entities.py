@@ -369,14 +369,16 @@ class ShapeType(enum.Enum):
     TRIANGLE = 'triangle'
     SQUARE = 'square'
     PENTAGON = 'pentagon'
-    OCTAGON = 'octagon'
     HEXAGON = 'hexagon'
+    OCTAGON = 'octagon'
     CIRCLE = 'circle'
 
 
 # limited set of types and colours to use for random generation
-SHAPE_TYPES = [ShapeType.SQUARE, ShapeType.PENTAGON]
-SHAPE_COLOURS = ['red', 'green', 'blue']
+SHAPE_TYPES = [
+    ShapeType.SQUARE, ShapeType.PENTAGON, ShapeType.OCTAGON, ShapeType.CIRCLE,
+]
+SHAPE_COLOURS = ['red', 'green', 'blue', 'yellow']
 
 
 class Shape(Entity):
