@@ -1,4 +1,5 @@
 """Train a policy with behavioural cloning."""
+import collections
 import functools
 import gzip
 import os
@@ -13,11 +14,13 @@ import gym
 from imitation.algorithms.bc import BCTrainer
 from imitation.util import rollout as roll_util
 import numpy as np
+import pandas as pd
 from stable_baselines.a2c.utils import conv, conv_to_fc, linear
 from stable_baselines.common.policies import CnnPolicy
 import tensorflow as tf
+import tqdm
 
-from milbench.benchmarks import register_envs
+from milbench.benchmarks import DEMO_ENVS_TO_TEST_ENVS_MAP, register_envs
 
 
 def simple_cnn(scaled_images, **kwargs):
@@ -165,6 +168,56 @@ def test(snapshot, env_name):
                     time.sleep(spf - elapsed)
         finally:
             env.viewer.close()
+
+
+@cli.command()
+@click.option("--snapshot",
+              default="scratch/policy.pkl",
+              help="path to saved policy")
+@click.option("--demo-env-name",
+              default="MoveToCorner-Demo-LoResStack-v0",
+              help="name of env to instantiate")
+def testall(snapshot, demo_env_name):
+    """Compute completion statistics on an entire family of benchmark tasks."""
+    test_env_names = [
+        demo_env_name,
+        *DEMO_ENVS_TO_TEST_ENVS_MAP[demo_env_name],
+    ]
+
+    with tf.Session():
+        policy = BCTrainer.reconstruct_policy(snapshot)
+        mean_scores = []
+
+        for env_name in test_env_names:
+            print(f"Testing on {env_name}")
+            env = gym.make(env_name)
+            scores = []
+            # TODO: refactor this to use imitation rollout utils once I figure
+            # out how to create vecenvs (also use appropriately large vecenv)
+            for _ in tqdm.trange(30):
+                obs = env.reset()
+                while True:
+                    (action, ), _, _, _ = policy.step(obs[None])
+                    obs, rew, done, info = env.step(action)
+                    obs = np.asarray(obs)
+                    if done:
+                        scores.append(info['eval_score'])
+                        break
+            mean_scores.append((env_name, np.mean(scores)))
+
+    records = [
+        collections.OrderedDict([
+            ('demo_env', demo_env_name),
+            ('test_env', env_name),
+            ('mean_score', mean_score),
+            ('snapshot', snapshot),
+        ]) for env_name, mean_score in mean_scores
+    ]
+    frame = pd.DataFrame.from_records(records)
+    print(f"Final mean scores for '{snapshot}':")
+    print(frame[['test_env', 'mean_score']])
+
+    return frame
 
 
 if __name__ == '__main__':
