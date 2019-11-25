@@ -26,7 +26,7 @@ def get_unique_fn(env_name):
               default=None,
               help="directory to record demos to, if any")
 @click.option("--env-name",
-              default='MoveToCornerLoResStack-v0',
+              default='MoveToCorner-Demo-LoResStack-v0',
               help='name of environment')
 def main(record, env_name):
     if record:
@@ -41,6 +41,7 @@ def main(record, env_name):
     env = gym.make(env_name)
     try:
         obs = env.reset()
+        was_done_on_prev_step = False
         if record:
             traj_accum.add_step(0, {"obs": obs})
 
@@ -53,7 +54,6 @@ def main(record, env_name):
 
         # render loop
         spf = 1.0 / env.fps
-        saved = False
         while env.viewer.isopen:
             if key_map[key.R]:
                 # drop traj and don't save
@@ -62,7 +62,7 @@ def main(record, env_name):
                     traj_accum = _TrajectoryAccumulator()
                     traj_accum.add_step(0, {"obs": obs})
                 time.sleep(0.5)
-                saved = False
+                was_done_on_prev_step = False
 
             # for limiting FPS
             frame_start = time.time()
@@ -83,6 +83,9 @@ def main(record, env_name):
 
             obs, rew, done, info = env.step(action)
 
+            if done and not was_done_on_prev_step:
+                print(f"Trajectory done, score {info['eval_score']:.4g}/1.0")
+
             if record:
                 traj_accum.add_step(0, {
                     "rews": rew,
@@ -90,23 +93,27 @@ def main(record, env_name):
                     "acts": action,
                     "infos": info,
                 })
-                if done and not saved:
+                if done and not was_done_on_prev_step:
                     traj = traj_accum.finish_trajectory(0)
                     new_path = os.path.join(record_dir,
                                             get_unique_fn(env_name))
                     pickle_data = {
                         'env_name': env_name,
                         'trajectory': traj,
+                        'score': info['eval_score'],
                     }
                     print(f"Saving trajectory ({len(traj.obs)} obs, "
                           f"{len(traj.acts)} actions, {len(traj.rews)} rews) "
                           f"to '{new_path}'")
                     with gzip.GzipFile(new_path, 'wb') as fp:
                         dill.dump(pickle_data, fp, protocol=4)
-                    saved = True
 
             # render to screen
             env.render(mode='human')
+
+            # for things we only want to run the FIRST time the env gives is a
+            # 'done' flag
+            was_done_on_prev_step = done
 
             # wait for next frame
             elapsed = time.time() - frame_start

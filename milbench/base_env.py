@@ -14,14 +14,22 @@ import milbench.gym_render as r
 class BaseEnv(gym.Env, abc.ABC):
     # constants for all envs
     ROBOT_RAD = 0.2
+    ROBOT_MASS = 1.0
     SHAPE_RAD = ROBOT_RAD * 2 / 3
     ARENA_BOUNDS_LRBT = [-1, 1, -1, 1]
 
-    def __init__(self, res_hw=(256, 256), fps=20, phys_steps=10, phys_iter=10):
+    def __init__(self,
+                 *,
+                 res_hw=(256, 256),
+                 fps=20,
+                 phys_steps=10,
+                 phys_iter=10,
+                 max_episode_steps=None):
         self.phys_iter = phys_iter
         self.phys_steps = phys_steps
         self.fps = fps
         self.res_hw = res_hw
+        self.max_episode_steps = max_episode_steps
         # RGB observation, stored as bytes
         self.observation_space = spaces.Box(low=0.0,
                                             high=255,
@@ -46,6 +54,7 @@ class BaseEnv(gym.Env, abc.ABC):
         self._entities = None
         self._space = None
         self._robot = None
+        self._episode_steps = None
         # this is for background rendering
         self.viewer = None
 
@@ -59,6 +68,15 @@ class BaseEnv(gym.Env, abc.ABC):
             seed = np.random.randint(0, (1 << 31) - 1)
         self.rng = np.random.RandomState(seed=seed)
         return [seed]
+
+    def _make_robot(self, init_pos, init_angle):
+        return en.Robot(radius=self.ROBOT_RAD,
+                        init_pos=init_pos,
+                        init_angle=init_angle,
+                        mass=self.ROBOT_MASS)
+
+    def _make_shape(self, **kwargs):
+        return en.Shape(shape_size=self.SHAPE_RAD, **kwargs)
 
     @classmethod
     @abc.abstractmethod
@@ -76,18 +94,22 @@ class BaseEnv(gym.Env, abc.ABC):
         Returns:
             name (str): full, Gym-compatible name for this env, with the
                 included name suffix."""
-
     @abc.abstractmethod
-    def _reinit_entities(self):
-        """Set up entities necessary for this environment.
+    def on_reset(self):
+        """Set up entities necessary for this environment, and reset any other
+        data needed for the env. Must create a robot in addition to any
+        necessary entities, and return bot hthe robot and the other entities
+        separately.
 
         Returns: a tuple with the following elements:
             robot (en.Robot): an initialised robot to be controlled by the
                 user.
-            ents (en.Entity): other entities necessary for this environment."""
+            ents ([en.Entity]): list of other entities necessary for this
+                environment."""
         pass
 
     def reset(self):
+        self._episode_steps = 0
         if self._entities is not None:
             # delete old entities/space
             self._entities = []
@@ -108,7 +130,7 @@ class BaseEnv(gym.Env, abc.ABC):
                                          right=arena_r,
                                          bottom=arena_b,
                                          top=arena_t)
-        self._robot, self._misc_ents = self._reinit_entities()
+        self._robot, self._misc_ents = self.on_reset()
         assert isinstance(self._misc_ents, (tuple, list))
         assert isinstance(self._robot, en.Robot)
         self._entities = [*self._misc_ents, self._robot, self._arena]
@@ -139,6 +161,16 @@ class BaseEnv(gym.Env, abc.ABC):
                 ent.update(dt)
             self._space.step(dt)
 
+    @abc.abstractmethod
+    def score_on_end_of_traj(self):
+        """Compute the score for this trajectory. Only called at the last step
+        of the trajectory.
+
+        Returns:
+           score (float): number in [0, 1] indicating the worst possible
+               performance (0), the best possible performance (1) or something
+               in between. Should apply to the WHOLE trajectory."""
+
     def step(self, action):
         # step forward physics
         ac_ud, ac_lr, ac_grip = action
@@ -148,10 +180,24 @@ class BaseEnv(gym.Env, abc.ABC):
         action_flag |= self._ac_flags_grip[ac_grip]
         self._robot.set_action(action_flag)
         self._phys_steps_on_frame()
-        reward = 0.0
-        done = False
+
         info = {}
+        # always 0 reward (avoids training RL algs accidentally)
+        reward = 0.0
+
+        # check episode step count
+        self._episode_steps += 1
+        done = False
+        if self.max_episode_steps is not None:
+            done = done or self._episode_steps >= self.max_episode_steps
+        if done:
+            eval_score = self.score_on_end_of_traj()
+            assert 0 <= eval_score <= 1, \
+                f'eval score {eval_score} out of range for env {self}'
+            info['eval_score'] = eval_score
+
         obs_u8 = self.render(mode='rgb_array')
+
         return obs_u8, reward, done, info
 
     def render(self, mode='human'):

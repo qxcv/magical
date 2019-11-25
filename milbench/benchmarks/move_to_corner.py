@@ -1,42 +1,67 @@
 import math
 
+import numpy as np
+
 from milbench.base_env import BaseEnv
 import milbench.entities as en
 
 
 class MoveToCornerEnv(BaseEnv):
+    def __init__(self,
+                 rand_shape_colour=False,
+                 rand_shape_type=False,
+                 rand_shape_pose=False,
+                 rand_robot_pose=False,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.rand_shape_colour = rand_shape_colour
+        self.rand_shape_type = rand_shape_type
+        self.rand_shape_pose = rand_shape_pose
+        self.rand_robot_pose = rand_robot_pose
+
     @classmethod
     def make_name(cls, suffix=None):
         base_name = 'MoveToCorner'
         return base_name + (suffix or '') + '-v0'
 
-    def _reinit_entities(self):
-        robot = en.Robot(radius=self.ROBOT_RAD, init_pos=(0.1, -0.1),
-                         init_angle=math.pi / 9, mass=1.0)
-        square = en.Shape(shape_type=en.ShapeType.SQUARE,
-                          colour_name='red',
-                          shape_size=self.SHAPE_RAD,
-                          init_pos=(0.4, -0.4),
-                          init_angle=0.13 * math.pi)
-        # other examples:
-        # square2 = en.Shape(shape_type=en.ShapeType.SQUARE,
-        #                    colour_name='red',
-        #                    shape_size=shape_rad,
-        #                    init_pos=(0.25, -0.65),
-        #                    init_angle=0.23 * math.pi)
-        # circle = en.Shape(shape_type=en.ShapeType.CIRCLE,
-        #                   colour_name='yellow',
-        #                   shape_size=shape_rad,
-        #                   init_pos=(-0.7, -0.5),
-        #                   init_angle=-0.5 * math.pi)
-        # triangle = en.Shape(shape_type=en.ShapeType.HEXAGON,
-        #                     colour_name='green',
-        #                     shape_size=shape_rad,
-        #                     init_pos=(-0.5, 0.35),
-        #                     init_angle=0.05 * math.pi)
-        # pentagon = en.Shape(shape_type=en.ShapeType.PENTAGON,
-        #                     colour_name='blue',
-        #                     shape_size=shape_rad,
-        #                     init_pos=(0.4, 0.35),
-        #                     init_angle=0.8 * math.pi)
-        return robot, [square]
+    def on_reset(self):
+        # make the robot
+        robot_pos = np.asarray((0.0, -0.0))
+        robot_angle = math.pi / 9
+        if self.rand_robot_pose:
+            robot_jitter = np.clip(0.1 * self.rng.randn(2), 0.1, 0.1)
+            robot_pos = robot_pos + robot_jitter
+            robot_angle = self.rng.uniform(-math.pi, math.pi)
+        robot = self._make_robot(robot_pos, robot_angle)
+
+        shape_pos = np.asarray((0.6, -0.6))
+        shape_angle = 0.13 * math.pi
+        shape_colour = 'red'
+        shape_type = en.ShapeType.SQUARE
+        if self.rand_shape_pose:
+            shape_jitter = np.clip(0.1 * self.rng.randn(2), 0.1, 0.1)
+            shape_pos = shape_pos + shape_jitter
+            shape_angle = self.rng.uniform(-math.pi, math.pi)
+        if self.rand_shape_colour:
+            shape_colour = self.rng.choice(en.SHAPE_COLOURS)
+        if self.rand_shape_type:
+            shape_type = self.rng.choice(en.SHAPE_TYPES)
+
+        shape = self._make_shape(shape_type=shape_type,
+                                 colour_name=shape_colour,
+                                 init_pos=shape_pos,
+                                 init_angle=shape_angle)
+        self.__shape_ref = shape
+
+        return robot, [shape]
+
+    def score_on_end_of_traj(self):
+        # TODO: do this goal check with invisible sensor area, not manual
+        # position accesses
+        robot_pos = np.asarray(self.__shape_ref.shape_body.position)
+        # should be in top right corner
+        shortfall_x = max(0, robot_pos[0] + 0.7)
+        shortfall_y = max(0, 0.7 - robot_pos[1])
+        dist = np.linalg.norm((shortfall_x, shortfall_y))
+        in_corner = dist <= 0
+        return 1.0 if in_corner else 0.0
