@@ -20,11 +20,6 @@ import tensorflow as tf
 from milbench.benchmarks import register_envs
 
 
-@click.group()
-def cli():
-    pass
-
-
 def simple_cnn(scaled_images, **kwargs):
     """Simple CNN made to play nicely with my input shapes (and be a bit
     deeper, since this is not RL).
@@ -81,6 +76,14 @@ def simple_cnn(scaled_images, **kwargs):
     return activ(linear(layer_5, 'fc1', n_hidden=512, init_scale=np.sqrt(2)))
 
 
+SimpleCNNPolicy = functools.partial(CnnPolicy, cnn_extractor=simple_cnn)
+
+
+@click.group()
+def cli():
+    pass
+
+
 @cli.command()
 @click.option("--scratch",
               default="scratch",
@@ -110,7 +113,7 @@ def train(demos, scratch, batch_size, nholdout, nepochs):
     train_transitions = roll_util.flatten_trajectories(demo_trajs[nholdout:])
 
     # train for a while
-    policy_class = functools.partial(CnnPolicy, cnn_extractor=simple_cnn)
+    policy_class = SimpleCNNPolicy
     trainer = BCTrainer(env,
                         expert_demos=train_transitions,
                         policy_class=policy_class,

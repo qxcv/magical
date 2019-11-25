@@ -33,7 +33,7 @@ def main(record, env_name):
         record_dir = os.path.abspath(record)
         print(f"Will record demos to '{record_dir}'")
         os.makedirs(record_dir, exist_ok=True)
-        # naughty :-)
+        # naughty
         from imitation.util.rollout import _TrajectoryAccumulator
         traj_accum = _TrajectoryAccumulator()
 
