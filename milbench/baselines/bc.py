@@ -1,6 +1,5 @@
 """Train a policy with behavioural cloning."""
 import collections
-import gzip
 import os
 import sys
 import time
@@ -8,91 +7,16 @@ import time
 # TODO: replace dill with cloudpickle (that's what SB uses, so I don't have to
 # introduce another dep)
 import click
-import dill
 import gym
 from imitation.algorithms.bc import BCTrainer
 from imitation.util import rollout as roll_util
 import numpy as np
 import pandas as pd
-from stable_baselines.a2c.utils import conv, conv_to_fc, linear
-from stable_baselines.common.policies import CnnPolicy
 import tensorflow as tf
 import tqdm
 
+from milbench.baselines.common import SimpleCNNPolicy, load_demos
 from milbench.benchmarks import DEMO_ENVS_TO_TEST_ENVS_MAP, register_envs
-
-
-def simple_cnn(scaled_images, **kwargs):
-    """Simple CNN made to play nicely with my input shapes (and be a bit
-    deeper, since this is not RL).
-
-    :param scaled_images: (TensorFlow Tensor) Image input placeholder.
-    :param kwargs: (dict) Extra keywords parameters for the convolutional
-        layers of the CNN.
-    :return: (TensorFlow Tensor) The CNN output layer."""
-    # FIXME: make sure input is appropriately scaled to [-1, 1] or something.
-    # TODO: make this a beefy resnet and figure out how to give it batch norm.
-
-    # input shape is [batch_size, num_steps, h, w, num_channels]
-    # we transpose to [batch_size, h, w, num_channels * num_steps]
-    scaled_images_nc_ns = tf.transpose(scaled_images, (0, 2, 3, 1, 4))
-    orig_shape_list = scaled_images_nc_ns.shape.as_list()
-    orig_shape = tf.shape(scaled_images_nc_ns)
-    final_chans = np.prod(orig_shape_list[3:])
-    new_shape = tf.concat((orig_shape[:3], (final_chans, )), axis=0)
-    scaled_images_ncs = tf.reshape(scaled_images_nc_ns, new_shape)
-    activ = tf.nn.relu
-    layer_1 = activ(
-        conv(scaled_images_ncs,
-             'c1',
-             n_filters=32,
-             filter_size=8,
-             stride=4,
-             init_scale=np.sqrt(2),
-             **kwargs))
-    layer_2 = activ(
-        conv(layer_1,
-             'c2',
-             n_filters=64,
-             filter_size=4,
-             stride=2,
-             init_scale=np.sqrt(2),
-             **kwargs))
-    layer_3 = activ(
-        conv(layer_2,
-             'c3',
-             n_filters=64,
-             filter_size=3,
-             stride=2,
-             init_scale=np.sqrt(2),
-             **kwargs))
-    layer_4 = activ(
-        conv(layer_3,
-             'c4',
-             n_filters=64,
-             filter_size=3,
-             stride=2,
-             init_scale=np.sqrt(2),
-             **kwargs))
-    layer_5 = conv_to_fc(layer_4)
-    return activ(linear(layer_5, 'fc1', n_hidden=512, init_scale=np.sqrt(2)))
-
-
-class SimpleCNNPolicy(CnnPolicy):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, cnn_extractor=simple_cnn, **kwargs)
-
-
-def load_demos(demo_paths):
-    """Use GzipFile & Dill to load a list of demo dictionaries from a series of
-    file paths."""
-    demo_dicts = []
-    n_demos = len(demo_paths)
-    for d_num, d_path in enumerate(demo_paths, start=1):
-        print(f"Loading '{d_path}' ({d_num}/{n_demos})")
-        with gzip.GzipFile(d_path, 'rb') as fp:
-            demo_dicts.append(dill.load(fp))
-    return demo_dicts
 
 
 @click.group()

@@ -10,7 +10,7 @@ from imitation.algorithms.dagger import (DAggerTrainer, NeedDemosException,
 from imitation.util.util import make_session
 from pyglet.window import key
 
-from milbench.baselines.bc import SimpleCNNPolicy
+from milbench.baselines.common import SimpleCNNPolicy
 from milbench.benchmarks import register_envs
 
 

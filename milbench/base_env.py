@@ -194,7 +194,14 @@ class BaseEnv(gym.Env, abc.ABC):
             eval_score = self.score_on_end_of_traj()
             assert 0 <= eval_score <= 1, \
                 f'eval score {eval_score} out of range for env {self}'
-            info['eval_score'] = eval_score
+            end_ep_dict = dict(eval_score=eval_score)
+            info.update(end_ep_dict)
+            # These were my attempts at sneaking episode termination info
+            # through the Monitor and SubprocVecEnv wrappers ('monitor_info'
+            # was a keyword I gave to info_keywords in the Monitor
+            # constructor). I don't know why, but neither approach worked.
+            # info['monitor_info'] = end_ep_dict
+            # info['episode'] = end_ep_dict
 
         obs_u8 = self.render(mode='rgb_array')
 
