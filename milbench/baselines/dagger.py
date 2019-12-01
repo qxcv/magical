@@ -5,7 +5,9 @@ import time
 
 import click
 import gym
-from imitation.algorithms.dagger import DAggerTrainer, NeedDemosException
+from imitation.algorithms.dagger import (DAggerTrainer, NeedDemosException,
+                                         linear_beta_schedule)
+from imitation.util.util import make_session
 from pyglet.window import key
 
 from milbench.baselines.bc import SimpleCNNPolicy
@@ -31,6 +33,7 @@ def cli(ctx, scratch):
     help='number of epochs (passes through the full demo dataset) of '
     'training to do')
 @click.pass_context
+@make_session()
 def train(ctx, env_name, nepochs):
     # TODO: refactor this into a 'create' command that creates a new DAgger
     # training session, and a 'train' command that does a round of training.
@@ -43,7 +46,8 @@ def train(ctx, env_name, nepochs):
               f"trainer anew")
         trainer = DAggerTrainer(env=gym.make(env_name),
                                 scratch_dir=scratch,
-                                policy_class=SimpleCNNPolicy)
+                                policy_class=SimpleCNNPolicy,
+                                beta_schedule=linear_beta_schedule(10))
         # initial save, just in case
         trainer.save_trainer()
     try:
@@ -60,6 +64,7 @@ def train(ctx, env_name, nepochs):
 
 @cli.command()
 @click.pass_context
+@make_session()
 def collect(ctx):
     # FIXME: refactor to dedupe code with __main__
     scratch = ctx.obj['scratch']

@@ -12,3 +12,9 @@
 - Move the test() and testall() functions in bc.py into their own rollout script
   in the baselines directory. Those two things shouldn't be immutably attached
   to BC.
+- Fix bug in `dagger.py` (or maybe `DAggerTrainer` in imitation) that is causing
+  it not to reload policies correctly. When I do `collect()`, it just seems to
+  roll out randomly, which is not at all what I want. Can I verify that it's
+  loading all of the correct weights? `save_policy()` and `reconstruct_policy()`
+  seem to work, so it's evidently just something up with
+  `reconstruct_trainer()` and/or `save_trainer()`.

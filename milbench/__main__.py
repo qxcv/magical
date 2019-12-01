@@ -9,6 +9,7 @@ import time
 import click
 import dill
 import gym
+from imitation.util.rollout import TrajectoryAccumulator
 from pyglet.window import key
 
 from milbench.benchmarks import register_envs
@@ -33,9 +34,7 @@ def main(record, env_name):
         record_dir = os.path.abspath(record)
         print(f"Will record demos to '{record_dir}'")
         os.makedirs(record_dir, exist_ok=True)
-        # naughty
-        from imitation.util.rollout import _TrajectoryAccumulator
-        traj_accum = _TrajectoryAccumulator()
+        traj_accum = TrajectoryAccumulator()
 
     register_envs()
     env = gym.make(env_name)
@@ -43,7 +42,7 @@ def main(record, env_name):
         obs = env.reset()
         was_done_on_prev_step = False
         if record:
-            traj_accum.add_step(0, {"obs": obs})
+            traj_accum.add_step({"obs": obs})
 
         # first render to open window
         env.render(mode='human')
@@ -59,8 +58,8 @@ def main(record, env_name):
                 # drop traj and don't save
                 obs = env.reset()
                 if record:
-                    traj_accum = _TrajectoryAccumulator()
-                    traj_accum.add_step(0, {"obs": obs})
+                    traj_accum = TrajectoryAccumulator()
+                    traj_accum.add_step({"obs": obs})
                 time.sleep(0.5)
                 was_done_on_prev_step = False
 
@@ -87,14 +86,14 @@ def main(record, env_name):
                 print(f"Done, score {info['eval_score']:.4g}/1.0")
 
             if record:
-                traj_accum.add_step(0, {
+                traj_accum.add_step({
                     "rews": rew,
                     "obs": obs,
                     "acts": action,
                     "infos": info,
                 })
                 if done and not was_done_on_prev_step:
-                    traj = traj_accum.finish_trajectory(0)
+                    traj = traj_accum.finish_trajectory()
                     new_path = os.path.join(record_dir,
                                             get_unique_fn(env_name))
                     pickle_data = {

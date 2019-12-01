@@ -1,6 +1,5 @@
 """Train a policy with behavioural cloning."""
 import collections
-import functools
 import gzip
 import os
 import sys
@@ -79,7 +78,21 @@ def simple_cnn(scaled_images, **kwargs):
     return activ(linear(layer_5, 'fc1', n_hidden=512, init_scale=np.sqrt(2)))
 
 
-SimpleCNNPolicy = functools.partial(CnnPolicy, cnn_extractor=simple_cnn)
+class SimpleCNNPolicy(CnnPolicy):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, cnn_extractor=simple_cnn, **kwargs)
+
+
+def load_demos(demo_paths):
+    """Use GzipFile & Dill to load a list of demo dictionaries from a series of
+    file paths."""
+    demo_dicts = []
+    n_demos = len(demo_paths)
+    for d_num, d_path in enumerate(demo_paths, start=1):
+        print(f"Loading '{d_path}' ({d_num}/{n_demos})")
+        with gzip.GzipFile(d_path, 'rb') as fp:
+            demo_dicts.append(dill.load(fp))
+    return demo_dicts
 
 
 @click.group()
@@ -99,11 +112,7 @@ def cli():
 @click.argument("demos", nargs=-1, required=True)
 def train(demos, scratch, batch_size, nholdout, nepochs):
     """Use behavioural cloning to train a convnet policy on DEMOS."""
-    demo_dicts = []
-    for d_num, d_path in enumerate(demos, start=1):
-        print(f"Loading '{d_path}' ({d_num}/{len(demos)})")
-        with gzip.GzipFile(d_path, 'rb') as fp:
-            demo_dicts.append(dill.load(fp))
+    demo_dicts = load_demos(demos)
     env_name = demo_dicts[0]['env_name']
     env = gym.make(env_name)
     env.reset()
