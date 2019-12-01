@@ -2,10 +2,7 @@ import collections
 import gzip
 import os
 
-# TODO: replace dill with cloudpickle (that's what SB uses, so I don't have to
-# introduce another dep)
 import cloudpickle
-import dill
 import numpy as np
 from stable_baselines.a2c.utils import conv, conv_to_fc, linear
 from stable_baselines.common.policies import CnnPolicy
@@ -197,12 +194,12 @@ class SimpleCNNPolicy(CnnPolicy):
 
 
 def load_demos(demo_paths):
-    """Use GzipFile & Dill to load a list of demo dictionaries from a series of
-    file paths."""
+    """Use GzipFile & cloudpickle to load a list of demo dictionaries from a
+    series of file paths."""
     demo_dicts = []
     n_demos = len(demo_paths)
     for d_num, d_path in enumerate(demo_paths, start=1):
         print(f"Loading '{d_path}' ({d_num}/{n_demos})")
         with gzip.GzipFile(d_path, 'rb') as fp:
-            demo_dicts.append(dill.load(fp))
+            demo_dicts.append(cloudpickle.load(fp))
     return demo_dicts

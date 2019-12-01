@@ -7,7 +7,7 @@ import sys
 import time
 
 import click
-import dill
+import cloudpickle
 import gym
 from imitation.util.rollout import TrajectoryAccumulator
 from pyglet.window import key
@@ -18,7 +18,7 @@ from milbench.benchmarks import register_envs
 def get_unique_fn(env_name):
     now = datetime.datetime.now()
     time_str = now.strftime('%FT%k:%M:%S')
-    return f"demo-{env_name}-{time_str}.dill.gz"
+    return f"demo-{env_name}-{time_str}.pkl.gz"
 
 
 @click.command()
@@ -105,7 +105,7 @@ def main(record, env_name):
                           f"{len(traj.acts)} actions, {len(traj.rews)} rews) "
                           f"to '{new_path}'")
                     with gzip.GzipFile(new_path, 'wb') as fp:
-                        dill.dump(pickle_data, fp, protocol=4)
+                        cloudpickle.dump(pickle_data, fp)
 
             # render to screen
             env.render(mode='human')

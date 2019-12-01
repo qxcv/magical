@@ -4,8 +4,6 @@ import os
 import sys
 import time
 
-# TODO: replace dill with cloudpickle (that's what SB uses, so I don't have to
-# introduce another dep)
 import click
 import gym
 from imitation.algorithms.bc import BCTrainer

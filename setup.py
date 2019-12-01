@@ -11,7 +11,7 @@ setup(
         'gym~=0.15.0',
         'Click~=7.0',
         'numpy~=1.17.4',
-        'dill~=0.3.1.1',
+        'cloudpickle~=1.2.2',
     ],
     extras_require={
         # for imitation baselines
