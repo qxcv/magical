@@ -1,6 +1,7 @@
 """Geometry."""
 
 import math
+import warnings
 
 import pymunk as pm
 
@@ -82,3 +83,64 @@ def rect_verts(w, h):
         pm.vec2d.Vec2d(-w / 2, -h / 2),
         pm.vec2d.Vec2d(w / 2, -h / 2),
     ]
+
+
+class PlacementError(Exception):
+    """Raised when `pm_randomise_pose` cannot find an appropriate
+    (non-colliding) pose for the given object."""
+    pass
+
+
+def pm_randomise_pose(space,
+                      bodies,
+                      arena_xyhw,
+                      rand_pos=True,
+                      rand_rot=True,
+                      rejection_tests=()):
+    """Do rejection sampling to choose a position and/or orientation which
+    ensures the given bodies and their attached shapes do not collide with any
+    other collidable shape in the space, while still falling entirely within
+    arena_xyhw. Note that position/orientation will be chosen in terms of the
+    first body in the given list of bodies, then later bodies attached to it
+    will be repositioned and rotated accordingly.
+
+    Args:
+        space (pm.Space): the space to place the given bodies in.
+        bodies ([pm.Body]): a list of bodies to place. They should maintain the
+            same relative positions and orientations.
+        arena_xhyw ([int]): bounding box to place the bodies in.
+        rand_pos (bool): should position be randomised?
+        rand_rot (bool): should rotation be randomised?
+        rejection_tests ([(*locals()) -> bool]): additional rejection tests to
+            apply. If any one of these functions returns "True", then the shape
+            pose will be rejected and re-sampled. Useful for, e.g., ensuring
+            that placed shapes do not coincide with certain existing objects.
+
+    Returns (int): number of random placements attempted before finding a
+        successful one."""
+    assert len(bodies) >= 1, "no bodies given (?)"
+
+    # If we exceed this many tries then fitting is probably impossible, or
+    # impractically hard. We'll warn if we get close to that number.
+    max_tries = 10000
+    warn_tries = int(max_tries / 10)
+
+    n_tries = 0
+    while n_tries < max_tries:
+        # I think easiest way to do this is to first rotate every body *about
+        # the origin*, then pick a random translation within the given bounds.
+        # There might exist easier and more general ways to do this, though.
+        raise NotImplementedError(
+            "still need to sample random rigid transform, apply it, and test "
+            "for collisions")
+        n_tries += 1
+    else:
+        raise PlacementError(
+            f"Could not place bodies {bodies} in space {space} after "
+            f"{n_tries} attempts. rand_pos={rand_pos}, rand_rot={rand_rot}, "
+            f"arena_xhyw={arena_xyhw}.")
+
+    if n_tries > warn_tries:
+        warnings.warn(f"Took {n_tries}>{warn_tries} samples to place shape.")
+
+    return n_tries

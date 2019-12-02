@@ -224,7 +224,7 @@ class Robot(Entity):
         circ_body_out = r.make_circle(radius=self.radius, res=100)
         robot_colour = COLOURS_RGB['grey']
         dark_robot_colour = darken_rgb(robot_colour)
-        light_robot_colour = lighten_rgb(robot_colour)
+        light_robot_colour = lighten_rgb(robot_colour, 5)
         circ_body_in.set_color(*robot_colour)
         circ_body_out.set_color(*dark_robot_colour)
 
@@ -376,7 +376,10 @@ class ShapeType(enum.Enum):
 
 # limited set of types and colours to use for random generation
 SHAPE_TYPES = [
-    ShapeType.SQUARE, ShapeType.PENTAGON, ShapeType.OCTAGON, ShapeType.CIRCLE,
+    ShapeType.SQUARE,
+    ShapeType.PENTAGON,
+    ShapeType.OCTAGON,
+    ShapeType.CIRCLE,
 ]
 SHAPE_COLOURS = ['red', 'green', 'blue', 'yellow']
 
@@ -501,3 +504,59 @@ class Shape(Entity):
     def pre_draw(self):
         self.shape_xform.set_translation(*self.shape_body.position)
         self.shape_xform.set_rotation(self.shape_body.angle)
+
+
+# #############################################################################
+# Sensor region for pushing shapes into.
+# #############################################################################
+
+
+class GoalRegion(Entity):
+    """A goal region that the robot should push certain shapes into. It's up to
+    the caller to figure out exactly which shapes & call methods for collision
+    checking/scoring."""
+    def __init__(self, x, y, h, w, colour_name):
+        self.x = x
+        self.y = y
+        assert h > 0, w > 0
+        self.h = h
+        self.w = w
+        self.base_colour = COLOURS_RGB[colour_name]
+
+    def setup(self, *args, **kwargs):
+        super().setup(*args, **kwargs)
+
+        # the space only needs a sensor body
+        self.goal_body = pm.Body(body_type=pm.Body.STATIC)
+        self.goal_shape = pm.Poly.create_box(self.goal_body, (self.w, self.h))
+        self.goal_shape.sensor = True
+        self.goal_body.position = (self.x + self.w / 2, self.y - self.h / 2)
+        self.space.add(self.goal_body, self.goal_shape)
+
+        # Making visual display: region should consist of very lightly shaded
+        # rectangle, surrounded by darker stippled border. Ideally corners on
+        # the rectangle should be rounded.
+        self.rect_xform = r.Transform()
+        self.rect_xform.set_translation(*self.goal_body.position)
+
+        inner_colour = lighten_rgb(self.base_colour, times=2)
+        inner_rect = r.make_rect(width=self.w, height=self.h, filled=True)
+        inner_rect.set_color(*inner_colour)
+        inner_rect.add_attr(self.rect_xform)
+        self.viewer.add_geom(inner_rect)
+
+        outer_colour = self.base_colour
+        outer_rect = r.make_rect(width=self.w, height=self.h, filled=False)
+        outer_rect.set_color(*outer_colour)
+        outer_rect.add_attr(r.LineStyle(0x00FF))
+        outer_rect.set_linewidth(250 * LINE_THICKNESS)
+        outer_rect.add_attr(self.rect_xform)
+        self.viewer.add_geom(outer_rect)
+
+    def update(self, dt):
+        # nothing really needs to be done here, AFAICT
+        pass
+
+    def pre_draw(self):
+        # just so we can see if the thing accidentally moves :-)
+        self.rect_xform.set_translation(*self.goal_body.position)

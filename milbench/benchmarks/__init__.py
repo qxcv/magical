@@ -6,11 +6,13 @@ import re
 import gym
 from gym.wrappers import FrameStack, ResizeObservation
 
+from milbench.benchmarks.match_regions import MatchRegionsEnv
 from milbench.benchmarks.move_to_corner import MoveToCornerEnv
 
 __all__ = [
     'DEMO_ENVS_TO_TEST_ENVS_MAP',
     'MoveToCornerEnv',
+    'MatchRegionsEnv',
     'register_envs',
 ]
 
@@ -108,9 +110,17 @@ def register_envs():
         }),
     ]
 
+    mr_ep_len = 450
+    match_regions_variants = [
+        # FIXME: create a proper demo/test split
+        (MatchRegionsEnv, mr_ep_len, '-Demo', {}),
+        (MatchRegionsEnv, mr_ep_len, '-Test', {}),
+    ]
+
     # collection of ALL env specifications
     env_cls_suffix_kwargs = [
         *move_to_corner_variants,
+        *match_regions_variants,
     ]
 
     # register all the envs and record their names
