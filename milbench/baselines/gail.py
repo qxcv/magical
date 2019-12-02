@@ -9,6 +9,7 @@ from imitation.algorithms.adversarial import init_trainer
 from imitation.scripts.train_adversarial import save as save_adv_trainer
 from imitation.util import rollout, util
 import numpy as np
+from stable_baselines import logger
 import tensorflow as tf
 
 from milbench.baselines.common import (SimpleCNNPolicy, load_demos,
@@ -91,9 +92,14 @@ def train(scratch, demos, seed, nenvs, nepochs, test_every, save_every):
 
     test_policy('before training')
 
+    # this is just for writing out stats in a nice table
+    human_writer = logger.HumanOutputFormat(sys.stdout)
+
     for epoch in range(1, nepochs + 1):
+        print("\n\n\n\n")
         print(f"Training discriminator ({epoch}/{nepochs})")
-        trainer.train_disc(5)  # was (50)
+        disc_stats = trainer.train_disc(10)
+        human_writer.writekvs(disc_stats)
 
         print(f"Training generator ({epoch}/{nepochs})")
         # FIXME: the fact that train_gen and train_disc take totally different
