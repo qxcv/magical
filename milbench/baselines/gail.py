@@ -38,11 +38,18 @@ def cli():
 @click.option("--save-every",
               default=10,
               help="save policy every `--save-every` updates")
+@click.option("--disc-nupdate",
+              default=5,
+              help="number of discriminator updates at each iteration")
+@click.option("--gen-nupdate",
+              default=1,
+              help="number of generator updates at each iteration")
 @click.option("--seed", default=42, help="random seed to use")
 @click.option("--nepochs", default=100, help="number of epochs to train for")
 @click.argument("demos", nargs=-1, required=True)
 @util.make_session()
-def train(scratch, demos, seed, nenvs, nepochs, test_every, save_every):
+def train(scratch, demos, seed, nenvs, nepochs, test_every, save_every,
+          disc_nupdate, gen_nupdate):
     demo_dicts = load_demos(demos)
     env_name = demo_dicts[0]['env_name']
     demo_trajectories = [d['trajectory'] for d in demo_dicts]
@@ -97,17 +104,17 @@ def train(scratch, demos, seed, nenvs, nepochs, test_every, save_every):
 
     for epoch in range(1, nepochs + 1):
         print("\n\n\n\n")
-        print(f"Training discriminator ({epoch}/{nepochs})")
-        disc_stats = trainer.train_disc(10)
+
+        print(f"Doing {disc_nupdate} discriminator steps ({epoch}/{nepochs})")
+        disc_stats = trainer.train_disc(disc_nupdate)
         human_writer.writekvs(disc_stats)
 
-        print(f"Training generator ({epoch}/{nepochs})")
+        print(f"Doing {gen_nupdate} generator steps ({epoch}/{nepochs})")
         # FIXME: the fact that train_gen and train_disc take totally different
         # types of arguments is weird. Should fix (?) imitation project so that
         # they both measure progress in either "updates performed on the model"
         # or "steps of interaction data generated/consumed", not a mix of both.
-        n_updates = 1
-        trainer.train_gen(n_updates * trainer._gen_policy.n_batch)
+        trainer.train_gen(gen_nupdate * trainer._gen_policy.n_batch)
 
         if (epoch % test_every) == 0:
             test_policy(f'epoch {epoch}')
