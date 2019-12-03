@@ -122,6 +122,7 @@ class BaseEnv(gym.Env, abc.ABC):
             # these will get added back later
             self.viewer.reset_geoms()
         self._space = pm.Space()
+        self._space.collision_slop = 0.01
         self._space.iterations = self.phys_iter
 
         # set up robot and arena
