@@ -28,9 +28,94 @@ class Entity(abc.ABC):
     def update(self, dt):
         """Do an logic/physics update at some (most likely fixed) time
         interval."""
+        pass
+
     def pre_draw(self):
         """Do a graphics state update to, e.g., update state of internal
         `Geom`s. This doesn't have to be done at every physics time step."""
+        pass
+
+
+# #############################################################################
+# Helpers
+# #############################################################################
+
+
+def _recursive_ent_shapes(container, level=0):
+    assert level < 10
+    rv = set()
+    if isinstance(container, Entity):
+        assert level == 0, f"found entity attached to entity ({container})"
+        for attr_value in container.__dict__.values():
+            rv.update(_recursive_ent_shapes(attr_value, level=level+1))
+    elif isinstance(container, pm.Shape):
+        rv.add(container)
+    elif isinstance(container, pm.Body):
+        for shape in container.shapes:
+            rv.add(shape)
+    elif isinstance(container, (list, dict, tuple, set)):
+        for elem in container:
+            rv.update(_recursive_ent_shapes(elem, level=level+1))
+    return rv
+
+
+class EntityIndex:
+    def __init__(self, entities):
+        """Build a reverse index mapping shapes to entities. Assumes that all
+        the shapes which make up an entity are stored as attributes on the
+        shape, or are attached to bodies which are stored as attributes on the
+        shape.
+
+        Args:
+            entities ([Entity]): list of entities to process.
+
+        Returns:
+            ent_index (dict): dictionary mapping shapes to entities."""
+        self._shape_to_ent = dict()
+        self._ent_to_shapes = dict()
+        for entity in entities:
+            shapes = _recursive_ent_shapes(entity)
+            self._ent_to_shapes[entity] = shapes
+            for shape in shapes:
+                assert shape not in self._shape_to_ent, \
+                    f"shape {shape} appears in {entity} and " \
+                    f"{self._shape_to_ent[shape]}"
+                self._shape_to_ent[shape] = entity
+
+    def entity_for(self, shape):
+        """Look up the entity associated with a particular shape. Raises
+        `KeyError` if no known entity owns the shape."""
+        return self._shape_to_ent[shape]
+
+    def shapes_for(self, ent):
+        """Return a set of shapes associated with the given entity. Raises
+        `KeyError` if the given entity is not in the index."""
+        return self._ent_to_shapes[ent]
+
+
+class LazyEntityIndex:
+    """Version of EntityIndex that constructs itself only when actual methods
+    are needed. This is a silly hack to get around the fact that I create this
+    during the .on_reset() for an environment, but entities don't actually get
+    set up with shapes, bodies, etc. until their .setup() method is called
+    after .on_reset(). Probably there is a better refactoring that doesn't
+    require this hack."""
+    def __init__(self, *args, **kwargs):
+        self._index = None
+        self._args = args
+        self._kwargs = kwargs
+
+    def _init(self):
+        if self._index is None:
+            self._index = EntityIndex(*self._args, **self._kwargs)
+
+    def entity_for(self, *args, **kwargs):
+        self._init()
+        return self._index.entity_for(*args, **kwargs)
+
+    def shapes_for(self, *args, **kwargs):
+        self._init()
+        return self._index.shapes_for(*args, **kwargs)
 
 
 # #############################################################################
@@ -515,13 +600,14 @@ class GoalRegion(Entity):
     """A goal region that the robot should push certain shapes into. It's up to
     the caller to figure out exactly which shapes & call methods for collision
     checking/scoring."""
-    def __init__(self, x, y, h, w, colour_name):
+    def __init__(self, x, y, h, w, colour_name, ent_index):
         self.x = x
         self.y = y
         assert h > 0, w > 0
         self.h = h
         self.w = w
         self.base_colour = COLOURS_RGB[colour_name]
+        self.ent_index = ent_index
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
@@ -556,6 +642,55 @@ class GoalRegion(Entity):
     def update(self, dt):
         # nothing really needs to be done here, AFAICT
         pass
+
+    def get_overlapping_ents(self, contained=False):
+        """Get all entities overlapping this region.
+
+        Args:
+            contained (bool): set this to True to only return entities that are
+                fully contained in the regions. Otherwise, if this is False,
+                all entities that overlap the region at all will be returned.
+
+        Returns:
+            ents ([Entity]): list of entities intersecting the current one."""
+
+        # first look up all overlapping shapes
+        shape_results = self.space.shape_query(self.goal_shape)
+        overlap_shapes = {r.shape for r in shape_results}
+
+        # if necessary, do total containment check on shapes
+        if contained:
+            # This does a containment check based *only* on axis-aligned
+            # bounding boxes. This is valid if our goal region is an
+            # axis-aligned bounding box, but could lead to false positives if
+            # the goal region were a different shape, or if it was rotated.
+            goal_bb = self.goal_shape.bb
+            overlap_shapes = {
+                s for s in overlap_shapes if goal_bb.contains(s.bb)
+            }
+
+        # now look up all indexed entities that own at least one overlapping
+        # shape
+        relevant_ents = set()
+        for shape in overlap_shapes:
+            try:
+                ent = self.ent_index.entity_for(shape)
+            except KeyError:
+                # shape not in index
+                continue
+            relevant_ents.add(ent)
+
+        # if necessary, filter the entities so that only those with *all*
+        # shapes within the region are included
+        if contained:
+            new_relevant_ents = set()
+            for relevant_ent in relevant_ents:
+                shapes = self.ent_index.shapes_for(relevant_ent)
+                if shapes <= overlap_shapes:
+                    new_relevant_ents.add(relevant_ent)
+            relevant_ents = new_relevant_ents
+
+        return relevant_ents
 
     def pre_draw(self):
         # just so we can see if the thing accidentally moves :-)
