@@ -113,8 +113,9 @@ class RobotAction(enum.IntFlag):
 
 def make_finger_vertices(upper_arm_len, forearm_len, thickness, side_sign):
     """Make annoying finger polygons coordinates. Corresponding composite shape
-    will have origin in the middle of the upper arm, with upper arm oriented
-    straight upwards and forearm above it."""
+    will have origin at root of upper arm, with upper arm oriented straight
+    upwards and forearm above it."""
+    up_shift = upper_arm_len / 2
     upper_arm_vertices = gtools.rect_verts(thickness, upper_arm_len)
     forearm_vertices = gtools.rect_verts(thickness, forearm_len)
     # now rotate upper arm into place & then move it to correct position
@@ -123,9 +124,12 @@ def make_finger_vertices(upper_arm_len, forearm_len, thickness, side_sign):
                                           forearm_len / 2)
     rot_angle = side_sign * math.pi / 8
     forearm_trans = upper_start + forearm_offset_unrot.rotated(rot_angle)
+    forearm_trans.y += up_shift
     forearm_vertices_trans = [
         v.rotated(rot_angle) + forearm_trans for v in forearm_vertices
     ]
+    for v in upper_arm_vertices:
+        v.y += up_shift
     upper_arm_verts_final = [(v.x, v.y) for v in upper_arm_vertices]
     forearm_verts_final = [(v.x, v.y) for v in forearm_vertices_trans]
     return upper_arm_verts_final, forearm_verts_final
@@ -187,7 +191,7 @@ class Robot(Entity):
 
         # finger bodies/controls (annoying)
         finger_thickness = 0.25 * self.radius
-        finger_upper_length = 1.4 * self.radius
+        finger_upper_length = 1.2 * self.radius
         finger_lower_length = 0.7 * self.radius
         self.finger_bodies = []
         self.finger_motors = []
@@ -202,7 +206,6 @@ class Robot(Entity):
                 thickness=finger_thickness,
                 side_sign=finger_side)
             finger_vertices.append(finger_verts)
-            # this is just for drawing
             finger_inner_verts = make_finger_vertices(
                 upper_arm_len=finger_upper_length - LINE_THICKNESS * 2,
                 forearm_len=finger_lower_length - LINE_THICKNESS * 2,
@@ -211,18 +214,27 @@ class Robot(Entity):
             finger_inner_verts = [[(x, y + LINE_THICKNESS) for x, y in box]
                                   for box in finger_inner_verts]
             finger_inner_vertices.append(finger_inner_verts)
-            # now create body
+            # these are movement limits; they are useful below, but also
+            # necessary to make initial positioning work
+            if finger_side < 0:
+                lower_rot_lim = -self.finger_rot_limit_inner
+                upper_rot_lim = self.finger_rot_limit_outer
+            if finger_side > 0:
+                lower_rot_lim = -self.finger_rot_limit_outer
+                upper_rot_lim = self.finger_rot_limit_inner
             finger_mass = self.mass / 8
             finger_inertia = pm.moment_for_poly(finger_mass,
                                                 sum(finger_verts, []))
             finger_body = pm.Body(finger_mass, finger_inertia)
-            finger_body.angle = self.init_angle
-            # attach somewhere on the inner side of actual finger position
-            finger_attach_delta = pm.vec2d.Vec2d(
-                -finger_side * self.radius * 0.5, -self.radius * 0.8)
+            if finger_side < 0:
+                delta_finger_angle = upper_rot_lim
+                finger_body.angle = self.init_angle + delta_finger_angle
+            else:
+                delta_finger_angle = lower_rot_lim
+                finger_body.angle = self.init_angle + delta_finger_angle
             # position of finger relative to body
-            finger_rel_pos = (finger_side * self.radius * 0.35,
-                              self.radius * 0.5)
+            finger_rel_pos = (finger_side * self.radius * 0.45,
+                              self.radius * 0.1)
             finger_rel_pos_rot = gtools.rotate_vec(finger_rel_pos,
                                                    self.init_angle)
             finger_body.position = gtools.add_vecs(body.position,
@@ -234,18 +246,12 @@ class Robot(Entity):
             finger_pin = pm.PinJoint(
                 body,
                 finger_body,
-                gtools.add_vecs(finger_rel_pos, finger_attach_delta),
-                finger_attach_delta,
+                finger_rel_pos,
+                (0, 0),
             )
             finger_pin.error_bias = 0.0
             self.add_to_space(finger_pin)
             # rotary limit joint to stop it from getting too far out of line
-            if finger_side < 0:
-                lower_rot_lim = -self.finger_rot_limit_inner
-                upper_rot_lim = self.finger_rot_limit_outer
-            if finger_side > 0:
-                lower_rot_lim = -self.finger_rot_limit_outer
-                upper_rot_lim = self.finger_rot_limit_inner
             finger_limit = pm.RotaryLimitJoint(body, finger_body,
                                                lower_rot_lim, upper_rot_lim)
             finger_limit.error_bias = 0.0

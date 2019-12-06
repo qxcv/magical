@@ -1,6 +1,5 @@
 # General code cleanup tasks I want to do at some point
 
-- Fix the robot's arms/fingers so that they start at the correct rotation.
 - Abstract all of the environment interaction code to use a common main loop
   class which can handle keyboard I/O (if desired), resetting, saving
   demonstrations, recording videos, etc. This should be useful for all the
