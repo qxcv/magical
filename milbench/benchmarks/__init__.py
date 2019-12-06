@@ -129,9 +129,43 @@ def register_envs():
 
     mr_ep_len = 350
     match_regions_variants = [
-        # FIXME: create a proper demo/test split
-        (MatchRegionsEnv, mr_ep_len, '-Demo', {}),
-        (MatchRegionsEnv, mr_ep_len, '-Test', {}),
+        (MatchRegionsEnv, mr_ep_len, '-Demo', {
+            'rand_target_colour': False,
+            'rand_shape_type': False,
+            'rand_shape_count': False,
+            'rand_layout': False,
+        }),
+        (MatchRegionsEnv, mr_ep_len, '-TestShapeColour', {
+            'rand_target_colour': True,
+            'rand_shape_type': False,
+            'rand_shape_count': False,
+            'rand_layout': False,
+        }),
+        (MatchRegionsEnv, mr_ep_len, '-TestShapeType', {
+            'rand_target_colour': False,
+            'rand_shape_type': True,
+            'rand_shape_count': False,
+            'rand_layout': False,
+        }),
+        (MatchRegionsEnv, mr_ep_len, '-TestLayout', {
+            'rand_target_colour': False,
+            'rand_shape_type': False,
+            'rand_shape_count': False,
+            'rand_layout': True,
+        }),
+        # test everything EXCEPT colour
+        (MatchRegionsEnv, mr_ep_len, '-TestShapeTypeCountLayout', {
+            'rand_target_colour': False,
+            'rand_shape_type': True,
+            'rand_shape_count': True,
+            'rand_layout': True,
+        }),
+        (MatchRegionsEnv, mr_ep_len, '-TestAll', {
+            'rand_target_colour': True,
+            'rand_shape_type': True,
+            'rand_shape_count': True,
+            'rand_layout': True,
+        }),
     ]
 
     # collection of ALL env specifications

@@ -110,13 +110,25 @@ class BaseEnv(gym.Env, abc.ABC):
                 environment."""
         pass
 
+    def add_entities(self, entities):
+        """Adds a list of entities to the current entities list and sets it up.
+        Only intended to be used from within on_reset(). Needs to be called for
+        every created entity or else they will not be added to the space!
+
+        Args:
+            entities (en.Entity): the entity to add."""
+        for entity in entities:
+            if isinstance(entity, en.Robot):
+                self._robot = entity
+            self._entities.append(entity)
+            entity.setup(self.viewer, self._space)
+
     def reset(self):
         self._episode_steps = 0
-        if self._entities is not None:
-            # delete old entities/space
-            self._entities = []
-            self._space = None
-            self._robot = None
+        # delete old entities/space
+        self._entities = []
+        self._space = None
+        self._robot = None
         if self.viewer is None:
             res_h, res_w = self.res_hw
             self.viewer = r.Viewer(res_w, res_h, visible=False)
@@ -133,13 +145,13 @@ class BaseEnv(gym.Env, abc.ABC):
                                          right=arena_r,
                                          bottom=arena_b,
                                          top=arena_t)
-        self._robot, self._misc_ents = self.on_reset()
-        assert isinstance(self._misc_ents, (tuple, list))
+        self.add_entities([self._arena])
+        reset_rv = self.on_reset()
+        assert reset_rv is None, \
+            f"on_reset method of {type(self)} returned {reset_rv}, but "\
+            f"should return None"
         assert isinstance(self._robot, en.Robot)
-        self._entities = [*self._misc_ents, self._robot, self._arena]
-
-        for ent in self._entities:
-            ent.setup(self.viewer, self._space)
+        assert len(self._entities) >= 1
 
         self.viewer.set_bounds(left=self._arena.left,
                                right=self._arena.right,

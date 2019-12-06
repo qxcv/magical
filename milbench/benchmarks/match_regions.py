@@ -8,21 +8,13 @@ import milbench.geom as geom
 
 # we don't use en.SHAPE_COLOURS because some of the constants in this module
 # depend on the number of colours remaining constant
-ALL_COLOURS = [
+ALL_COLOURS = np.array([
     en.ShapeColour.RED,
     en.ShapeColour.GREEN,
     en.ShapeColour.BLUE,
     en.ShapeColour.YELLOW,
-]
-
-# class ShapeRandLevel(Enum):
-#     """How much should we randomise shape types (square, circle, etc.) and
-#     the number of shapes? If we randomise count then we have to randomise
-#     type, which is why this enum is used here instead of separate
-#     'randomise_shape_type' and 'randomise_shape_count' flags."""
-#     NONE = 'none'
-#     TYPES = 'types'
-#     TYPES_AND_COUNT = 'types_and_count'
+],
+                       dtype='object')
 
 
 class MatchRegionsEnv(BaseEnv):
@@ -61,10 +53,8 @@ class MatchRegionsEnv(BaseEnv):
         # make the robot
         robot_pos = np.asarray((-0.5, 0.1))
         robot_angle = -math.pi * 1.2
+        # if necessary, robot pose is randomised below
         robot = self._make_robot(robot_pos, robot_angle)
-        # if self.rand_layout:
-        #     # TODO: randomise the robot's pose
-        #     geom.pm_randomise_pose(XXX)
 
         # set up target colour/region/pose
         if self.rand_target_colour:
@@ -85,6 +75,7 @@ class MatchRegionsEnv(BaseEnv):
             target_y = 0.7
         sensor = en.GoalRegion(target_x, target_y, target_h, target_w,
                                target_colour)
+        self.add_entities([sensor])
         self.__sensor_ref = sensor
 
         # set up spec for remaining blocks
@@ -112,30 +103,30 @@ class MatchRegionsEnv(BaseEnv):
         if self.rand_shape_count:
             target_count = self.rng.randint(1, 2 + 1)
             distractor_counts = [
-                self.rng.randint(0, 2 + 1) for c in ALL_COLOURS
+                self.rng.randint(0, 2 + 1) for c in distractor_colours
             ]
         else:
             target_count = len(default_target_types)
-            distractor_counts = [
-                len(l) for l in default_distractor_types
-            ]
+            distractor_counts = [len(l) for l in default_distractor_types]
 
         if self.rand_shape_type:
+            shape_types_np = np.asarray(en.SHAPE_TYPES, dtype='object')
             target_types = [
-                self.rng.choice(en.SHAPE_TYPES) for _ in range(target_count)
+                self.rng.choice(shape_types_np) for _ in range(target_count)
             ]
-            distractor_types = [
-                [self.rng.choice(en.SHAPE_TYPES) for _ in range(dist_count)]
-                for dist_count in distractor_counts
-            ]
+            distractor_types = [[
+                self.rng.choice(shape_types_np) for _ in range(dist_count)
+            ] for dist_count in distractor_counts]
         else:
             target_types = default_target_types
             distractor_types = default_distractor_types
 
         if self.rand_layout:
-            raise NotImplementedError(
-                "this will probably require me to place everything in one "
-                "spot and then do post-hoc randomisation")
+            # will do post-hoc randomisation at the end
+            target_poses = [(0, 0, 0)] * target_count
+            distractor_poses = [
+                [(0, 0, 0)] * dcount for dcount in distractor_counts
+            ]
         else:
             target_poses = default_target_poses
             distractor_poses = default_distractor_poses
@@ -145,44 +136,68 @@ class MatchRegionsEnv(BaseEnv):
         assert len(distractor_types) == len(distractor_counts)
         assert len(distractor_types) == len(distractor_colours)
         assert len(distractor_types) == len(distractor_poses)
-        assert all(len(types) == dcount for types, dcount in zip(
-            distractor_types, distractor_counts))
-        assert all(len(poses) == dcount for poses, dcount in zip(
-            distractor_poses, distractor_counts))
+        assert all(
+            len(types) == dcount
+            for types, dcount in zip(distractor_types, distractor_counts))
+        assert all(
+            len(poses) == dcount
+            for poses, dcount in zip(distractor_poses, distractor_counts))
 
-        target_shapes = [
+        self.__target_shapes = [
             self._make_shape(shape_type=shape_type,
                              colour_name=target_colour,
                              init_pos=(shape_x, shape_y),
                              init_angle=shape_angle)
-            for shape_type, (shape_x, shape_y, shape_angle)
-            in zip(target_types, target_poses)
+            for shape_type, (shape_x, shape_y,
+                             shape_angle) in zip(target_types, target_poses)
         ]
-        distractor_shapes = []
+        self.__distractor_shapes = []
         for dist_colour, dist_types, dist_poses \
                 in zip(distractor_colours, distractor_types, distractor_poses):
             for shape_type, (shape_x, shape_y, shape_angle) \
                     in zip(dist_types, dist_poses):
-                dist_shape = self._make_shape(
-                    shape_type=shape_type, colour_name=dist_colour,
-                    init_pos=(shape_x, shape_y), init_angle=shape_angle)
-                distractor_shapes.append(dist_shape)
-        shape_ents = target_shapes + distractor_shapes
-        self.__shape_set = set(shape_ents)
+                dist_shape = self._make_shape(shape_type=shape_type,
+                                              colour_name=dist_colour,
+                                              init_pos=(shape_x, shape_y),
+                                              init_angle=shape_angle)
+                self.__distractor_shapes.append(dist_shape)
+        shape_ents = self.__target_shapes + self.__distractor_shapes
+        self.add_entities(shape_ents)
 
-        # TODO: do post-hoc randomisation of distractor shape positions and
-        # robot position down here
+        # add this last so it shows up on top, but before layout randomisation,
+        # since it needs to be added to the space before randomising
+        self.add_entities([robot])
+
+        if self.rand_layout:
+            for entity in [robot, *shape_ents]:
+                geom.pm_randomise_pose(space=self._space,
+                                       bodies=entity.bodies,
+                                       arena_lrbt=self.ARENA_BOUNDS_LRBT,
+                                       rng=self.rng,
+                                       rand_pos=True,
+                                       rand_rot=True)
 
         # set up index for lookups
-        all_ents = [robot, *shape_ents]
-        self.__ent_index = en.LazyEntityIndex(all_ents)
-
-        return robot, [sensor, *shape_ents]
+        self.__ent_index = en.EntityIndex(shape_ents)
 
     def score_on_end_of_traj(self):
-        # TODO: write actual scoring function
         overlap_ents = self.__sensor_ref.get_overlapping_ents(
             contained=True, ent_index=self.__ent_index)
-        if self.__shape_set <= overlap_ents:
-            return 1.0
-        return 0.0
+        target_set = set(self.__target_shapes)
+        distractor_set = set(self.__distractor_shapes)
+        n_overlap_targets = len(target_set & overlap_ents)
+        n_overlap_distractors = len(distractor_set & overlap_ents)
+        # what fraction of targets are in the overlap set?
+        target_frac_done = n_overlap_targets / len(target_set)
+        if len(overlap_ents) == 1:
+            contamination_rate = 0
+        else:
+            # what fraction of the overlap set are distractors?
+            contamination_rate = n_overlap_distractors / len(overlap_ents)
+        # score guide:
+        # - 1 if all target shapes and no distractors are in the target region
+        # - 0 if no target shapes in the target region
+        # - somewhere in between if some are all target shapes are there, but
+        #   there's also contamination (more contamination = worse, fewer
+        #   target shapes in target region = worse).
+        return target_frac_done * (1 - contamination_rate)

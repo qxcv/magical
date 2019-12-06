@@ -24,6 +24,8 @@ class Entity(abc.ABC):
     def setup(self, viewer, space):
         """Set up entity graphics/physics usig a gym_render.Viewer and a
         pm.Space. Only gets called once."""
+        self.shapes = []
+        self.bodies = []
         self.viewer = weakref.proxy(viewer)
         self.space = weakref.proxy(space)
 
@@ -37,28 +39,27 @@ class Entity(abc.ABC):
         `Geom`s. This doesn't have to be done at every physics time step."""
         pass
 
+    def add_to_space(self, *objects):
+        """For adding a body or shape to the Pymunk 'space'. Keeps track of
+        shapes/bodies so they can be used later. Should be called instead of
+        space.add()."""
+        for obj in objects:
+            self.space.add(obj)
+            if isinstance(obj, pm.Body):
+                self.bodies.append(obj)
+            elif isinstance(obj, pm.Shape):
+                self.shapes.append(obj)
+            elif isinstance(obj, pm.Constraint):
+                pass
+            else:
+                raise TypeError(
+                    f"don't know how to handle object '{obj}' of type "
+                    f"'{type(obj)}' in class '{type(self)}'")
+
 
 # #############################################################################
 # Helpers
 # #############################################################################
-
-
-def _recursive_ent_shapes(container, level=0):
-    assert level < 10
-    rv = set()
-    if isinstance(container, Entity):
-        assert level == 0, f"found entity attached to entity ({container})"
-        for attr_value in container.__dict__.values():
-            rv.update(_recursive_ent_shapes(attr_value, level=level + 1))
-    elif isinstance(container, pm.Shape):
-        rv.add(container)
-    elif isinstance(container, pm.Body):
-        for shape in container.shapes:
-            rv.add(shape)
-    elif isinstance(container, (list, dict, tuple, set)):
-        for elem in container:
-            rv.update(_recursive_ent_shapes(elem, level=level + 1))
-    return rv
 
 
 class EntityIndex:
@@ -76,7 +77,7 @@ class EntityIndex:
         self._shape_to_ent = dict()
         self._ent_to_shapes = dict()
         for entity in entities:
-            shapes = _recursive_ent_shapes(entity)
+            shapes = entity.shapes
             self._ent_to_shapes[entity] = shapes
             for shape in shapes:
                 assert shape not in self._shape_to_ent, \
@@ -93,31 +94,6 @@ class EntityIndex:
         """Return a set of shapes associated with the given entity. Raises
         `KeyError` if the given entity is not in the index."""
         return self._ent_to_shapes[ent]
-
-
-class LazyEntityIndex:
-    """Version of EntityIndex that constructs itself only when actual methods
-    are needed. This is a silly hack to get around the fact that I create this
-    during the .on_reset() for an environment, but entities don't actually get
-    set up with shapes, bodies, etc. until their .setup() method is called
-    after .on_reset(). Probably there is a better refactoring that doesn't
-    require this hack."""
-    def __init__(self, *args, **kwargs):
-        self._index = None
-        self._args = args
-        self._kwargs = kwargs
-
-    def _init(self):
-        if self._index is None:
-            self._index = EntityIndex(*self._args, **self._kwargs)
-
-    def entity_for(self, *args, **kwargs):
-        self._init()
-        return self._index.entity_for(*args, **kwargs)
-
-    def shapes_for(self, *args, **kwargs):
-        self._init()
-        return self._index.shapes_for(*args, **kwargs)
 
 
 # #############################################################################
@@ -177,23 +153,23 @@ class Robot(Entity):
         self.robot_body = body = pm.Body(self.mass, inertia)
         body.position = self.init_pos
         body.angle = self.init_angle
-        self.space.add(body)
+        self.add_to_space(body)
 
         # For control. The rough joint setup was taken form tank.py in the
         # pymunk examples.
         self.control_body = control_body = pm.Body(body_type=pm.Body.KINEMATIC)
         control_body.position = self.init_pos
         control_body.angle = self.init_angle
-        self.space.add(control_body)
+        self.add_to_space(control_body)
         pos_control_joint = pm.PivotJoint(control_body, body, (0, 0), (0, 0))
         pos_control_joint.max_bias = 0
         pos_control_joint.max_force = 3
-        self.space.add(pos_control_joint)
+        self.add_to_space(pos_control_joint)
         rot_control_joint = pm.GearJoint(control_body, body, 0.0, 1.0)
         rot_control_joint.error_bias = 0.0
         rot_control_joint.max_bias = 2.5
         rot_control_joint.max_force = 1
-        self.space.add(rot_control_joint)
+        self.add_to_space(rot_control_joint)
 
         # googly eye control bodies & joints
         self.pupil_bodies = []
@@ -207,7 +183,7 @@ class Robot(Entity):
             eye_joint.max_bias = 3.0
             eye_joint.max_force = 0.001
             self.pupil_bodies.append(eye_body)
-            self.space.add(eye_body, eye_joint)
+            self.add_to_space(eye_body, eye_joint)
 
         # finger bodies/controls (annoying)
         finger_thickness = 0.25 * self.radius
@@ -251,7 +227,7 @@ class Robot(Entity):
                                                    self.init_angle)
             finger_body.position = gtools.add_vecs(body.position,
                                                    finger_rel_pos_rot)
-            self.space.add(finger_body)
+            self.add_to_space(finger_body)
             self.finger_bodies.append(finger_body)
 
             # pin joint to keep it in place (it will rotate around this point)
@@ -262,7 +238,7 @@ class Robot(Entity):
                 finger_attach_delta,
             )
             finger_pin.error_bias = 0.0
-            self.space.add(finger_pin)
+            self.add_to_space(finger_pin)
             # rotary limit joint to stop it from getting too far out of line
             if finger_side < 0:
                 lower_rot_lim = -self.finger_rot_limit_inner
@@ -273,14 +249,14 @@ class Robot(Entity):
             finger_limit = pm.RotaryLimitJoint(body, finger_body,
                                                lower_rot_lim, upper_rot_lim)
             finger_limit.error_bias = 0.0
-            self.space.add(finger_limit)
+            self.add_to_space(finger_limit)
             # motor to move the fingers around (very limited in power so as not
             # to conflict with rotary limit joint)
             finger_motor = pm.SimpleMotor(body, finger_body, 0.0)
             finger_motor.rate = 0.0
             finger_motor.max_bias = 0.0
             finger_motor.max_force = 4
-            self.space.add(finger_motor)
+            self.add_to_space(finger_motor)
             self.finger_motors.append(finger_motor)
 
         # For collision. Main body circle. Signature: Circle(body, radius,
@@ -289,7 +265,7 @@ class Robot(Entity):
         body_shape = pm.Circle(body, self.radius, (0, 0))
         body_shape.filter = pm.ShapeFilter(group=robot_group)
         body_shape.friction = 0.5
-        self.space.add(body_shape)
+        self.add_to_space(body_shape)
         # the fingers
         finger_shapes = []
         for finger_body, finger_verts, finger_side in zip(
@@ -301,7 +277,7 @@ class Robot(Entity):
                 # grippy fingers
                 finger_subshape.friction = 4.0
                 finger_subshapes.append(finger_subshape)
-            self.space.add(*finger_subshapes)
+            self.add_to_space(*finger_subshapes)
             finger_shapes.append(finger_subshapes)
 
         # graphics setup
@@ -444,7 +420,7 @@ class ArenaBoundaries(Entity):
             segment = pm.Segment(arena_body, start_point, end_point, rad)
             segment.friction = 0.8
             arena_segments.append(segment)
-        self.space.add(*arena_segments)
+        self.add_to_space(*arena_segments)
 
 
 # #############################################################################
@@ -512,7 +488,7 @@ class Shape(Entity):
             self.shape_body = body = pm.Body()
             body.position = self.init_pos
             body.angle = self.init_angle
-            self.space.add(body)
+            self.add_to_space(body)
 
             side_len = math.sqrt(math.pi) * self.shape_size
             shape = pm.Poly.create_box(
@@ -528,7 +504,7 @@ class Shape(Entity):
             self.shape_body = body = pm.Body(self.mass, inertia)
             body.position = self.init_pos
             body.angle = self.init_angle
-            self.space.add(body)
+            self.add_to_space(body)
             shape = pm.Circle(body, self.shape_size, (0, 0))
         else:
             # these are free-form shapes b/c no helpers exist in Pymunk
@@ -554,21 +530,21 @@ class Shape(Entity):
             self.shape_body = body = pm.Body(self.mass, inertia)
             body.position = self.init_pos
             body.angle = self.init_angle
-            self.space.add(body)
+            self.add_to_space(body)
             shape = pm.Poly(body, poly_verts)
 
         shape.friction = 0.5
-        self.space.add(shape)
+        self.add_to_space(shape)
 
         trans_joint = pm.PivotJoint(self.space.static_body, body, (0, 0),
                                     (0, 0))
         trans_joint.max_bias = 0
         trans_joint.max_force = 1.5
-        self.space.add(trans_joint)
+        self.add_to_space(trans_joint)
         rot_joint = pm.GearJoint(self.space.static_body, body, 0.0, 1.0)
         rot_joint.max_bias = 0
         rot_joint.max_force = 0.1
-        self.space.add(rot_joint)
+        self.add_to_space(rot_joint)
 
         # Drawing
         if self.shape_type == ShapeType.SQUARE:
@@ -630,7 +606,7 @@ class GoalRegion(Entity):
         self.goal_shape = pm.Poly.create_box(self.goal_body, (self.w, self.h))
         self.goal_shape.sensor = True
         self.goal_body.position = (self.x + self.w / 2, self.y - self.h / 2)
-        self.space.add(self.goal_body, self.goal_shape)
+        self.add_to_space(self.goal_body, self.goal_shape)
 
         # Making visual display: region should consist of very lightly shaded
         # rectangle, surrounded by darker stippled border. Ideally corners on
@@ -651,10 +627,6 @@ class GoalRegion(Entity):
         outer_rect.set_linewidth(250 * LINE_THICKNESS)
         outer_rect.add_attr(self.rect_xform)
         self.viewer.add_geom(outer_rect)
-
-    def update(self, dt):
-        # nothing really needs to be done here, AFAICT
-        pass
 
     def get_overlapping_ents(self, ent_index, contained=False):
         """Get all entities overlapping this region.
@@ -700,7 +672,7 @@ class GoalRegion(Entity):
         if contained:
             new_relevant_ents = set()
             for relevant_ent in relevant_ents:
-                shapes = ent_index.shapes_for(relevant_ent)
+                shapes = set(ent_index.shapes_for(relevant_ent))
                 if shapes <= overlap_shapes:
                     new_relevant_ents.add(relevant_ent)
             relevant_ents = new_relevant_ents

@@ -33,6 +33,7 @@ class MoveToCornerEnv(BaseEnv):
             robot_pos = robot_pos + robot_jitter
             robot_angle = self.rng.uniform(-math.pi, math.pi)
         robot = self._make_robot(robot_pos, robot_angle)
+        self.add_entities([robot])
 
         shape_pos = np.asarray((0.6, -0.6))
         shape_angle = 0.13 * math.pi
@@ -51,9 +52,8 @@ class MoveToCornerEnv(BaseEnv):
                                  colour_name=shape_colour,
                                  init_pos=shape_pos,
                                  init_angle=shape_angle)
+        self.add_entities([shape])
         self.__shape_ref = shape
-
-        return robot, [shape]
 
     def score_on_end_of_traj(self):
         # TODO: do this goal check with invisible sensor area, not manual
