@@ -13,14 +13,14 @@ import milbench.gym_render as r
 
 class BaseEnv(gym.Env, abc.ABC):
     # constants for all envs
-    ROBOT_RAD = 0.2
+    ROBOT_RAD = 0.16
     ROBOT_MASS = 1.0
-    SHAPE_RAD = ROBOT_RAD * 2 / 3
+    SHAPE_RAD = ROBOT_RAD * 3 / 5
     ARENA_BOUNDS_LRBT = [-1, 1, -1, 1]
 
     def __init__(self,
                  *,
-                 res_hw=(256, 256),
+                 res_hw=(384, 384),
                  fps=20,
                  phys_steps=10,
                  phys_iter=10,
@@ -94,6 +94,8 @@ class BaseEnv(gym.Env, abc.ABC):
         Returns:
             name (str): full, Gym-compatible name for this env, with the
                 included name suffix."""
+        pass
+
     @abc.abstractmethod
     def on_reset(self):
         """Set up entities necessary for this environment, and reset any other
@@ -171,6 +173,7 @@ class BaseEnv(gym.Env, abc.ABC):
            score (float): number in [0, 1] indicating the worst possible
                performance (0), the best possible performance (1) or something
                in between. Should apply to the WHOLE trajectory."""
+        pass
 
     def step(self, action):
         # step forward physics

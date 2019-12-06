@@ -48,6 +48,7 @@ class make_convnet_builder:
 
         # vision preprocessing stage
         vis_input = layers.Input(obs_shape)
+        # TODO: consider decreasing kernel size to 5x5 or so here
         vis_rep = layers.Conv2D(32, 8, strides=4, activation=activ)(vis_input)
         vis_rep = layers.Conv2D(64, 4, strides=2, activation=activ)(vis_rep)
         vis_rep = layers.Conv2D(64, 3, strides=2, activation=activ)(vis_rep)

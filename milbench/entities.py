@@ -1,4 +1,6 @@
-"""Some kind of 'entity' abstraction for game world objects."""
+"""Some kind of 'entity' abstraction for game world objects. The robot, the
+different shapes in the environment, and the non-interacting coloured 'goal
+regions' are all examples of entities."""
 
 import abc
 import enum
@@ -47,7 +49,7 @@ def _recursive_ent_shapes(container, level=0):
     if isinstance(container, Entity):
         assert level == 0, f"found entity attached to entity ({container})"
         for attr_value in container.__dict__.values():
-            rv.update(_recursive_ent_shapes(attr_value, level=level+1))
+            rv.update(_recursive_ent_shapes(attr_value, level=level + 1))
     elif isinstance(container, pm.Shape):
         rv.add(container)
     elif isinstance(container, pm.Body):
@@ -55,7 +57,7 @@ def _recursive_ent_shapes(container, level=0):
             rv.add(shape)
     elif isinstance(container, (list, dict, tuple, set)):
         for elem in container:
-            rv.update(_recursive_ent_shapes(elem, level=level+1))
+            rv.update(_recursive_ent_shapes(elem, level=level + 1))
     return rv
 
 
@@ -309,7 +311,7 @@ class Robot(Entity):
         circ_body_out = r.make_circle(radius=self.radius, res=100)
         robot_colour = COLOURS_RGB['grey']
         dark_robot_colour = darken_rgb(robot_colour)
-        light_robot_colour = lighten_rgb(robot_colour, 5)
+        light_robot_colour = lighten_rgb(robot_colour, 4)
         circ_body_in.set_color(*robot_colour)
         circ_body_out.set_color(*dark_robot_colour)
 
@@ -450,13 +452,20 @@ class ArenaBoundaries(Entity):
 # #############################################################################
 
 
-class ShapeType(enum.Enum):
+class ShapeType(str, enum.Enum):
     TRIANGLE = 'triangle'
     SQUARE = 'square'
     PENTAGON = 'pentagon'
     HEXAGON = 'hexagon'
     OCTAGON = 'octagon'
     CIRCLE = 'circle'
+
+
+class ShapeColour(str, enum.Enum):
+    RED = 'red'
+    GREEN = 'green'
+    BLUE = 'blue'
+    YELLOW = 'yellow'
 
 
 # limited set of types and colours to use for random generation
@@ -466,7 +475,12 @@ SHAPE_TYPES = [
     ShapeType.OCTAGON,
     ShapeType.CIRCLE,
 ]
-SHAPE_COLOURS = ['red', 'green', 'blue', 'yellow']
+SHAPE_COLOURS = [
+    ShapeColour.RED,
+    ShapeColour.GREEN,
+    ShapeColour.BLUE,
+    ShapeColour.YELLOW,
+]
 
 
 class Shape(Entity):
@@ -600,14 +614,13 @@ class GoalRegion(Entity):
     """A goal region that the robot should push certain shapes into. It's up to
     the caller to figure out exactly which shapes & call methods for collision
     checking/scoring."""
-    def __init__(self, x, y, h, w, colour_name, ent_index):
+    def __init__(self, x, y, h, w, colour_name):
         self.x = x
         self.y = y
         assert h > 0, w > 0
         self.h = h
         self.w = w
         self.base_colour = COLOURS_RGB[colour_name]
-        self.ent_index = ent_index
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
@@ -643,10 +656,11 @@ class GoalRegion(Entity):
         # nothing really needs to be done here, AFAICT
         pass
 
-    def get_overlapping_ents(self, contained=False):
+    def get_overlapping_ents(self, ent_index, contained=False):
         """Get all entities overlapping this region.
 
         Args:
+            ent_index (EntityIndex): index of entities to query over.
             contained (bool): set this to True to only return entities that are
                 fully contained in the regions. Otherwise, if this is False,
                 all entities that overlap the region at all will be returned.
@@ -666,7 +680,8 @@ class GoalRegion(Entity):
             # the goal region were a different shape, or if it was rotated.
             goal_bb = self.goal_shape.bb
             overlap_shapes = {
-                s for s in overlap_shapes if goal_bb.contains(s.bb)
+                s
+                for s in overlap_shapes if goal_bb.contains(s.bb)
             }
 
         # now look up all indexed entities that own at least one overlapping
@@ -674,7 +689,7 @@ class GoalRegion(Entity):
         relevant_ents = set()
         for shape in overlap_shapes:
             try:
-                ent = self.ent_index.entity_for(shape)
+                ent = ent_index.entity_for(shape)
             except KeyError:
                 # shape not in index
                 continue
@@ -685,7 +700,7 @@ class GoalRegion(Entity):
         if contained:
             new_relevant_ents = set()
             for relevant_ent in relevant_ents:
-                shapes = self.ent_index.shapes_for(relevant_ent)
+                shapes = ent_index.shapes_for(relevant_ent)
                 if shapes <= overlap_shapes:
                     new_relevant_ents.add(relevant_ent)
             relevant_ents = new_relevant_ents

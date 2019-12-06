@@ -36,6 +36,20 @@ DEMO_ENVS_TO_TEST_ENVS_MAP = collections.OrderedDict()
 
 
 class _EnvName:
+    """Convenience class for parsing environment names. All environment names
+    look like this (per _ENV_NAME_RE):
+
+        <name_prefix>-<demo_test_spec>[-<suffix>]-<version_suffix>
+
+    Where:
+        - name_prefix identifies the environment class (e.g. MoveToCorner).
+        - demo_test_spec is either 'demo' for the demonstration environment, or
+          'Test<description>' for test environments, where the description is
+          something like 'Pose' or 'Colour' or 'All', depending on what aspects
+          of the environment are randomised.
+        - suffix is usually for indicating a type of postprocessing (e.g.
+          -LoResStack for stacked, scaled-down frames). Not always present.
+        - version_suffix is -v0, -v1, etc. etc."""
     def __init__(self, env_name):
         match = _ENV_NAME_RE.match(env_name)
         if match is None:
@@ -62,8 +76,11 @@ def register_envs():
         return False
     _REGISTERED = True
 
-    default_res = (256, 256)
-    small_res = (96, 96)
+    default_res = (384, 384)
+    # 128x128 is about the smallest size at which you can distinguish pentagon
+    # vs. hexagon vs. circle. It's also about a third as many pixels as an
+    # ImageNet network, so should be reasonably memory-efficient to train.
+    small_res = (128, 128)
     common_kwargs = dict(res_hw=default_res,
                          fps=15,
                          phys_steps=10,
@@ -110,7 +127,7 @@ def register_envs():
         }),
     ]
 
-    mr_ep_len = 450
+    mr_ep_len = 350
     match_regions_variants = [
         # FIXME: create a proper demo/test split
         (MatchRegionsEnv, mr_ep_len, '-Demo', {}),

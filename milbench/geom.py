@@ -107,7 +107,10 @@ def pm_randomise_pose(space,
     Args:
         space (pm.Space): the space to place the given bodies in.
         bodies ([pm.Body]): a list of bodies to place. They should maintain the
-            same relative positions and orientations.
+            same relative positions and orientations. Usually you'll only need
+            to pass one body, although passing multiple bodies can be useful
+            when the bodies have a pin joint (e.g. the robot's body is attached
+            to its fingers this way).
         arena_xhyw ([int]): bounding box to place the bodies in.
         rand_pos (bool): should position be randomised?
         rand_rot (bool): should rotation be randomised?
