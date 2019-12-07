@@ -56,12 +56,14 @@ class MoveToCornerEnv(BaseEnv):
         self.__shape_ref = shape
 
     def score_on_end_of_traj(self):
-        # TODO: do this goal check with invisible sensor area, not manual
-        # position accesses
         robot_pos = np.asarray(self.__shape_ref.shape_body.position)
-        # should be in top right corner
-        shortfall_x = max(0, robot_pos[0] + 0.7)
-        shortfall_y = max(0, 0.7 - robot_pos[1])
+        # should be in top left corner
+        shortfall_x = max(0, robot_pos[0] + 0.5)
+        shortfall_y = max(0, 0.5 - robot_pos[1])
         dist = np.linalg.norm((shortfall_x, shortfall_y))
-        in_corner = dist <= 0
-        return 1.0 if in_corner else 0.0
+        # max reward is for being in 0.5x0.5 square in top left corner. Reward
+        # decreases linearly outside of that, until we're more than 0.5 units
+        # outside of that 0.5x0.5 square and & we get nothing.
+        reward = max(1 - dist / 0.5, 0)
+        assert reward <= 1
+        return reward

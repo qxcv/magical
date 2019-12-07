@@ -6,8 +6,8 @@ from milbench.base_env import BaseEnv
 import milbench.entities as en
 import milbench.geom as geom
 
-# we don't use en.SHAPE_COLOURS because some of the constants in this module
-# depend on the number of colours remaining constant
+# we don't use en.SHAPE_COLOURS because some of the default constants in this
+# environment depend on the total number of colours remaining the same
 ALL_COLOURS = np.array([
     en.ShapeColour.RED,
     en.ShapeColour.GREEN,

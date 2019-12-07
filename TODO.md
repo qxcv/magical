@@ -9,7 +9,9 @@
   people don't have to squint at a 256x256 window on my laptop. I could
   additionally the default machine-readable image resolution to 512x512 or
   something else that seems reasonable (probably the arena is too small right
-  now for the more advanced things I want to do).
+  now for the more advanced things I want to do). It would also be nice to have
+  an interface for collecting demos that includes a counter for time remaining,
+  a scoring interface, and some on-screen description of the task.
 - Refactor state preprocessors so that demos aren't tied to a particular
   preprocessing of the environment.
 - Move the test() and testall() functions in bc.py into their own rollout script
@@ -21,3 +23,12 @@
   loading all of the correct weights? `save_policy()` and `reconstruct_policy()`
   seem to work, so it's evidently just something up with
   `reconstruct_trainer()` and/or `save_trainer()`.
+- Change the MatchRegions scoring function so that it detects overlap based on
+  position of shape COM by default, instead of full shape overlap (which is much
+  harder for to humans to optimise for, since there's no grey zone between in &
+  out).
+- In Cluster* environments, consider changing the random layout function to
+  avoid placing blocks of similar colour or type too close to one another (e.g.
+  within ~4 shape radii). That should minimise the number of accidental clusters
+  that the algorithm builds, at the cost of making placement expensive when
+  there are many shapes.

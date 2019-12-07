@@ -6,6 +6,7 @@ import re
 import gym
 from gym.wrappers import FrameStack, ResizeObservation
 
+from milbench.benchmarks.cluster import ClusterColourEnv, ClusterTypeEnv
 from milbench.benchmarks.match_regions import MatchRegionsEnv
 from milbench.benchmarks.move_to_corner import MoveToCornerEnv
 
@@ -13,6 +14,7 @@ __all__ = [
     'DEMO_ENVS_TO_TEST_ENVS_MAP',
     'MoveToCornerEnv',
     'MatchRegionsEnv',
+    'ClusterColourEnv',
     'register_envs',
 ]
 
@@ -168,10 +170,34 @@ def register_envs():
         }),
     ]
 
+    # Long episodes because this is a hard environment. You can have up to 12
+    # blocks when doing random layouts, and that takes a human 30-35s to
+    # process (so 650/15=43.3s is just enough time to finish a 12-block run if
+    # you know what you're doing).
+    cluster_ep_len = 650
+    cluster_variants = []
+    for cluster_cls in (ClusterColourEnv, ClusterTypeEnv):
+        cluster_variants.extend([
+            (cluster_cls, cluster_ep_len, '-Demo', {
+                'rand_shape_colour': False,
+                'rand_shape_type': False,
+                'rand_layout': False,
+                'rand_shape_count': False,
+            }),
+            # TODO: all other variants
+            (cluster_cls, cluster_ep_len, '-TestAll', {
+                'rand_shape_colour': True,
+                'rand_shape_type': True,
+                'rand_layout': True,
+                'rand_shape_count': True,
+            }),
+        ])
+
     # collection of ALL env specifications
     env_cls_suffix_kwargs = [
         *move_to_corner_variants,
         *match_regions_variants,
+        *cluster_variants,
     ]
 
     # register all the envs and record their names

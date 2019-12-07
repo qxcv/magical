@@ -21,6 +21,7 @@ from milbench.style import COLOURS_RGB, LINE_THICKNESS, darken_rgb, lighten_rgb
 class Entity(abc.ABC):
     """Basic class for logical 'things' that can be displayed on screen and/or
     interact via physics."""
+    @abc.abstractmethod
     def setup(self, viewer, space):
         """Set up entity graphics/physics usig a gym_render.Viewer and a
         pm.Space. Only gets called once."""
@@ -38,6 +39,38 @@ class Entity(abc.ABC):
         """Do a graphics state update to, e.g., update state of internal
         `Geom`s. This doesn't have to be done at every physics time step."""
         pass
+
+    def reconstruct_signature(self):
+        """Produce signature necessary to reconstruct this entity in its
+        current pose. This is useful for creating new scenarios out of existing
+        world states.
+
+        Returns: tuple of (cls, kwargs), where:
+            cls (type): the class that should be used to construct the
+                instance.
+            kwargs (dict): keyword arguments that should be passed to the
+                constructor for cls."""
+        raise NotImplementedError(
+            f"no .reconstruct_signature() implementation for object "
+            f"'{self}' of type '{type(self)}'")
+
+    @staticmethod
+    def format_reconstruct_signature(cls, kwargs):
+        """String-format a reconstruction signature. Makes things as
+        easy to cut-and-paste as possible."""
+        prefix = "    "
+        kwargs_sig_parts = []
+        for k, v in sorted(kwargs.items()):
+            v_str = str(v)
+            if isinstance(v, pm.vec2d.Vec2d):
+                v_str = "(%.5g, %.5g)" % (v.x, v.y)
+            elif isinstance(v, float):
+                v_str = "%.5g" % v
+            part = f"{prefix}{k}={v_str}"
+            kwargs_sig_parts.append(part)
+        kwargs_sig = ",\n".join(kwargs_sig_parts)
+        result = f"{cls.__name__}(\n{kwargs_sig})"
+        return result
 
     def add_to_space(self, *objects):
         """For adding a body or shape to the Pymunk 'space'. Keeps track of
@@ -147,6 +180,14 @@ class Robot(Entity):
         # max angle from vertical on inner side and outer
         self.finger_rot_limit_outer = math.pi / 8
         self.finger_rot_limit_inner = 0.0
+
+    def reconstruct_signature(self):
+        cls = type(self)
+        kwargs = dict(radius=self.radius,
+                      init_pos=self.robot_body.position,
+                      init_angle=self.robot_body.angle,
+                      mass=self.mass)
+        return cls, kwargs
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
@@ -479,10 +520,21 @@ class Shape(Entity):
         # shape type, but area of shape should increase quadratically in this
         # number regardless of shape type
         self.shape_size = shape_size
-        self.colour = COLOURS_RGB[colour_name]
+        self.colour_name = colour_name
+        self.colour = COLOURS_RGB[self.colour_name]
         self.init_pos = init_pos
         self.init_angle = init_angle
         self.mass = mass
+
+    def reconstruct_signature(self):
+        cls = type(self)
+        kwargs = dict(shape_type=self.shape_type,
+                      colour_name=self.colour_name,
+                      shape_size=self.shape_size,
+                      init_pos=self.shape_body.position,
+                      init_angle=self.shape_body.angle,
+                      mass=self.mass)
+        return cls, kwargs
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
