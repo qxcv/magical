@@ -10,6 +10,8 @@
   additionally the default machine-readable image resolution to 512x512 or
   something else that seems reasonable (probably the arena is too small right
   now for the more advanced things I want to do).
+- Refactor state preprocessors so that demos aren't tied to a particular
+  preprocessing of the environment.
 - Move the test() and testall() functions in bc.py into their own rollout script
   in the baselines directory. Those two things shouldn't be immutably attached
   to BC.
