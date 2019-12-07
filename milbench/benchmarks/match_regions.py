@@ -189,7 +189,7 @@ class MatchRegionsEnv(BaseEnv):
         n_overlap_distractors = len(distractor_set & overlap_ents)
         # what fraction of targets are in the overlap set?
         target_frac_done = n_overlap_targets / len(target_set)
-        if len(overlap_ents) == 1:
+        if len(overlap_ents) == 0:
             contamination_rate = 0
         else:
             # what fraction of the overlap set are distractors?

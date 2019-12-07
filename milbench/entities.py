@@ -191,7 +191,7 @@ class Robot(Entity):
 
         # finger bodies/controls (annoying)
         finger_thickness = 0.25 * self.radius
-        finger_upper_length = 1.2 * self.radius
+        finger_upper_length = 1.1 * self.radius
         finger_lower_length = 0.7 * self.radius
         self.finger_bodies = []
         self.finger_motors = []
