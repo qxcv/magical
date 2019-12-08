@@ -18,9 +18,9 @@ ALL_COLOURS = np.array([
 ],
                        dtype='object')
 ALL_SHAPE_TYPES = np.array([
+    en.ShapeType.HEXAGON,
     en.ShapeType.SQUARE,
     en.ShapeType.PENTAGON,
-    en.ShapeType.OCTAGON,
     en.ShapeType.CIRCLE,
 ],
                            dtype='object')

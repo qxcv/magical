@@ -23,10 +23,6 @@
   loading all of the correct weights? `save_policy()` and `reconstruct_policy()`
   seem to work, so it's evidently just something up with
   `reconstruct_trainer()` and/or `save_trainer()`.
-- Change the MatchRegions scoring function so that it detects overlap based on
-  position of shape COM by default, instead of full shape overlap (which is much
-  harder for to humans to optimise for, since there's no grey zone between in &
-  out).
 - In Cluster* environments, consider changing the random layout function to
   avoid placing blocks of similar colour or type too close to one another (e.g.
   within ~4 shape radii). That should minimise the number of accidental clusters

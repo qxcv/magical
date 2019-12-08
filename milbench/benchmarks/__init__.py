@@ -184,7 +184,24 @@ def register_envs():
                 'rand_layout': False,
                 'rand_shape_count': False,
             }),
-            # TODO: all other variants
+            (cluster_cls, cluster_ep_len, '-TestShapeColour', {
+                'rand_shape_colour': True,
+                'rand_shape_type': False,
+                'rand_layout': False,
+                'rand_shape_count': False,
+            }),
+            (cluster_cls, cluster_ep_len, '-TestShapeType', {
+                'rand_shape_colour': False,
+                'rand_shape_type': True,
+                'rand_layout': False,
+                'rand_shape_count': False,
+            }),
+            (cluster_cls, cluster_ep_len, '-TestLayout', {
+                'rand_shape_colour': False,
+                'rand_shape_type': False,
+                'rand_layout': True,
+                'rand_shape_count': False,
+            }),
             (cluster_cls, cluster_ep_len, '-TestAll', {
                 'rand_shape_colour': True,
                 'rand_shape_type': True,

@@ -322,7 +322,7 @@ class Robot(Entity):
                 finger_subshape = pm.Poly(finger_body, finger_subverts)
                 finger_subshape.filter = pm.ShapeFilter(group=robot_group)
                 # grippy fingers
-                finger_subshape.friction = 4.0
+                finger_subshape.friction = 5.0
                 finger_subshapes.append(finger_subshape)
             self.add_to_space(*finger_subshapes)
             finger_shapes.append(finger_subshapes)
@@ -479,6 +479,8 @@ class ShapeType(str, enum.Enum):
     TRIANGLE = 'triangle'
     SQUARE = 'square'
     PENTAGON = 'pentagon'
+    # hexagon is somewhat hard to distinguish from pentagon, and octagon is
+    # very hard to distinguish from circle at low resolutions
     HEXAGON = 'hexagon'
     OCTAGON = 'octagon'
     CIRCLE = 'circle'
@@ -492,10 +494,13 @@ class ShapeColour(str, enum.Enum):
 
 
 # limited set of types and colours to use for random generation
+# (WARNING: not all benchmarks use the two arrays below! Some have used their
+# own arrays so that changes to the base SHAPE_TYPES array don't break the
+# benchmark's default shape layout.)
 SHAPE_TYPES = [
     ShapeType.SQUARE,
     ShapeType.PENTAGON,
-    ShapeType.OCTAGON,
+    ShapeType.HEXAGON,
     ShapeType.CIRCLE,
 ]
 SHAPE_COLOURS = [
@@ -567,7 +572,8 @@ class Shape(Entity):
         else:
             # these are free-form shapes b/c no helpers exist in Pymunk
             if self.shape_type == ShapeType.TRIANGLE:
-                factor = 0.8  # shrink to make it look more sensible
+                # shrink to make it look more sensible and easier to grasp
+                factor = 0.8
                 num_sides = 3
             elif self.shape_type == ShapeType.PENTAGON:
                 factor = 1.0
@@ -686,7 +692,10 @@ class GoalRegion(Entity):
         outer_rect.add_attr(self.rect_xform)
         self.viewer.add_geom(outer_rect)
 
-    def get_overlapping_ents(self, ent_index, contained=False):
+    def get_overlapping_ents(self,
+                             ent_index,
+                             contained=False,
+                             com_overlap=False):
         """Get all entities overlapping this region.
 
         Args:
@@ -713,6 +722,13 @@ class GoalRegion(Entity):
                 s
                 for s in overlap_shapes if goal_bb.contains(s.bb)
             }
+        if com_overlap:
+            goal_bb = self.goal_shape.bb
+            overlap_shapes = {
+                s
+                for s in overlap_shapes
+                if goal_bb.contains_vect(s.body.position)
+            }
 
         # now look up all indexed entities that own at least one overlapping
         # shape
@@ -726,8 +742,9 @@ class GoalRegion(Entity):
             relevant_ents.add(ent)
 
         # if necessary, filter the entities so that only those with *all*
-        # shapes within the region are included
-        if contained:
+        # shapes within the region (or with COMs of all bodies in the region)
+        # are included
+        if contained or com_overlap:
             new_relevant_ents = set()
             for relevant_ent in relevant_ents:
                 shapes = set(ent_index.shapes_for(relevant_ent))

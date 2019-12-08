@@ -182,7 +182,7 @@ class MatchRegionsEnv(BaseEnv):
 
     def score_on_end_of_traj(self):
         overlap_ents = self.__sensor_ref.get_overlapping_ents(
-            contained=True, ent_index=self.__ent_index)
+            com_overlap=True, ent_index=self.__ent_index)
         target_set = set(self.__target_shapes)
         distractor_set = set(self.__distractor_shapes)
         n_overlap_targets = len(target_set & overlap_ents)
