@@ -13,7 +13,9 @@ from stable_baselines import logger
 import tensorflow as tf
 
 from milbench.baselines.common import (SimpleCNNPolicy, load_demos,
-                                       make_convnet_builder)
+                                       make_convnet_builder,
+                                       preprocess_demos_with_wrapper,
+                                       splice_in_preproc_name)
 from milbench.benchmarks import register_envs
 
 
@@ -46,13 +48,27 @@ def cli():
               help="number of generator updates at each iteration")
 @click.option("--seed", default=42, help="random seed to use")
 @click.option("--nepochs", default=100, help="number of epochs to train for")
+@click.option(
+    "--add-preproc",
+    default=None,
+    type=str,
+    help="add preprocessor to the demos and test env (e.g. LoResStack)")
 @click.argument("demos", nargs=-1, required=True)
 @util.make_session()
 def train(scratch, demos, seed, nenvs, nepochs, test_every, save_every,
-          disc_nupdate, gen_nupdate):
+          disc_nupdate, gen_nupdate, add_preproc):
     demo_dicts = load_demos(demos)
-    env_name = demo_dicts[0]['env_name']
+    orig_env_name = demo_dicts[0]['env_name']
+    if add_preproc:
+        env_name = splice_in_preproc_name(orig_env_name, add_preproc)
+        print(f"Splicing preprocessor '{add_preproc}' into environment "
+              f"'{orig_env_name}'. New environment is {env_name}")
+    else:
+        env_name = orig_env_name
     demo_trajectories = [d['trajectory'] for d in demo_dicts]
+    if add_preproc:
+        demo_trajectories = preprocess_demos_with_wrapper(
+            demo_trajectories, orig_env_name, add_preproc)
     if nenvs is None:
         nenvs = min(32, max(1, multiprocessing.cpu_count()))
     os.makedirs(scratch, exist_ok=True)

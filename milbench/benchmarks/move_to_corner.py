@@ -44,9 +44,11 @@ class MoveToCornerEnv(BaseEnv):
             shape_pos = shape_pos + shape_jitter
             shape_angle = self.rng.uniform(-math.pi, math.pi)
         if self.rand_shape_colour:
-            shape_colour = self.rng.choice(en.SHAPE_COLOURS)
+            shape_colour = self.rng.choice(
+                np.asarray(en.SHAPE_COLOURS, dtype='object'))
         if self.rand_shape_type:
-            shape_type = self.rng.choice(en.SHAPE_TYPES)
+            shape_type = self.rng.choice(
+                np.asarray(en.SHAPE_TYPES, dtype='object'))
 
         shape = self._make_shape(shape_type=shape_type,
                                  colour_name=shape_colour,
