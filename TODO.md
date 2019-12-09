@@ -23,7 +23,7 @@
   loading all of the correct weights? `save_policy()` and `reconstruct_policy()`
   seem to work, so it's evidently just something up with
   `reconstruct_trainer()` and/or `save_trainer()`.
-- In Cluster* environments, consider changing the random layout function to
+- In `Cluster*` environments, consider changing the random layout function to
   avoid placing blocks of similar colour or type too close to one another (e.g.
   within ~4 shape radii). That should minimise the number of accidental clusters
   that the algorithm builds, at the cost of making placement expensive when

@@ -1,6 +1,7 @@
 """Register available envs and create index of train/test mappings."""
 
 import collections
+import functools
 import re
 
 import gym
@@ -18,6 +19,8 @@ __all__ = [
     'register_envs',
 ]
 
+DEFAULT_RES = (384, 384)
+
 
 def lores_stack_entry_point(env_cls, small_res, frames=4):
     def make_lores_stack(**kwargs):
@@ -29,6 +32,15 @@ def lores_stack_entry_point(env_cls, small_res, frames=4):
     return make_lores_stack
 
 
+DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS = collections.OrderedDict([
+    # Images downsampled to 128x128, four adjacent frames stacked together.
+    # 128x128 is about the smallest size at which you can distinguish pentagon
+    # vs. hexagon vs. circle. It's also about a third as many pixels as an
+    # ImageNet network, so should be reasonably memory-efficient to train.
+    ('LoResStack',
+     functools.partial(lores_stack_entry_point, small_res=(128, 128),
+                       frames=4)),
+])
 _ENV_NAME_RE = re.compile(
     r'^(?P<name_prefix>[^-]+)(?P<demo_test_spec>-(Demo|Test[^-]*))'
     r'(?P<env_name_suffix>(-[^-]+)*)(?P<version_suffix>-v\d+)$')
@@ -78,12 +90,7 @@ def register_envs():
         return False
     _REGISTERED = True
 
-    default_res = (384, 384)
-    # 128x128 is about the smallest size at which you can distinguish pentagon
-    # vs. hexagon vs. circle. It's also about a third as many pixels as an
-    # ImageNet network, so should be reasonably memory-efficient to train.
-    small_res = (128, 128)
-    common_kwargs = dict(res_hw=default_res,
+    common_kwargs = dict(res_hw=DEFAULT_RES,
                          fps=15,
                          phys_steps=10,
                          phys_iter=10)
@@ -231,17 +238,18 @@ def register_envs():
                          **env_kwargs,
                      })
 
-        # images downsampled to 128x128, four adjacent frames stacked together
-        lores_env_name = env_class.make_name(env_suffix + '-LoResStack')
-        registered_env_names.append(lores_env_name)
-        gym.register(lores_env_name,
-                     entry_point=lores_stack_entry_point(env_class, small_res),
-                     max_episode_steps=env_ep_len,
-                     kwargs={
-                         'max_episode_steps': env_ep_len,
-                         **common_kwargs,
-                         **env_kwargs,
-                     })
+        for preproc_str, constructor in \
+                DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS.items():
+            new_name = env_class.make_name(env_suffix + f'-{preproc_str}')
+            registered_env_names.append(new_name)
+            gym.register(new_name,
+                         entry_point=constructor(env_class),
+                         max_episode_steps=env_ep_len,
+                         kwargs={
+                            'max_episode_steps': env_ep_len,
+                            **common_kwargs,
+                            **env_kwargs,
+                         })
 
     train_to_test_map = {}
     observed_demo_envs = set()

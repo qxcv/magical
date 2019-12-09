@@ -14,7 +14,57 @@ import tensorflow as tf
 import tqdm
 
 from milbench.baselines.common import SimpleCNNPolicy, load_demos
-from milbench.benchmarks import DEMO_ENVS_TO_TEST_ENVS_MAP, register_envs
+from milbench.benchmarks import (DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS,
+                                 DEMO_ENVS_TO_TEST_ENVS_MAP, register_envs)
+
+
+class MockDemoEnv(gym.Wrapper):
+    """Mock Gym environment that just returns an observation"""
+    def __init__(self, orig_env, trajectory):
+        super().__init__(orig_env)
+        self._idx = 0
+        self._traj = trajectory
+        self._traj_length = len(self._traj.acts)
+
+    def reset(self):
+        self._idx = 0
+        return self._traj.obs[self._idx]
+
+    def step(self, action):
+        rew = self._traj.rews[self._idx]
+        info = self._traj.infos[self._idx] or {}
+        info['_mock_demo_act'] = self._traj.acts[self._idx]
+        self._idx += 1
+        # ignore action, return next obs
+        obs = self._traj.obs[self._idx]
+        # it's okay if we run one over the end
+        done = self._idx >= self._traj_length
+        return obs, rew, done, info
+
+
+def _apply_env_wrapper(trajectories, orig_env_name, wrapper):
+    orig_env = gym.make(orig_env_name)
+    wrapped_constructor = wrapper(MockDemoEnv)
+    rv_trajectories = []
+    for traj in trajectories:
+        accum = roll_util.TrajectoryAccumulator()
+        mock_env = wrapped_constructor(orig_env=orig_env, trajectory=traj)
+        obs = mock_env.reset()
+        accum.add_step({'obs': obs})
+        done = False
+        while not done:
+            obs, rew, done, info = mock_env.step(None)
+            acts = info['_mock_demo_act']
+            del info['_mock_demo_act']
+            accum.add_step({
+                'obs': obs,
+                'acts': acts,
+                'rews': rew,
+                'infos': info,
+            })
+        new_traj = accum.finish_trajectory()
+        rv_trajectories.append(new_traj)
+    return rv_trajectories
 
 
 @click.group()
@@ -31,16 +81,34 @@ def cli():
               default=0,
               help="use the first HOLDOUT demos only for cross-validation")
 @click.option("--nepochs", default=100, help="number of epochs of training")
+@click.option(
+    "--add-preproc",
+    default=None,
+    type=str,
+    help="add preprocessor to the demos and test env (e.g. LoResStack)")
 @click.argument("demos", nargs=-1, required=True)
-def train(demos, scratch, batch_size, nholdout, nepochs):
+def train(demos, scratch, batch_size, nholdout, nepochs, add_preproc):
     """Use behavioural cloning to train a convnet policy on DEMOS."""
     demo_dicts = load_demos(demos)
-    env_name = demo_dicts[0]['env_name']
+    orig_env_name = demo_dicts[0]['env_name']
+    if add_preproc:
+        prefix, version = orig_env_name.rsplit('-', 1)
+        assert add_preproc in DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS, \
+            f"no preprocessor named '{add_preproc}', options are " \
+            f"{', '.join(DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS)}"
+        env_name = f'{prefix}-{add_preproc}-{version}'
+        print(f"Splicing preprocessor '{add_preproc}' into environment "
+              f"'{orig_env_name}'. New environment is {env_name}")
+    else:
+        env_name = orig_env_name
     env = gym.make(env_name)
     env.reset()
 
     # split into train/validate
     demo_trajs = [d['trajectory'] for d in demo_dicts]
+    if add_preproc:
+        wrapper = DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS[add_preproc]
+        demo_trajs = _apply_env_wrapper(demo_trajs, orig_env_name, wrapper)
     if nholdout > 0:
         # TODO: do validation occasionally
         val_transitions = roll_util.flatten_trajectories(demo_trajs[:nholdout])
