@@ -48,22 +48,25 @@ def train(demos, scratch, batch_size, nholdout, nepochs):
 
     # train for a while
     policy_class = SimpleCNNPolicy
-    trainer = BCTrainer(env,
-                        expert_demos=train_transitions,
-                        policy_class=policy_class,
-                        batch_size=batch_size)
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config):
+        trainer = BCTrainer(env,
+                            expert_demos=train_transitions,
+                            policy_class=policy_class,
+                            batch_size=batch_size)
 
-    def save_snapshot(trainer_locals):
-        # intermediate policy, can delete later
-        save_path = os.path.join(scratch, "policy-intermediate.pkl")
+        def save_snapshot(trainer_locals):
+            # intermediate policy, can delete later
+            save_path = os.path.join(scratch, "policy-intermediate.pkl")
+            trainer.save_policy(save_path)
+
+        trainer.train(n_epochs=nepochs, on_epoch_end=save_snapshot)
+
+        # save policy
+        save_path = os.path.join(scratch, "policy.pkl")
+        print(f"Saving a model to '{save_path}'")
         trainer.save_policy(save_path)
-
-    trainer.train(n_epochs=nepochs, on_epoch_end=save_snapshot)
-
-    # save policy
-    save_path = os.path.join(scratch, "policy.pkl")
-    print(f"Saving a model to '{save_path}'")
-    trainer.save_policy(save_path)
 
 
 @cli.command()
