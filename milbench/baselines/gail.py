@@ -181,7 +181,7 @@ def train(scratch, demos, seed, nenvs, nepochs, test_every, save_every,
 
 
 # putting this up here ensures it is executed on import; otherwise never get
-# registered in teh subprocesses created by SubprocVecEnv.
+# registered in the subprocesses created by SubprocVecEnv.
 register_envs()
 
 if __name__ == '__main__':

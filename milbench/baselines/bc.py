@@ -1,6 +1,8 @@
 """Train a policy with behavioural cloning."""
 import collections
+import multiprocessing
 import os
+import random
 import sys
 import time
 
@@ -8,6 +10,7 @@ import click
 import gym
 from imitation.algorithms.bc import BCTrainer
 from imitation.util import rollout as roll_util
+from imitation.util import util
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -17,6 +20,9 @@ from milbench.baselines.common import (SimpleCNNPolicy, load_demos,
                                        preprocess_demos_with_wrapper,
                                        splice_in_preproc_name)
 from milbench.benchmarks import DEMO_ENVS_TO_TEST_ENVS_MAP, register_envs
+
+# put this here so that it happens even in subprocesses spawned for vecenvs
+register_envs()
 
 
 @click.group()
@@ -128,15 +134,27 @@ def test(snapshot, env_name, det_pol):
 @click.option("--snapshot",
               default="scratch/policy.pkl",
               help="path to saved policy")
+@click.option('--nrollout', default=30, help="number of rollouts to perform")
 @click.option("--demo-env-name",
               default="MoveToCorner-Demo-LoResStack-v0",
               help="name of env to instantiate")
-def testall(snapshot, demo_env_name):
+@click.option("--seed", default=42, help="seed for TF etc.")
+@click.option("--nenvs", default=None, help="number of parallel envs to use")
+def testall(snapshot, demo_env_name, nrollout, seed, nenvs):
     """Compute completion statistics on an entire family of benchmark tasks."""
     test_env_names = [
         demo_env_name,
         *DEMO_ENVS_TO_TEST_ENVS_MAP[demo_env_name],
     ]
+
+    if seed is not None:
+        np.random.seed(seed)
+        random.seed(seed)
+        tf.set_random_seed(seed)
+
+    if nenvs is None:
+        nenvs = max(1, multiprocessing.cpu_count())
+    assert nenvs > 0
 
     with tf.Session():
         policy = BCTrainer.reconstruct_policy(snapshot)
@@ -144,19 +162,27 @@ def testall(snapshot, demo_env_name):
 
         for env_name in test_env_names:
             print(f"Testing on {env_name}")
-            env = gym.make(env_name)
+            # env = gym.make(env_name)
+            vec_env = util.make_vec_env(env_name,
+                                        nenvs,
+                                        seed=seed,
+                                        parallel=nenvs > 1)
             scores = []
-            # TODO: refactor this to use imitation rollout utils once I figure
-            # out how to create vecenvs (also use appropriately large vecenv)
-            for _ in tqdm.trange(30):
-                obs = env.reset()
+            for _ in tqdm.trange(int(np.ceil(float(nrollout) / nenvs))):
+                # obs = env.reset()
+                obses = vec_env.reset()
                 while True:
-                    (action, ), _, _, _ = policy.step(obs[None])
-                    obs, rew, done, info = env.step(action)
-                    obs = np.asarray(obs)
-                    if done:
-                        scores.append(info['eval_score'])
+                    # (action, ), _, _, _ = policy.step(obs[None])
+                    # obs, rew, done, info = env.step(action)
+                    # obs = np.asarray(obs)
+                    actions, _, _, _ = policy.step(obses)
+                    obses, rews, dones, infos = vec_env.step(actions)
+                    if np.any(dones):
+                        scores.extend(d['eval_score'] for d in infos)
                         break
+            # drop the last few rollouts if we have a vec env that's too big
+            scores = scores[:nrollout]
+            # TODO: it would be nice to make a t-dist CI instead of doing this
             mean_scores.append((env_name, np.mean(scores)))
 
     records = [
@@ -175,7 +201,6 @@ def testall(snapshot, demo_env_name):
 
 
 if __name__ == '__main__':
-    register_envs()
     try:
         with cli.make_context(sys.argv[0], sys.argv[1:]) as ctx:
             result = cli.invoke(ctx)
