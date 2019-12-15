@@ -12,6 +12,7 @@ setup(
         'Click~=7.0',
         'numpy~=1.17.4',
         'cloudpickle~=1.2.2',
+        'statsmodels>=0.10.2',
     ],
     extras_require={
         # for imitation baselines

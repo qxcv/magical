@@ -13,6 +13,7 @@ from imitation.util import rollout as roll_util
 from imitation.util import util
 import numpy as np
 import pandas as pd
+from statsmodels.stats.weightstats import DescrStatsW
 import tensorflow as tf
 import tqdm
 
@@ -101,10 +102,13 @@ def train(demos, scratch, batch_size, nholdout, nepochs, add_preproc):
 @click.option("--det-pol/--no-det-pol",
               default=False,
               help="should actions be sampled deterministically?")
-def test(snapshot, env_name, det_pol):
+@click.option("--gif/--no-gif", default=False, help="save a gif?")
+def test(snapshot, env_name, det_pol, gif):
     """Roll out the given SNAPSHOT in the environment."""
     env = gym.make(env_name)
+    frames = []
     obs = env.reset()
+    frames.append(obs[-1])
 
     with tf.Session():
         policy = BCTrainer.reconstruct_policy(snapshot)
@@ -118,11 +122,19 @@ def test(snapshot, env_name, det_pol):
                 (action, ), _, _, _ = policy.step(obs[None],
                                                   deterministic=det_pol)
                 obs, rew, done, info = env.step(action)
+                frames.append(obs[-1])
                 obs = np.asarray(obs)
                 env.render(mode='human')
                 if done:
                     print(f"Done, score {info['eval_score']:.4g}/1.0")
+                    if gif:
+                        import imageio
+                        gif_dest = env_name + '.gif'
+                        print(f"Saving gif to {gif_dest}")
+                        imageio.mimsave(gif_dest, frames, duration=1 / 15.0)
+                    frames = []
                     obs = env.reset()
+                    frames.append(obs[-1])
                 elapsed = time.time() - frame_start
                 if elapsed < spf:
                     time.sleep(spf - elapsed)
@@ -140,7 +152,14 @@ def test(snapshot, env_name, det_pol):
               help="name of env to instantiate")
 @click.option("--seed", default=42, help="seed for TF etc.")
 @click.option("--nenvs", default=None, help="number of parallel envs to use")
-def testall(snapshot, demo_env_name, nrollout, seed, nenvs):
+@click.option("--write-latex",
+              default=None,
+              help="write LaTeX table to this file")
+@click.option("--latex-alg-name",
+              default="UNK",
+              help="algorithm name for LaTeX")
+def testall(snapshot, demo_env_name, nrollout, seed, nenvs, write_latex,
+            latex_alg_name):
     """Compute completion statistics on an entire family of benchmark tasks."""
     test_env_names = [
         demo_env_name,
@@ -158,7 +177,7 @@ def testall(snapshot, demo_env_name, nrollout, seed, nenvs):
 
     with tf.Session():
         policy = BCTrainer.reconstruct_policy(snapshot)
-        mean_scores = []
+        stats_tuples = []
 
         for env_name in test_env_names:
             print(f"Testing on {env_name}")
@@ -169,12 +188,8 @@ def testall(snapshot, demo_env_name, nrollout, seed, nenvs):
                                         parallel=nenvs > 1)
             scores = []
             for _ in tqdm.trange(int(np.ceil(float(nrollout) / nenvs))):
-                # obs = env.reset()
                 obses = vec_env.reset()
                 while True:
-                    # (action, ), _, _, _ = policy.step(obs[None])
-                    # obs, rew, done, info = env.step(action)
-                    # obs = np.asarray(obs)
                     actions, _, _, _ = policy.step(obses)
                     obses, rews, dones, infos = vec_env.step(actions)
                     if np.any(dones):
@@ -182,20 +197,61 @@ def testall(snapshot, demo_env_name, nrollout, seed, nenvs):
                         break
             # drop the last few rollouts if we have a vec env that's too big
             scores = scores[:nrollout]
-            # TODO: it would be nice to make a t-dist CI instead of doing this
-            mean_scores.append((env_name, np.mean(scores)))
+            mean = np.mean(scores)
+            interval = DescrStatsW(scores).tconfint_mean(0.05, 'two-sided')
+            std = np.std(scores, ddof=1)
+            stats_tuples.append(
+                (env_name, mean, interval[0], interval[1], std))
 
     records = [
         collections.OrderedDict([
             ('demo_env', demo_env_name),
             ('test_env', env_name),
             ('mean_score', mean_score),
+            ('ci95_lower', ci95_lower),
+            ('ci95_upper', ci95_upper),
+            ('std_score', std),
             ('snapshot', snapshot),
-        ]) for env_name, mean_score in mean_scores
+        ])
+        for env_name, mean_score, ci95_lower, ci95_upper, std in stats_tuples
     ]
     frame = pd.DataFrame.from_records(records)
     print(f"Final mean scores for '{snapshot}':")
-    print(frame[['test_env', 'mean_score']])
+    print(frame[['test_env', 'mean_score', 'ci95_lower', 'ci95_upper']])
+
+    if write_latex:
+        dir_path = os.path.dirname(write_latex)
+        if dir_path:
+            os.makedirs(dir_path, exist_ok=True)
+        with open(write_latex, 'w') as fp:
+            col_names = []
+            stat_parts = []
+            for _, row in frame.iterrows():
+                col_names.append(r'\textbf{%s}' % row['test_env'])
+                # bounds = row["ci95_upper"] - row["mean_score"]
+                std = row['std_score']
+                stat_parts.append(
+                    f'{row["mean_score"]:.2f} ($\\pm$ {std:.2f})')
+
+            # prefix
+            print(r"\centering", file=fp)
+            print(r"\begin{tabular}{l@{\hspace{1em}}%s}" %
+                  ("c" * len(col_names)),
+                  file=fp)
+            print(r"\toprule", file=fp)
+
+            # first line: algorithm & env names
+            print(r'\textbf{Randomisation} & ', end='', file=fp)
+            print(' & '.join(col_names), end='', file=fp)
+            print('\\\\', file=fp)
+            print(r'\midrule', file=fp)
+
+            # next line: actual results
+            print(r'\textbf{%s} & ' % latex_alg_name, end='', file=fp)
+            print(' & '.join(stat_parts), end='', file=fp)
+            print('\\\\', file=fp)
+            print(r'\bottomrule', file=fp)
+            print(r'\end{tabular}', file=fp)
 
     return frame
 

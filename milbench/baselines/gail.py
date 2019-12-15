@@ -165,13 +165,8 @@ def train(scratch, demos, seed, nenvs, nepochs, test_every, save_every,
 
     # TODO Rough sketch of things I left have to do here:
     #
-    # - Implement serialisation for both reward model and policy. Probably I
-    #   can just serialise the trainer and it will work fine. Serialising the
-    #   policy itself will be a bit trickier; perhaps I can hack my
-    #   SimpleCNNPolicy to make it work?
     # - Figure out how to do intermediate evaluations to track how well the
     #   model is doing.
-    # - Figure out how to make TensorBoard work.
     # - Tune optim hyperparams until it works :-)
     # - (Maybe) write a test function that can evaluate reward function as well
     #   as policy (e.g. do better trajectories, according to the scoring
