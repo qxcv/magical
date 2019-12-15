@@ -151,7 +151,7 @@ def test(snapshot, env_name, det_pol, gif):
               default="MoveToCorner-Demo-LoResStack-v0",
               help="name of env to instantiate")
 @click.option("--seed", default=42, help="seed for TF etc.")
-@click.option("--nenvs", default=None, help="number of parallel envs to use")
+@click.option("--nenvs", default=None, type=int, help="number of parallel envs to use")
 @click.option("--write-latex",
               default=None,
               help="write LaTeX table to this file")
