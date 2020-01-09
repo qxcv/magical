@@ -1,18 +1,13 @@
 import collections
-import gzip
 import os
 
 import cloudpickle
-import gym
-import imitation.util.rollout as roll_util
 import numpy as np
 from stable_baselines.a2c.utils import conv, conv_to_fc, linear
 from stable_baselines.common.policies import CnnPolicy
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-
-from milbench.benchmarks import DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS
 
 
 class make_convnet_builder:
@@ -196,93 +191,3 @@ class SimpleCNNPolicy(CnnPolicy):
             os.makedirs(dirname, exist_ok=True)
         with open(policy_path, 'wb') as fp:
             cloudpickle.dump(data, fp)
-
-
-def load_demos(demo_paths):
-    """Use GzipFile & cloudpickle to load a list of demo dictionaries from a
-    series of file paths."""
-    demo_dicts = []
-    n_demos = len(demo_paths)
-    for d_num, d_path in enumerate(demo_paths, start=1):
-        print(f"Loading '{d_path}' ({d_num}/{n_demos})")
-        with gzip.GzipFile(d_path, 'rb') as fp:
-            demo_dicts.append(cloudpickle.load(fp))
-    return demo_dicts
-
-
-class _MockDemoEnv(gym.Wrapper):
-    """Mock Gym environment that just returns an observation"""
-    def __init__(self, orig_env, trajectory):
-        super().__init__(orig_env)
-        self._idx = 0
-        self._traj = trajectory
-        self._traj_length = len(self._traj.acts)
-
-    def reset(self):
-        self._idx = 0
-        return self._traj.obs[self._idx]
-
-    def step(self, action):
-        rew = self._traj.rews[self._idx]
-        info = self._traj.infos[self._idx] or {}
-        info['_mock_demo_act'] = self._traj.acts[self._idx]
-        self._idx += 1
-        # ignore action, return next obs
-        obs = self._traj.obs[self._idx]
-        # it's okay if we run one over the end
-        done = self._idx >= self._traj_length
-        return obs, rew, done, info
-
-
-def preprocess_demos_with_wrapper(trajectories, orig_env_name, preproc_name):
-    """Preprocess trajectories using one of the built-in environment
-    preprocessing pipelines.
-
-    Args:
-        trajectories ([Trajectory]): list of trajectories to process.
-        orig_env_name (str): name of original environment where trajectories
-            were collected. This function will instantiate a temporary instance
-            of that environment to get access to an observation space and other
-            metadata.
-        preproc_name (str): name of preprocessor to apply. Should be available
-            in `milbench.benchmarks.DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS`.
-
-    Returns:
-        rv_trajectories ([Trajectory]): equivalent list of trajectories that
-            have each been preprocessed with the given wrapper."""
-    wrapper = DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS[preproc_name]
-    orig_env = gym.make(orig_env_name)
-    wrapped_constructor = wrapper(_MockDemoEnv)
-    rv_trajectories = []
-    for traj in trajectories:
-        accum = roll_util.TrajectoryAccumulator()
-        mock_env = wrapped_constructor(orig_env=orig_env, trajectory=traj)
-        obs = mock_env.reset()
-        accum.add_step({'obs': obs})
-        done = False
-        while not done:
-            obs, rew, done, info = mock_env.step(None)
-            acts = info['_mock_demo_act']
-            del info['_mock_demo_act']
-            accum.add_step({
-                'obs': obs,
-                'acts': acts,
-                'rews': rew,
-                'infos': info,
-            })
-        new_traj = accum.finish_trajectory()
-        rv_trajectories.append(new_traj)
-    return rv_trajectories
-
-
-def splice_in_preproc_name(base_env_name, preproc_name):
-    """Splice the name of a preprocessor into a milbench benchmark name. e.g.
-    you might start with "MoveToCorner-Demo-v0" and insert "LoResStack" to end
-    up with "MoveToCorner-Demo-LoResStack-v0". Will do a sanity check to ensure
-    that the preprocessor actually exists."""
-    prefix, version = base_env_name.rsplit('-', 1)
-    assert preproc_name in DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS, \
-        f"no preprocessor named '{preproc_name}', options are " \
-        f"{', '.join(DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS)}"
-    env_name = f'{prefix}-{preproc_name}-{version}'
-    return env_name

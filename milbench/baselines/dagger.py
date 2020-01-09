@@ -5,7 +5,7 @@ import time
 
 import click
 import gym
-from imitation.algorithms.dagger import (DAggerTrainer, NeedDemosException,
+from imitation.algorithms.dagger import (DAggerTrainer, NeedsDemosException,
                                          linear_beta_schedule)
 from imitation.util.util import make_session
 from pyglet.window import key
@@ -53,8 +53,8 @@ def train(ctx, env_name, nepochs):
     try:
         print(f"Training for round {trainer.round_num}")
         trainer.extend_and_update(n_epochs=nepochs)
-    except NeedDemosException as ex:
-        raise NeedDemosException(
+    except NeedsDemosException as ex:
+        raise NeedsDemosException(
             "No demos for this round yet. Try running 'collect' command. "
             "Original error: " + str(ex))
     trainer.save_trainer()

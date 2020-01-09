@@ -17,9 +17,9 @@ from statsmodels.stats.weightstats import DescrStatsW
 import tensorflow as tf
 import tqdm
 
-from milbench.baselines.common import (SimpleCNNPolicy, load_demos,
-                                       preprocess_demos_with_wrapper,
-                                       splice_in_preproc_name)
+from milbench.baselines.common import SimpleCNNPolicy
+from milbench.baselines.saved_trajectories import (
+    load_demos, preprocess_demos_with_wrapper, splice_in_preproc_name)
 from milbench.benchmarks import DEMO_ENVS_TO_TEST_ENVS_MAP, register_envs
 
 # put this here so that it happens even in subprocesses spawned for vecenvs
@@ -151,7 +151,10 @@ def test(snapshot, env_name, det_pol, gif):
               default="MoveToCorner-Demo-LoResStack-v0",
               help="name of env to instantiate")
 @click.option("--seed", default=42, help="seed for TF etc.")
-@click.option("--nenvs", default=None, type=int, help="number of parallel envs to use")
+@click.option("--nenvs",
+              default=None,
+              type=int,
+              help="number of parallel envs to use")
 @click.option("--write-latex",
               default=None,
               help="write LaTeX table to this file")

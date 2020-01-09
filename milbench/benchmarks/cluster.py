@@ -210,20 +210,16 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
         # from centroid for each block in the cluster.
         nvals = len(self.__characteristic_values)
         centroids = np.zeros((nvals, 2))
-        centroid_sses = np.zeros((nvals, 2))
         for c_idx, c_value in enumerate(self.__characteristic_values):
             c_blocks = self.__blocks_by_characteristic.get(c_value)
             if not c_blocks:
                 centroid = (0, 0)
-                mean_centroid_sse = 0
             else:
                 positions = np.asarray([(b.shape_body.position.x,
                                          b.shape_body.position.y)
                                         for b in c_blocks])
                 centroid = np.mean(positions, axis=0)
-                mean_centroid_sse = np.mean((centroid[None] - positions)**2)
             centroids[c_idx] = centroid
-            centroid_sses[c_idx] = mean_centroid_sse
 
         # Now for each block compute whether squared distance to nearest
         # incorrect centroid. A block is correctly clustered if the true
