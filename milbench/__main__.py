@@ -13,6 +13,7 @@ from imitation.util.rollout import TrajectoryAccumulator
 from pyglet.window import key
 
 from milbench.benchmarks import register_envs
+from milbench.entities import RobotAction as RA
 
 
 def get_unique_fn(env_name):
@@ -67,18 +68,20 @@ def main(record, env_name):
             frame_start = time.time()
 
             # movement and gripper keys
-            action = [0, 0, 0]
+            act_flags = [RA.NONE, RA.NONE, RA.OPEN]
             if key_map[key.UP] and not key_map[key.DOWN]:
-                action[0] = 1
+                act_flags[0] = RA.UP
             elif key_map[key.DOWN] and not key_map[key.UP]:
-                action[0] = 2
+                act_flags[0] = RA.DOWN
             if key_map[key.LEFT] and not key_map[key.RIGHT]:
-                action[1] = 1
+                act_flags[1] = RA.LEFT
             elif key_map[key.RIGHT] and not key_map[key.LEFT]:
-                action[1] = 2
+                act_flags[1] = RA.RIGHT
             if key_map[key.SPACE]:
                 # close gripper (otherwise it's open)
-                action[2] = 1
+                act_flags[2] = RA.CLOSE
+            # "flat" integer action
+            action = env.flags_to_action(act_flags)
 
             obs, rew, done, info = env.step(action)
 

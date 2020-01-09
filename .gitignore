@@ -4,4 +4,7 @@
 *.swp
 *~
 demos/
+demos-old/
 scratch/
+report-baselines/
+film/

@@ -35,20 +35,8 @@ class BaseEnv(gym.Env, abc.ABC):
                                             high=255,
                                             shape=(*res_hw, 3),
                                             dtype=np.uint8)
-        # First axis is movement of [none, up, down], second axis is rotation
-        # of [none, left, right], third axis is gripper state of [open, close].
-        self.action_space = spaces.MultiDiscrete([3, 3, 2])
-        self._ac_flags_ud = [
-            en.RobotAction.NONE,
-            en.RobotAction.UP,
-            en.RobotAction.DOWN,
-        ]
-        self._ac_flags_lr = [
-            en.RobotAction.NONE,
-            en.RobotAction.LEFT,
-            en.RobotAction.RIGHT,
-        ]
-        self._ac_flags_grip = [en.RobotAction.OPEN, en.RobotAction.CLOSE]
+        # action space includes every combination of those
+        self.action_space = spaces.Discrete(len(en.ACTION_NUMS_FLAGS_NAMES))
 
         # state/rendering (see reset())
         self._entities = None
@@ -59,6 +47,15 @@ class BaseEnv(gym.Env, abc.ABC):
         self.viewer = None
 
         self.seed()
+
+    def action_to_flags(self, int_action):
+        """Parse a 'flat' integer action into a combination of flags."""
+        return en.ACTION_ID_TO_FLAGS[int_action]
+
+    def flags_to_action(self, flags):
+        """Convert a 'structured' list of flags into a single flag integer
+        action. Inverse of action_to_flags."""
+        return en.FLAGS_TO_ACTION_ID[tuple(flags)]
 
     def seed(self, seed=None):
         """Initialise the PRNG and return seed necessary to reproduce results.
@@ -189,11 +186,11 @@ class BaseEnv(gym.Env, abc.ABC):
 
     def step(self, action):
         # step forward physics
-        ac_ud, ac_lr, ac_grip = action
+        ac_flag_ud, ac_flag_lr, ac_flag_grip = self.action_to_flags(action)
         action_flag = en.RobotAction.NONE
-        action_flag |= self._ac_flags_ud[ac_ud]
-        action_flag |= self._ac_flags_lr[ac_lr]
-        action_flag |= self._ac_flags_grip[ac_grip]
+        action_flag |= ac_flag_ud
+        action_flag |= ac_flag_lr
+        action_flag |= ac_flag_grip
         self._robot.set_action(action_flag)
         self._phys_steps_on_frame()
 

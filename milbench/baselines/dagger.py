@@ -12,6 +12,7 @@ from pyglet.window import key
 
 from milbench.baselines.common import SimpleCNNPolicy
 from milbench.benchmarks import register_envs
+from milbench.entities import RobotAction as RA
 
 
 @click.group()
@@ -93,17 +94,18 @@ def collect(ctx):
 
             frame_start = time.time()
 
-            action = [0, 0, 0]
+            act_flags = [RA.NONE, RA.NONE, RA.OPEN]
             if key_map[key.UP] and not key_map[key.DOWN]:
-                action[0] = 1
+                act_flags[0] = RA.UP
             elif key_map[key.DOWN] and not key_map[key.UP]:
-                action[0] = 2
+                act_flags[0] = RA.DOWN
             if key_map[key.LEFT] and not key_map[key.RIGHT]:
-                action[1] = 1
+                act_flags[1] = RA.LEFT
             elif key_map[key.RIGHT] and not key_map[key.LEFT]:
-                action[1] = 2
+                act_flags[1] = RA.RIGHT
             if key_map[key.SPACE]:
-                action[2] = 1
+                act_flags[2] = RA.CLOSE
+            action = collector.env.flags_to_action(act_flags)
 
             _, _, done, info = collector.step(action)
 

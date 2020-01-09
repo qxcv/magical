@@ -31,13 +31,14 @@ class _TrajRewriteUnpickler(Unpickler):
         return super().find_class(module, name)
 
 
-def load_demos(demo_paths, rewrite_traj_cls=True):
+def load_demos(demo_paths, rewrite_traj_cls=True, verbose=False):
     """Use GzipFile & pickle to load a list of demo dictionaries from a series
     of file paths."""
     demo_dicts = []
     n_demos = len(demo_paths)
     for d_num, d_path in enumerate(demo_paths, start=1):
-        print(f"Loading '{d_path}' ({d_num}/{n_demos})")
+        if verbose:
+            print(f"Loading '{d_path}' ({d_num}/{n_demos})")
         with gzip.GzipFile(d_path, 'rb') as fp:
             if rewrite_traj_cls:
                 unpickler = _TrajRewriteUnpickler(fp)

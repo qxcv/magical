@@ -144,6 +144,41 @@ class RobotAction(enum.IntFlag):
     CLOSE = 32
 
 
+# We need to have unique, consecutive identifiers for each action so that we
+# can use standard tools for categorical action spaces. This list & the
+# structures that follow allow us to map robot action flag combinations to
+# unique integer identifiers, and vice versa.
+ACTION_NUMS_FLAGS_NAMES = (
+    # (unique act ID, (up/down, left/right, open/close), act name)
+    (0,  (RobotAction.NONE, RobotAction.NONE,  RobotAction.OPEN),  'Open'),  # noqa: E501
+    (1,  (RobotAction.UP,   RobotAction.NONE,  RobotAction.OPEN),  'UpOpen'),  # noqa: E501
+    (2,  (RobotAction.DOWN, RobotAction.NONE,  RobotAction.OPEN),  'DownOpen'),  # noqa: E501
+    (3,  (RobotAction.NONE, RobotAction.LEFT,  RobotAction.OPEN),  'LeftOpen'),  # noqa: E501
+    (4,  (RobotAction.UP,   RobotAction.LEFT,  RobotAction.OPEN),  'UpLeftOpen'),  # noqa: E501
+    (5,  (RobotAction.DOWN, RobotAction.LEFT,  RobotAction.OPEN),  'DownLeftOpen'),  # noqa: E501
+    (6,  (RobotAction.NONE, RobotAction.RIGHT, RobotAction.OPEN),  'RightOpen'),  # noqa: E501
+    (7,  (RobotAction.UP,   RobotAction.RIGHT, RobotAction.OPEN),  'UpRightOpen'),  # noqa: E501
+    (8,  (RobotAction.DOWN, RobotAction.RIGHT, RobotAction.OPEN),  'DownRightOpen'),  # noqa: E501
+    (9,  (RobotAction.NONE, RobotAction.NONE,  RobotAction.CLOSE), 'Close'),  # noqa: E501
+    (10, (RobotAction.UP,   RobotAction.NONE,  RobotAction.CLOSE), 'UpClose'),  # noqa: E501
+    (11, (RobotAction.DOWN, RobotAction.NONE,  RobotAction.CLOSE), 'DownClose'),  # noqa: E501
+    (12, (RobotAction.NONE, RobotAction.LEFT,  RobotAction.CLOSE), 'LeftClose'),  # noqa: E501
+    (13, (RobotAction.UP,   RobotAction.LEFT,  RobotAction.CLOSE), 'UpLeftClose'),  # noqa: E501
+    (14, (RobotAction.DOWN, RobotAction.LEFT,  RobotAction.CLOSE), 'DownLeftClose'),  # noqa: E501
+    (15, (RobotAction.NONE, RobotAction.RIGHT, RobotAction.CLOSE), 'RightClose'),  # noqa: E501
+    (16, (RobotAction.UP,   RobotAction.RIGHT, RobotAction.CLOSE), 'UpRightClose'),  # noqa: E501
+    (17, (RobotAction.DOWN, RobotAction.RIGHT, RobotAction.CLOSE), 'DownRightClose'),  # noqa: E501
+)  # yapf: disable
+ACTION_ID_TO_FLAGS = {
+    act_id: flags
+    for act_id, flags, _ in ACTION_NUMS_FLAGS_NAMES
+}
+FLAGS_TO_ACTION_ID = {
+    flags: act_id
+    for act_id, flags, _ in ACTION_NUMS_FLAGS_NAMES
+}
+
+
 def make_finger_vertices(upper_arm_len, forearm_len, thickness, side_sign):
     """Make annoying finger polygons coordinates. Corresponding composite shape
     will have origin at root of upper arm, with upper arm oriented straight

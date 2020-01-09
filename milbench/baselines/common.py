@@ -23,13 +23,15 @@ class make_convnet_builder:
         # obs_tensor signature:
         #     <tf.Tensor 'truediv:0' shape=(?, 4, 96, 96, 3) dtype=float32>
         # act_tensor signature:
-        #     <tf.Tensor 'concat:0' shape=(?, 1, 8) dtype=float32>
+        #     <tf.Tensor 'concat:0' shape=(?, 1, 18) dtype=float32>
 
-        # flat_acts should be 3-hot vector of shape [B, 8]
-        flat_acts = tf.squeeze(act_tensor, axis=1)
-        act_shape = tuple(flat_acts.shape.as_list()[1:])
+        # act_tensor should be one-hot vector of shape [B, 18]
+        at_shape_list = act_tensor.shape.as_list()
+        assert len(at_shape_list) == 2, at_shape_list
+        act_shape = tuple(at_shape_list[1:])
         assert None not in act_shape, \
             f"act shape {act_shape} not fully specified"
+        assert act_shape == (18,), act_shape
 
         # going to flatten first axis into channels for observation tensor
         scaled_images = obs_tensor
@@ -63,7 +65,7 @@ class make_convnet_builder:
 
         # combine & apply parts of the model
         model = keras.Model(inputs=[vis_input, act_input], outputs=logits_rep)
-        logits_tensor_w_extra_dim = model([scaled_images_ncs, flat_acts])
+        logits_tensor_w_extra_dim = model([scaled_images_ncs, act_tensor])
         logits_tensor = tf.squeeze(logits_tensor_w_extra_dim, axis=1)
 
         # this is only needed for serialisation
