@@ -201,20 +201,23 @@ class BaseEnv(gym.Env, abc.ABC):
         # check episode step count
         self._episode_steps += 1
         done = False
+        eval_score = 0.0
         if self.max_episode_steps is not None:
             done = done or self._episode_steps >= self.max_episode_steps
         if done:
             eval_score = self.score_on_end_of_traj()
             assert 0 <= eval_score <= 1, \
                 f'eval score {eval_score} out of range for env {self}'
-            end_ep_dict = dict(eval_score=eval_score)
-            info.update(end_ep_dict)
             # These were my attempts at sneaking episode termination info
             # through the Monitor and SubprocVecEnv wrappers ('monitor_info'
             # was a keyword I gave to info_keywords in the Monitor
             # constructor). I don't know why, but neither approach worked.
             # info['monitor_info'] = end_ep_dict
             # info['episode'] = end_ep_dict
+        # we *always* include a score, even if it's zero, because at least one
+        # RL framework (rlpyt) refuses to recognise keys that aren't present at
+        # the first time step.
+        info.update(eval_score=eval_score)
 
         obs_u8 = self.render(mode='rgb_array')
 
