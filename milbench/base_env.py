@@ -50,7 +50,7 @@ class BaseEnv(gym.Env, abc.ABC):
 
     def action_to_flags(self, int_action):
         """Parse a 'flat' integer action into a combination of flags."""
-        return en.ACTION_ID_TO_FLAGS[int_action]
+        return en.ACTION_ID_TO_FLAGS[int(int_action)]
 
     def flags_to_action(self, flags):
         """Convert a 'structured' list of flags into a single flag integer

@@ -5,7 +5,9 @@ import functools
 import re
 
 import gym
+from gym.spaces import Box
 from gym.wrappers import FrameStack, ResizeObservation
+import numpy as np
 
 from milbench.benchmarks.cluster import ClusterColourEnv, ClusterTypeEnv
 from milbench.benchmarks.match_regions import MatchRegionsEnv
@@ -22,11 +24,31 @@ __all__ = [
 DEFAULT_RES = (384, 384)
 
 
+class EagerFrameStack(FrameStack):
+    """Variant of FrameStack that concatenates along the last (channels)
+    axis."""
+    def __init__(self, env, num_stack):
+        super().__init__(env, num_stack, lz4_compress=False)
+        old_shape = env.observation_space.shape
+        assert len(old_shape) == 3 and old_shape[-1] == 3, \
+            f"expected old shape to be 3D tensor with RGB colour axis at " \
+            f"end, but got shape {old_shape}"
+        low = np.repeat(env.observation_space.low, num_stack, axis=-1)
+        high = np.repeat(env.observation_space.high, num_stack, axis=-1)
+        self.observation_space = Box(low=low, high=high,
+                                     dtype=self.observation_space.dtype)
+
+    def _get_observation(self):
+        assert len(self.frames) == self.num_stack, \
+            (len(self.frames), self.num_stack)
+        return np.concatenate(self.frames, axis=-1)
+
+
 def lores_stack_entry_point(env_cls, small_res, frames=4):
     def make_lores_stack(**kwargs):
         base_env = env_cls(**kwargs)
         resize_env = ResizeObservation(base_env, small_res)
-        stack_env = FrameStack(resize_env, frames)
+        stack_env = EagerFrameStack(resize_env, frames)
         return stack_env
 
     return make_lores_stack

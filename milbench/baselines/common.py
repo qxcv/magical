@@ -21,7 +21,7 @@ class make_convnet_builder:
         # it batch norm.
 
         # obs_tensor signature:
-        #     <tf.Tensor 'truediv:0' shape=(?, 4, 96, 96, 3) dtype=float32>
+        #     <tf.Tensor 'truediv:0' shape=(?, 96, 96, 3 * 4) dtype=float32>
         # act_tensor signature:
         #     <tf.Tensor 'concat:0' shape=(?, 1, 18) dtype=float32>
 
@@ -34,14 +34,7 @@ class make_convnet_builder:
         assert act_shape == (18,), act_shape
 
         # going to flatten first axis into channels for observation tensor
-        scaled_images = obs_tensor
-        scaled_images_nc_ns = tf.transpose(scaled_images, (0, 2, 3, 1, 4))
-        orig_shape_list = scaled_images_nc_ns.shape.as_list()
-        orig_shape = tf.shape(scaled_images_nc_ns)
-        final_chans = np.prod(orig_shape_list[3:])
-        new_shape = tf.concat((orig_shape[:3], (final_chans, )), axis=0)
-        scaled_images_ncs = tf.reshape(scaled_images_nc_ns, new_shape)
-        obs_shape = tuple(scaled_images_ncs.shape.as_list()[1:])
+        obs_shape = tuple(obs_tensor.shape.as_list()[1:])
         assert None not in obs_shape, \
             f"obs shape {obs_shape} not fully specified"
 
@@ -65,7 +58,7 @@ class make_convnet_builder:
 
         # combine & apply parts of the model
         model = keras.Model(inputs=[vis_input, act_input], outputs=logits_rep)
-        logits_tensor_w_extra_dim = model([scaled_images_ncs, act_tensor])
+        logits_tensor_w_extra_dim = model([obs_tensor, act_tensor])
         logits_tensor = tf.squeeze(logits_tensor_w_extra_dim, axis=1)
 
         # this is only needed for serialisation
@@ -85,17 +78,10 @@ def simple_cnn(scaled_images, **kwargs):
     # FIXME: make sure input is appropriately scaled to [-1, 1] or something.
     # TODO: make this a beefy resnet and figure out how to give it batch norm.
 
-    # input shape is [batch_size, num_steps, h, w, num_channels]
-    # we transpose to [batch_size, h, w, num_channels * num_steps]
-    scaled_images_nc_ns = tf.transpose(scaled_images, (0, 2, 3, 1, 4))
-    orig_shape_list = scaled_images_nc_ns.shape.as_list()
-    orig_shape = tf.shape(scaled_images_nc_ns)
-    final_chans = np.prod(orig_shape_list[3:])
-    new_shape = tf.concat((orig_shape[:3], (final_chans, )), axis=0)
-    scaled_images_ncs = tf.reshape(scaled_images_nc_ns, new_shape)
+    # input shape is [batch_size, h, w, num_channels]
     activ = tf.nn.relu
     layer_1 = activ(
-        conv(scaled_images_ncs,
+        conv(scaled_images,
              'c1',
              n_filters=32,
              filter_size=8,
