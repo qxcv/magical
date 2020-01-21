@@ -1,9 +1,10 @@
 import abc
 import enum
 
+from gym.utils import EzPickle
 import numpy as np
 
-from milbench.base_env import BaseEnv
+from milbench.base_env import BaseEnv, ez_init
 import milbench.entities as en
 import milbench.geom as geom
 
@@ -255,7 +256,8 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
         return score
 
 
-class ClusterColourEnv(BaseClusterEnv):
+class ClusterColourEnv(BaseClusterEnv, EzPickle):
+    @ez_init()
     def __init__(self, *args, **kwargs):
         super().__init__(*args,
                          cluster_by=BaseClusterEnv.ClusterBy.COLOUR,
@@ -267,7 +269,8 @@ class ClusterColourEnv(BaseClusterEnv):
         return base_name + (suffix or '') + '-v0'
 
 
-class ClusterTypeEnv(BaseClusterEnv):
+class ClusterTypeEnv(BaseClusterEnv, EzPickle):
+    @ez_init()
     def __init__(self, *args, **kwargs):
         super().__init__(*args,
                          cluster_by=BaseClusterEnv.ClusterBy.TYPE,

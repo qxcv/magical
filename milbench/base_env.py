@@ -1,14 +1,46 @@
 """Gym wrapper for shape-pushing environment."""
 
 import abc
+import functools
+import inspect
 
 import gym
 from gym import spaces
+from gym.utils import EzPickle
 import numpy as np
 import pymunk as pm
 
 import milbench.entities as en
 import milbench.gym_render as r
+
+
+def ez_init(*args, **kwargs):
+    """Decorator to initialise EzPickle from all arguments and keyword
+    arguments. Use it like this:
+
+        class C(…, EzPickle):
+            @ez_init()
+            def __init__(self, spam, ham, …):
+                …"""
+    assert len(args) == 0 and len(kwargs) == 0, \
+        "ez_init takes no args at the moment (use `@ez_init()` only)"
+
+    def inner_decorator(method):
+        # sanity checks
+        msg = f"Got function {method}; should only be used to decorate " \
+              f"__init__() methods of classes"
+        assert inspect.isfunction(method), msg
+        assert method.__name__ == '__init__', msg
+
+        @functools.wraps(method)
+        def wrapper(*args, **kwargs):
+            self_var = args[0]
+            EzPickle.__init__(self_var, *args[1:], **kwargs)
+            return method(*args, **kwargs)
+
+        return wrapper
+
+    return inner_decorator
 
 
 class BaseEnv(gym.Env, abc.ABC):

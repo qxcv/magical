@@ -1,8 +1,9 @@
 import math
 
+from gym.utils import EzPickle
 import numpy as np
 
-from milbench.base_env import BaseEnv
+from milbench.base_env import BaseEnv, ez_init
 import milbench.entities as en
 import milbench.geom as geom
 
@@ -17,11 +18,12 @@ ALL_COLOURS = np.array([
                        dtype='object')
 
 
-class MatchRegionsEnv(BaseEnv):
+class MatchRegionsEnv(BaseEnv, EzPickle):
     """Need to push blocks of a certain colour to the corresponding coloured
     region. Aim is for the robot to generalise _that_ rule instead of
     generalising others (e.g. "always move squares to this position" or
     something)."""
+    @ez_init()
     def __init__(
             self,
             rand_target_colour=False,

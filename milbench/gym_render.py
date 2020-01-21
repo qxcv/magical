@@ -25,6 +25,7 @@ SOFTWARE.
 from __future__ import division
 import os
 import six
+import warnings
 import sys
 
 if "Apple" in sys.version:
@@ -200,7 +201,7 @@ class Viewer(object):
         arr = None
         if return_rgb_array:
             blit_fbo(self.width, self.height, self.render_fbo.id,
-                     self.no_msaa_fbo.id, gl.GL_COLOR_ATTACHMENT0)
+                     self.no_msaa_fbo.id, gl.GL_COLOR_ATTACHMENT0)  # XXX: crashes in subprocess
             image_data = self.no_msaa_fbo._colour_texture.get_image_data(
                 fmt='RGB', gl_format=gl.GL_RGB)
             arr = np.frombuffer(image_data.data, dtype=np.uint8)
@@ -249,7 +250,12 @@ class Viewer(object):
         return arr[::-1, :, 0:3]
 
     def __del__(self):
-        self.close()
+        try:
+            self.close()
+        except Exception as ex:
+            warnings.warn(f'Exception on env auto-close, you probably need '
+                          f'to manually close your Gym envs. Error messsage: '
+                          f'{ex!s}')
 
 
 def _add_attrs(geom, attrs):

@@ -1,12 +1,14 @@
 import math
 
+from gym.utils import EzPickle
 import numpy as np
 
-from milbench.base_env import BaseEnv
+from milbench.base_env import BaseEnv, ez_init
 import milbench.entities as en
 
 
-class MoveToCornerEnv(BaseEnv):
+class MoveToCornerEnv(BaseEnv, EzPickle):
+    @ez_init()
     def __init__(self,
                  rand_shape_colour=False,
                  rand_shape_type=False,
