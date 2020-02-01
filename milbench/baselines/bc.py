@@ -1,8 +1,8 @@
 """Train a policy with behavioural cloning."""
-import collections
 import multiprocessing
 import os
 import random
+import readline  # noqa: F401
 import sys
 import time
 
@@ -12,15 +12,14 @@ from imitation.algorithms.bc import BCTrainer
 from imitation.util import rollout as roll_util
 from imitation.util import util
 import numpy as np
-import pandas as pd
-from statsmodels.stats.weightstats import DescrStatsW
 import tensorflow as tf
 import tqdm
 
 from milbench.baselines.common import SimpleCNNPolicy
 from milbench.baselines.saved_trajectories import (
     load_demos, preprocess_demos_with_wrapper, splice_in_preproc_name)
-from milbench.benchmarks import DEMO_ENVS_TO_TEST_ENVS_MAP, register_envs
+from milbench.benchmarks import register_envs
+from milbench.evaluation import EvaluationProtocol, latexify_results
 
 # put this here so that it happens even in subprocesses spawned for vecenvs
 register_envs()
@@ -142,6 +141,42 @@ def test(snapshot, env_name, det_pol, gif):
             env.viewer.close()
 
 
+class BCEvalProtocol(EvaluationProtocol):
+    def __init__(self, policy, run_id, n_envs, seed, **kwargs):
+        super().__init__(**kwargs)
+        self.policy = policy
+        self._run_id = run_id
+        self.n_envs = n_envs
+        self.seed = seed
+
+    @property
+    def run_id(self):
+        return self._run_id
+
+    def obtain_scores(self, env_name):
+        print(f"Testing on {env_name}")
+
+        vec_env = util.make_vec_env(env_name,
+                                    self.n_envs,
+                                    seed=self.seed,
+                                    parallel=self.n_envs > 1)
+        scores = []
+        for _ in tqdm.trange(int(np.ceil(float(self.n_rollouts) /
+                                         self.n_envs))):
+            obses = vec_env.reset()
+            while True:
+                actions, _, _, _ = self.policy.step(obses)
+                obses, rews, dones, infos = vec_env.step(actions)
+                if np.any(dones):
+                    scores.extend(d['eval_score'] for d in infos)
+                    break
+
+        # drop the last few rollouts in case we have a vec env that's too big
+        scores = scores[:self.n_rollouts]
+
+        return scores
+
+
 @cli.command()
 @click.option("--snapshot",
               default="scratch/policy.pkl",
@@ -164,11 +199,6 @@ def test(snapshot, env_name, det_pol, gif):
 def testall(snapshot, demo_env_name, nrollout, seed, nenvs, write_latex,
             latex_alg_name):
     """Compute completion statistics on an entire family of benchmark tasks."""
-    test_env_names = [
-        demo_env_name,
-        *DEMO_ENVS_TO_TEST_ENVS_MAP[demo_env_name],
-    ]
-
     if seed is not None:
         np.random.seed(seed)
         random.seed(seed)
@@ -180,81 +210,22 @@ def testall(snapshot, demo_env_name, nrollout, seed, nenvs, write_latex,
 
     with tf.Session():
         policy = BCTrainer.reconstruct_policy(snapshot)
-        stats_tuples = []
-
-        for env_name in test_env_names:
-            print(f"Testing on {env_name}")
-            # env = gym.make(env_name)
-            vec_env = util.make_vec_env(env_name,
-                                        nenvs,
-                                        seed=seed,
-                                        parallel=nenvs > 1)
-            scores = []
-            for _ in tqdm.trange(int(np.ceil(float(nrollout) / nenvs))):
-                obses = vec_env.reset()
-                while True:
-                    actions, _, _, _ = policy.step(obses)
-                    obses, rews, dones, infos = vec_env.step(actions)
-                    if np.any(dones):
-                        scores.extend(d['eval_score'] for d in infos)
-                        break
-            # drop the last few rollouts if we have a vec env that's too big
-            scores = scores[:nrollout]
-            mean = np.mean(scores)
-            interval = DescrStatsW(scores).tconfint_mean(0.05, 'two-sided')
-            std = np.std(scores, ddof=1)
-            stats_tuples.append(
-                (env_name, mean, interval[0], interval[1], std))
-
-    records = [
-        collections.OrderedDict([
-            ('demo_env', demo_env_name),
-            ('test_env', env_name),
-            ('mean_score', mean_score),
-            ('ci95_lower', ci95_lower),
-            ('ci95_upper', ci95_upper),
-            ('std_score', std),
-            ('snapshot', snapshot),
-        ])
-        for env_name, mean_score, ci95_lower, ci95_upper, std in stats_tuples
-    ]
-    frame = pd.DataFrame.from_records(records)
-    print(f"Final mean scores for '{snapshot}':")
-    print(frame[['test_env', 'mean_score', 'ci95_lower', 'ci95_upper']])
+        eval_protocol = BCEvalProtocol(policy=policy,
+                                       run_id=snapshot,
+                                       n_envs=nenvs,
+                                       seed=seed,
+                                       demo_env_name=demo_env_name,
+                                       n_rollouts=nrollout)
+        frame = eval_protocol.do_eval(verbose=True)
+        frame['latex_alg_name'] = latex_alg_name
 
     if write_latex:
+        latex_str = latexify_results(frame, id_column='latex_alg_name')
         dir_path = os.path.dirname(write_latex)
         if dir_path:
             os.makedirs(dir_path, exist_ok=True)
         with open(write_latex, 'w') as fp:
-            col_names = []
-            stat_parts = []
-            for _, row in frame.iterrows():
-                col_names.append(r'\textbf{%s}' % row['test_env'])
-                # bounds = row["ci95_upper"] - row["mean_score"]
-                std = row['std_score']
-                stat_parts.append(
-                    f'{row["mean_score"]:.2f} ($\\pm$ {std:.2f})')
-
-            # prefix
-            print(r"\centering", file=fp)
-            print(r"\begin{tabular}{l@{\hspace{1em}}%s}" %
-                  ("c" * len(col_names)),
-                  file=fp)
-            print(r"\toprule", file=fp)
-
-            # first line: algorithm & env names
-            print(r'\textbf{Randomisation} & ', end='', file=fp)
-            print(' & '.join(col_names), end='', file=fp)
-            print('\\\\', file=fp)
-            print(r'\midrule', file=fp)
-
-            # next line: actual results
-            print(r'\textbf{%s} & ' % latex_alg_name, end='', file=fp)
-            print(' & '.join(stat_parts), end='', file=fp)
-            print('\\\\', file=fp)
-            print(r'\bottomrule', file=fp)
-            print(r'\end{tabular}', file=fp)
+            fp.write(latex_str)
 
     return frame
 
@@ -262,7 +233,7 @@ def testall(snapshot, demo_env_name, nrollout, seed, nenvs, write_latex,
 if __name__ == '__main__':
     try:
         with cli.make_context(sys.argv[0], sys.argv[1:]) as ctx:
-            result = cli.invoke(ctx)
+            cli.invoke(ctx)
     except click.ClickException as e:
         e.show()
         sys.exit(e.exit_code)

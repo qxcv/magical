@@ -31,7 +31,7 @@ class make_convnet_builder:
         act_shape = tuple(at_shape_list[1:])
         assert None not in act_shape, \
             f"act shape {act_shape} not fully specified"
-        assert act_shape == (18,), act_shape
+        assert act_shape == (18, ), act_shape
 
         # going to flatten first axis into channels for observation tensor
         obs_shape = tuple(obs_tensor.shape.as_list()[1:])
