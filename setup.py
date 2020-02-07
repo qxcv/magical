@@ -8,10 +8,10 @@ setup(
     install_requires=[
         'pymunk~=5.6.0',
         'pyglet~=1.3.2',
-        'gym~=0.15.0',
-        'Click~=7.0',
-        'numpy~=1.17.4',
-        'cloudpickle~=1.2.2',
+        'gym>=0.15.0',
+        'Click>=7.0',
+        'numpy>=1.17.4',
+        'cloudpickle>=1.2.2',
         'statsmodels>=0.10.2',
     ],
     extras_require={
