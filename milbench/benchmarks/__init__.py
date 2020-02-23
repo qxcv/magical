@@ -35,7 +35,8 @@ class EagerFrameStack(FrameStack):
             f"end, but got shape {old_shape}"
         low = np.repeat(env.observation_space.low, num_stack, axis=-1)
         high = np.repeat(env.observation_space.high, num_stack, axis=-1)
-        self.observation_space = Box(low=low, high=high,
+        self.observation_space = Box(low=low,
+                                     high=high,
                                      dtype=self.observation_space.dtype)
 
     def _get_observation(self):
@@ -268,9 +269,9 @@ def register_envs():
                          entry_point=constructor(env_class),
                          max_episode_steps=env_ep_len,
                          kwargs={
-                            'max_episode_steps': env_ep_len,
-                            **common_kwargs,
-                            **env_kwargs,
+                             'max_episode_steps': env_ep_len,
+                             **common_kwargs,
+                             **env_kwargs,
                          })
 
     train_to_test_map = {}
@@ -292,5 +293,28 @@ def register_envs():
         "train envs"
     sorted_items = sorted(train_to_test_map.items())
     DEMO_ENVS_TO_TEST_ENVS_MAP.update(sorted_items)
+
+    # Debugging environment: MoveToCorner with a nicely shaped reward function
+    # that you can simply do RL on.
+    debug_mtc_kwargs = dict(max_episode_steps=200,
+                            kwargs={
+                                'debug_reward': True,
+                                'max_episode_steps': 200,
+                                'rand_shape_colour': False,
+                                'rand_shape_type': False,
+                                'rand_shape_pose': False,
+                                'rand_robot_pose': False,
+                                **common_kwargs,
+                            })
+    debug_mtc_suffix = '-DebugReward'
+    gym.register(MoveToCornerEnv.make_name(debug_mtc_suffix),
+                 entry_point=MoveToCornerEnv,
+                 **debug_mtc_kwargs)
+    for preproc_str, constructor in \
+            DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS.items():
+        gym.register(
+            MoveToCornerEnv.make_name(f'{debug_mtc_suffix}-{preproc_str}'),
+            entry_point=constructor(MoveToCornerEnv),
+            **debug_mtc_kwargs)
 
     return True

@@ -1,4 +1,5 @@
 import math
+import warnings
 
 from gym.utils import EzPickle
 import numpy as np
@@ -14,12 +15,19 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
                  rand_shape_type=False,
                  rand_shape_pose=False,
                  rand_robot_pose=False,
+                 debug_reward=False,
                  **kwargs):
         super().__init__(**kwargs)
         self.rand_shape_colour = rand_shape_colour
         self.rand_shape_type = rand_shape_type
         self.rand_shape_pose = rand_shape_pose
         self.rand_robot_pose = rand_robot_pose
+        self.debug_reward = debug_reward
+        if self.debug_reward:
+            warnings.warn(
+                "DEBUG REWARD ENABLED IN MOVE-TO-CORNER ENV! This reward is "
+                "ONLY intended for training RL algorithms during debugging, "
+                "so don't forget to disable it when benchmarking IL")
 
     @classmethod
     def make_name(cls, suffix=None):
@@ -71,3 +79,26 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
         reward = max(1 - dist / 0.5, 0)
         assert reward <= 1
         return reward
+
+    def step(self, *args, **kwargs):
+        obs, rew, done, info = super().step(*args, **kwargs)
+        if self.debug_reward:
+            # dense reward for training RL
+            rew = self.debug_shaped_reward()
+        return obs, rew, done, info
+
+    def debug_shaped_reward(self):
+        """Compute a heavily shaped reward. This should be sufficient to do RL
+        on. It's quite helpful for tuning RL algorithms in new GAIL
+        implementations."""
+        shape_pos = np.asarray(self.__shape_ref.shape_body.position)
+        shortfall_x = max(0, shape_pos[0] + 0.5)
+        shortfall_y = max(0, 0.5 - shape_pos[1])
+        shape_to_goal_dist = np.linalg.norm((shortfall_x, shortfall_y))
+        # encourage the robot to get close to the shape, and the shape to get
+        # close to the goal
+        robot_pos = np.asarray(self._robot.robot_body.position)
+        robot_to_shape_dist = np.linalg.norm(robot_pos - shape_pos)
+        shaping = -shape_to_goal_dist / 5 \
+            - max(robot_to_shape_dist, 0.15) / 10
+        return shaping + self.score_on_end_of_traj()
