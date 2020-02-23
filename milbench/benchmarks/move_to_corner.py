@@ -92,13 +92,13 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
         on. It's quite helpful for tuning RL algorithms in new GAIL
         implementations."""
         shape_pos = np.asarray(self.__shape_ref.shape_body.position)
-        shortfall_x = max(0, shape_pos[0] + 0.5)
-        shortfall_y = max(0, 0.5 - shape_pos[1])
-        shape_to_goal_dist = np.linalg.norm((shortfall_x, shortfall_y))
+        # shape_pos[0] is meant to be 0, shape_pos[1] is meant to be 1
+        target_shape_pos = np.array((0, 1))
+        shape_to_corner_dist = np.linalg.norm(shape_pos - target_shape_pos)
         # encourage the robot to get close to the shape, and the shape to get
         # close to the goal
         robot_pos = np.asarray(self._robot.robot_body.position)
         robot_to_shape_dist = np.linalg.norm(robot_pos - shape_pos)
-        shaping = -shape_to_goal_dist / 5 \
-            - max(robot_to_shape_dist, 0.15) / 10
+        shaping = -shape_to_corner_dist / 5 \
+            - max(robot_to_shape_dist, 0.2) / 20
         return shaping + self.score_on_end_of_traj()
