@@ -6,7 +6,7 @@ import re
 
 import gym
 from gym.spaces import Box
-from gym.wrappers import FrameStack, ResizeObservation
+from gym.wrappers import FrameStack, GrayScaleObservation, ResizeObservation
 import numpy as np
 
 from milbench.benchmarks.cluster import ClusterColourEnv, ClusterTypeEnv
@@ -30,9 +30,9 @@ class EagerFrameStack(FrameStack):
     def __init__(self, env, num_stack):
         super().__init__(env, num_stack, lz4_compress=False)
         old_shape = env.observation_space.shape
-        assert len(old_shape) == 3 and old_shape[-1] == 3, \
-            f"expected old shape to be 3D tensor with RGB colour axis at " \
-            f"end, but got shape {old_shape}"
+        assert len(old_shape) == 3 and old_shape[-1] in {3, 1}, \
+            f"expected old shape to be 3D tensor with RGB or greyscale " \
+            f"colour axis at end, but got shape {old_shape}"
         low = np.repeat(env.observation_space.low, num_stack, axis=-1)
         high = np.repeat(env.observation_space.high, num_stack, axis=-1)
         self.observation_space = Box(low=low,
@@ -45,10 +45,15 @@ class EagerFrameStack(FrameStack):
         return np.concatenate(self.frames, axis=-1)
 
 
-def lores_stack_entry_point(env_cls, small_res, frames=4):
+def lores_stack_entry_point(env_cls, small_res, frames=4,
+                            greyscale=False):
     def make_lores_stack(**kwargs):
         base_env = env_cls(**kwargs)
-        resize_env = ResizeObservation(base_env, small_res)
+        if greyscale:
+            col_env = GrayScaleObservation(base_env, keep_dim=True)
+        else:
+            col_env = base_env
+        resize_env = ResizeObservation(col_env, small_res)
         stack_env = EagerFrameStack(resize_env, frames)
         return stack_env
 
@@ -63,6 +68,12 @@ DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS = collections.OrderedDict([
     ('LoResStack',
      functools.partial(lores_stack_entry_point, small_res=(128, 128),
                        frames=4)),
+    # This next one is only intended for debugging RL algorithms. The images
+    # are too small to resolve, e.g., octagons vs. circles, and it also omits
+    # colour, which is necessary for some tasks.
+    ('AtariStyle',
+     functools.partial(lores_stack_entry_point, small_res=(84, 84),
+                       frames=4, greyscale=True)),
 ])
 _ENV_NAME_RE = re.compile(
     r'^(?P<name_prefix>[^-]+)(?P<demo_test_spec>-(Demo|Test[^-]*))'
