@@ -170,7 +170,7 @@ def register_envs():
         }),
     ]
 
-    mr_ep_len = 150
+    mr_ep_len = 120
     match_regions_variants = [
         (MatchRegionsEnv, mr_ep_len, '-Demo', {
             'rand_target_colour': False,
