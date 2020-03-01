@@ -44,6 +44,10 @@ def main(record, env_name):
         was_done_on_prev_step = False
         if record:
             traj_accum.add_step({"obs": obs})
+            started = False
+            print("Will only start recording on first key press")
+        else:
+            started = True
 
         # first render to open window
         env.render(mode='human')
@@ -59,9 +63,11 @@ def main(record, env_name):
                 # drop traj and don't save
                 obs = env.reset()
                 if record:
+                    started = False
                     traj_accum = TrajectoryAccumulator()
                     traj_accum.add_step({"obs": obs})
-                time.sleep(0.5)
+                else:
+                    started = True
                 was_done_on_prev_step = False
 
             # for limiting FPS
@@ -82,40 +88,46 @@ def main(record, env_name):
                 act_flags[2] = RA.CLOSE
             # "flat" integer action
             action = env.flags_to_action(act_flags)
+            was_started = started
+            started = started or action != 0
+            if started and not was_started:
+                print("Detected non-null action, starting recording")
 
-            obs, rew, done, info = env.step(action)
+            if started:
+                obs, rew, done, info = env.step(action)
 
-            if done and not was_done_on_prev_step:
-                print(f"Done, score {info['eval_score']:.4g}/1.0")
-
-            if record:
-                traj_accum.add_step({
-                    "rews": rew,
-                    "obs": obs,
-                    "acts": action,
-                    "infos": info,
-                })
                 if done and not was_done_on_prev_step:
-                    traj = traj_accum.finish_trajectory()
-                    new_path = os.path.join(record_dir,
-                                            get_unique_fn(env_name))
-                    pickle_data = {
-                        'env_name': env_name,
-                        'trajectory': traj,
-                        'score': info['eval_score'],
-                    }
-                    print(f"Saving trajectory ({len(traj.obs)} obs, "
-                          f"{len(traj.acts)} actions, {len(traj.rews)} rews) "
-                          f"to '{new_path}'")
-                    with gzip.GzipFile(new_path, 'wb') as fp:
-                        cloudpickle.dump(pickle_data, fp)
+                    print(f"Done, score {info['eval_score']:.4g}/1.0")
+
+                if record:
+                    traj_accum.add_step({
+                        "rews": rew,
+                        "obs": obs,
+                        "acts": action,
+                        "infos": info,
+                    })
+                    if done and not was_done_on_prev_step:
+                        traj = traj_accum.finish_trajectory()
+                        new_path = os.path.join(record_dir,
+                                                get_unique_fn(env_name))
+                        pickle_data = {
+                            'env_name': env_name,
+                            'trajectory': traj,
+                            'score': info['eval_score'],
+                        }
+                        print(
+                            f"Saving trajectory ({len(traj.obs)} obs, "
+                            f"{len(traj.acts)} actions, {len(traj.rews)} rews) "
+                            f"to '{new_path}'")
+                        with gzip.GzipFile(new_path, 'wb') as fp:
+                            cloudpickle.dump(pickle_data, fp)
+
+                # for things we only want to run the FIRST time the env gives is a
+                # 'done' flag
+                was_done_on_prev_step = done
 
             # render to screen
             env.render(mode='human')
-
-            # for things we only want to run the FIRST time the env gives is a
-            # 'done' flag
-            was_done_on_prev_step = done
 
             # wait for next frame
             elapsed = time.time() - frame_start

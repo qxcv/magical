@@ -130,7 +130,7 @@ def register_envs():
                          phys_iter=10)
 
     # remember 100 frames is ~12.5s at 8fps
-    mtc_ep_len = 100
+    mtc_ep_len = 80
     move_to_corner_variants = [
         (MoveToCornerEnv, mtc_ep_len, '-Demo', {
             'rand_shape_colour': False,
