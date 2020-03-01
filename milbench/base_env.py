@@ -45,14 +45,14 @@ def ez_init(*args, **kwargs):
 
 class BaseEnv(gym.Env, abc.ABC):
     # constants for all envs
-    ROBOT_RAD = 0.16
+    ROBOT_RAD = 0.2
     ROBOT_MASS = 1.0
     SHAPE_RAD = ROBOT_RAD * 3 / 5
     ARENA_BOUNDS_LRBT = [-1, 1, -1, 1]
 
     def __init__(self,
                  *,
-                 res_hw=(384, 384),
+                 res_hw=(256, 256),
                  fps=20,
                  phys_steps=10,
                  phys_iter=10,

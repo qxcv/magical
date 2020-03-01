@@ -36,21 +36,21 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
 
     def on_reset(self):
         # make the robot
-        robot_pos = np.asarray((0.0, -0.0))
-        robot_angle = math.pi / 9
+        robot_pos = np.asarray((0.4, -0.0))
+        robot_angle = 0.55 * math.pi
         if self.rand_robot_pose:
-            robot_jitter = np.clip(0.1 * self.rng.randn(2), 0.1, 0.1)
+            robot_jitter = np.clip(0.05 * self.rng.randn(2), -0.05, 0.05)
             robot_pos = robot_pos + robot_jitter
             robot_angle = self.rng.uniform(-math.pi, math.pi)
         robot = self._make_robot(robot_pos, robot_angle)
         self.add_entities([robot])
 
-        shape_pos = np.asarray((0.6, -0.6))
+        shape_pos = np.asarray((0.1, -0.65))
         shape_angle = 0.13 * math.pi
         shape_colour = 'red'
         shape_type = en.ShapeType.SQUARE
         if self.rand_shape_pose:
-            shape_jitter = np.clip(0.1 * self.rng.randn(2), 0.1, 0.1)
+            shape_jitter = np.clip(0.05 * self.rng.randn(2), -0.05, 0.05)
             shape_pos = shape_pos + shape_jitter
             shape_angle = self.rng.uniform(-math.pi, math.pi)
         if self.rand_shape_colour:

@@ -61,12 +61,12 @@ def lores_stack_entry_point(env_cls, small_res, frames=4,
 
 
 DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS = collections.OrderedDict([
-    # Images downsampled to 128x128, four adjacent frames stacked together.
-    # 128x128 is about the smallest size at which you can distinguish pentagon
-    # vs. hexagon vs. circle. It's also about a third as many pixels as an
-    # ImageNet network, so should be reasonably memory-efficient to train.
+    # Images downsampled to 96x96 four adjacent frames stacked together. That
+    # is about the smallest size at which you can distinguish pentagon vs.
+    # hexagon vs. circle. It's also about 20% as many pixels as an ImageNet
+    # network, so should be reasonably memory-efficient to train.
     ('LoResStack',
-     functools.partial(lores_stack_entry_point, small_res=(128, 128),
+     functools.partial(lores_stack_entry_point, small_res=(96, 96),
                        frames=4)),
     # This next one is only intended for debugging RL algorithms. The images
     # are too small to resolve, e.g., octagons vs. circles, and it also omits
@@ -125,12 +125,12 @@ def register_envs():
     _REGISTERED = True
 
     common_kwargs = dict(res_hw=DEFAULT_RES,
-                         fps=15,
+                         fps=8,
                          phys_steps=10,
                          phys_iter=10)
 
-    # note on episode lengths: 250 frames is ~17s at 15fps; 200 frames is ~13s
-    mtc_ep_len = 200
+    # remember 100 frames is ~12.5s at 8fps
+    mtc_ep_len = 100
     move_to_corner_variants = [
         (MoveToCornerEnv, mtc_ep_len, '-Demo', {
             'rand_shape_colour': False,
@@ -170,7 +170,7 @@ def register_envs():
         }),
     ]
 
-    mr_ep_len = 300
+    mr_ep_len = 150
     match_regions_variants = [
         (MatchRegionsEnv, mr_ep_len, '-Demo', {
             'rand_target_colour': False,
@@ -215,7 +215,7 @@ def register_envs():
     # blocks when doing random layouts, and that takes a human 30-35s to
     # process (so 650/15=43.3s is just enough time to finish a 12-block run if
     # you know what you're doing).
-    cluster_ep_len = 650
+    cluster_ep_len = 320
     cluster_variants = []
     for cluster_cls in (ClusterColourEnv, ClusterTypeEnv):
         cluster_variants.extend([
