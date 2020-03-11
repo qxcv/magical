@@ -19,6 +19,7 @@ __all__ = [
     'MatchRegionsEnv',
     'ClusterColourEnv',
     'register_envs',
+    'EnvName',
 ]
 
 DEFAULT_RES = (384, 384)
@@ -45,8 +46,7 @@ class EagerFrameStack(FrameStack):
         return np.concatenate(self.frames, axis=-1)
 
 
-def lores_stack_entry_point(env_cls, small_res, frames=4,
-                            greyscale=False):
+def lores_stack_entry_point(env_cls, small_res, frames=4, greyscale=False):
     def make_lores_stack(**kwargs):
         base_env = env_cls(**kwargs)
         if greyscale:
@@ -66,14 +66,15 @@ DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS = collections.OrderedDict([
     # hexagon vs. circle. It's also about 20% as many pixels as an ImageNet
     # network, so should be reasonably memory-efficient to train.
     ('LoResStack',
-     functools.partial(lores_stack_entry_point, small_res=(96, 96),
-                       frames=4)),
+     functools.partial(lores_stack_entry_point, small_res=(96, 96), frames=4)),
     # This next one is only intended for debugging RL algorithms. The images
     # are too small to resolve, e.g., octagons vs. circles, and it also omits
     # colour, which is necessary for some tasks.
     ('AtariStyle',
-     functools.partial(lores_stack_entry_point, small_res=(84, 84),
-                       frames=4, greyscale=True)),
+     functools.partial(lores_stack_entry_point,
+                       small_res=(84, 84),
+                       frames=4,
+                       greyscale=True)),
 ])
 _ENV_NAME_RE = re.compile(
     r'^(?P<name_prefix>[^-]+)(?P<demo_test_spec>-(Demo|Test[^-]*))'
@@ -83,7 +84,7 @@ _REGISTERED = False
 DEMO_ENVS_TO_TEST_ENVS_MAP = collections.OrderedDict()
 
 
-class _EnvName:
+class EnvName:
     """Convenience class for parsing environment names. All environment names
     look like this (per _ENV_NAME_RE):
 
@@ -105,13 +106,13 @@ class _EnvName:
                 "env name '{env_name}' does not match _ENV_NAME_RE spec")
         groups = match.groupdict()
         self.env_name = env_name
-        name_prefix = groups['name_prefix']
-        demo_test_spec = groups['demo_test_spec']
-        env_name_suffix = groups['env_name_suffix']
-        version_suffix = groups['version_suffix']
-        self.demo_env_name = name_prefix + '-Demo' + env_name_suffix \
-            + version_suffix
-        self.is_test = demo_test_spec.startswith('-Test')
+        self.name_prefix = groups['name_prefix']
+        self.demo_test_spec = groups['demo_test_spec']
+        self.env_name_suffix = groups['env_name_suffix']
+        self.version_suffix = groups['version_suffix']
+        self.demo_env_name = self.name_prefix + '-Demo' \
+            + self.env_name_suffix + self.version_suffix
+        self.is_test = self.demo_test_spec.startswith('-Test')
         if not self.is_test:
             assert self.demo_env_name == self.env_name, \
                 (self.demo_env_name, self.env_name)
@@ -288,7 +289,7 @@ def register_envs():
     train_to_test_map = {}
     observed_demo_envs = set()
     for name in registered_env_names:
-        parsed = _EnvName(name)
+        parsed = EnvName(name)
         if parsed.is_test:
             test_l = train_to_test_map.setdefault(parsed.demo_env_name, [])
             test_l.append(parsed.env_name)
