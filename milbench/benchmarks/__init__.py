@@ -308,10 +308,10 @@ def register_envs():
 
     # Debugging environment: MoveToCorner with a nicely shaped reward function
     # that you can simply do RL on.
-    debug_mtc_kwargs = dict(max_episode_steps=200,
+    debug_mtc_kwargs = dict(max_episode_steps=mtc_ep_len,
                             kwargs={
                                 'debug_reward': True,
-                                'max_episode_steps': 200,
+                                'max_episode_steps': mtc_ep_len,
                                 'rand_shape_colour': False,
                                 'rand_shape_type': False,
                                 'rand_shape_pose': False,
