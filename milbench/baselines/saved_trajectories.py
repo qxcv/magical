@@ -85,7 +85,10 @@ class _MockDemoEnv(gym.Wrapper):
         return obs, rew, done, info
 
 
-def preprocess_demos_with_wrapper(trajectories, orig_env_name, preproc_name):
+def preprocess_demos_with_wrapper(trajectories,
+                                  orig_env_name,
+                                  preproc_name=None,
+                                  wrapper=None):
     """Preprocess trajectories using one of the built-in environment
     preprocessing pipelines.
 
@@ -95,13 +98,22 @@ def preprocess_demos_with_wrapper(trajectories, orig_env_name, preproc_name):
             were collected. This function will instantiate a temporary instance
             of that environment to get access to an observation space and other
             metadata.
-        preproc_name (str): name of preprocessor to apply. Should be available
-            in `milbench.benchmarks.DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS`.
+        preproc_name (str or None): name of preprocessor to apply. Should be
+            available in
+            `milbench.benchmarks.DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS`.
+        wrapper (callable or None): wrapper constructor. Should take a
+            constructed Gym environment and return a wrapped Gym-like
+            environment. Either `preproc_name` or `wrapper` must be specified,
+            but both cannot be specified at once.
 
     Returns:
         rv_trajectories ([Trajectory]): equivalent list of trajectories that
             have each been preprocessed with the given wrapper."""
-    wrapper = DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS[preproc_name]
+    if preproc_name is not None:
+        assert wrapper is None
+        wrapper = DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS[preproc_name]
+    else:
+        assert wrapper is not None
     orig_env = gym.make(orig_env_name)
     wrapped_constructor = wrapper(_MockDemoEnv)
     rv_trajectories = []
