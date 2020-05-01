@@ -12,6 +12,7 @@ import pymunk as pm
 
 import milbench.entities as en
 import milbench.gym_render as r
+from milbench.phys_vars import PhysicsVariablesBase, PhysVar
 
 
 def ez_init(*args, **kwargs):
@@ -43,6 +44,17 @@ def ez_init(*args, **kwargs):
     return inner_decorator
 
 
+class PhysicsVariables(PhysicsVariablesBase):
+    """Default values & randomisation ranges for key physical parameters of the
+    environment."""
+    # robot_pos_joint_max_force = PhysVar(3, (2.5, 4))
+    robot_pos_joint_max_force = PhysVar(3, (2.2, 3.5))
+    robot_rot_joint_max_force = PhysVar(1, (0.7, 1.5))
+    robot_finger_max_force = PhysVar(4, (2.5, 4.5))
+    shape_trans_joint_max_force = PhysVar(1.5, (0.5, 1.8))
+    shape_rot_joint_max_force = PhysVar(0.1, (0.07, 0.15))
+
+
 class BaseEnv(gym.Env, abc.ABC):
     # constants for all envs
     ROBOT_RAD = 0.2
@@ -56,7 +68,8 @@ class BaseEnv(gym.Env, abc.ABC):
                  fps=20,
                  phys_steps=10,
                  phys_iter=10,
-                 max_episode_steps=None):
+                 max_episode_steps=None,
+                 rand_dynamics=False):
         self.phys_iter = phys_iter
         self.phys_steps = phys_steps
         self.fps = fps
@@ -75,8 +88,11 @@ class BaseEnv(gym.Env, abc.ABC):
         self._space = None
         self._robot = None
         self._episode_steps = None
+        self._phys_vars = None
         # this is for background rendering
         self.viewer = None
+        # common randomisation option for all envs
+        self.rand_dynamics = rand_dynamics
 
         self.seed()
 
@@ -150,7 +166,7 @@ class BaseEnv(gym.Env, abc.ABC):
             if isinstance(entity, en.Robot):
                 self._robot = entity
             self._entities.append(entity)
-            entity.setup(self.viewer, self._space)
+            entity.setup(self.viewer, self._space, self._phys_vars)
 
     def reset(self):
         self._episode_steps = 0
@@ -158,6 +174,7 @@ class BaseEnv(gym.Env, abc.ABC):
         self._entities = []
         self._space = None
         self._robot = None
+        self._phys_vars = None
         if self.viewer is None:
             res_h, res_w = self.res_hw
             self.viewer = r.Viewer(res_w, res_h, visible=False)
@@ -167,6 +184,13 @@ class BaseEnv(gym.Env, abc.ABC):
         self._space = pm.Space()
         self._space.collision_slop = 0.01
         self._space.iterations = self.phys_iter
+
+        if self.rand_dynamics:
+            # Randomise the physics properties of objects and the robot a
+            # little bit.
+            self._phys_vars = PhysicsVariables.sample(self.rng)
+        else:
+            self._phys_vars = PhysicsVariables.defaults()
 
         # set up robot and arena
         arena_l, arena_r, arena_b, arena_t = self.ARENA_BOUNDS_LRBT

@@ -22,13 +22,14 @@ class Entity(abc.ABC):
     """Basic class for logical 'things' that can be displayed on screen and/or
     interact via physics."""
     @abc.abstractmethod
-    def setup(self, viewer, space):
+    def setup(self, viewer, space, phys_vars):
         """Set up entity graphics/physics usig a gym_render.Viewer and a
         pm.Space. Only gets called once."""
         self.shapes = []
         self.bodies = []
         self.viewer = weakref.proxy(viewer)
         self.space = weakref.proxy(space)
+        self.phys_vars = weakref.proxy(phys_vars)
 
     def update(self, dt):
         """Do an logic/physics update at some (most likely fixed) time
@@ -243,12 +244,12 @@ class Robot(Entity):
         self.add_to_space(control_body)
         pos_control_joint = pm.PivotJoint(control_body, body, (0, 0), (0, 0))
         pos_control_joint.max_bias = 0
-        pos_control_joint.max_force = 3
+        pos_control_joint.max_force = self.phys_vars.robot_pos_joint_max_force
         self.add_to_space(pos_control_joint)
         rot_control_joint = pm.GearJoint(control_body, body, 0.0, 1.0)
         rot_control_joint.error_bias = 0.0
         rot_control_joint.max_bias = 2.5
-        rot_control_joint.max_force = 1
+        rot_control_joint.max_force = self.phys_vars.robot_rot_joint_max_force
         self.add_to_space(rot_control_joint)
 
         # googly eye control bodies & joints
@@ -337,7 +338,7 @@ class Robot(Entity):
             finger_motor = pm.SimpleMotor(body, finger_body, 0.0)
             finger_motor.rate = 0.0
             finger_motor.max_bias = 0.0
-            finger_motor.max_force = 4
+            finger_motor.max_force = self.phys_vars.robot_finger_max_force
             self.add_to_space(finger_motor)
             self.finger_motors.append(finger_motor)
 
@@ -638,11 +639,11 @@ class Shape(Entity):
         trans_joint = pm.PivotJoint(self.space.static_body, body, (0, 0),
                                     (0, 0))
         trans_joint.max_bias = 0
-        trans_joint.max_force = 1.5
+        trans_joint.max_force = self.phys_vars.shape_trans_joint_max_force
         self.add_to_space(trans_joint)
         rot_joint = pm.GearJoint(self.space.static_body, body, 0.0, 1.0)
         rot_joint.max_bias = 0
-        rot_joint.max_force = 0.1
+        rot_joint.max_force = self.phys_vars.shape_rot_joint_max_force
         self.add_to_space(rot_joint)
 
         # Drawing
