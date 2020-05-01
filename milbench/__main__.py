@@ -117,13 +117,13 @@ def main(record, env_name):
                         }
                         print(
                             f"Saving trajectory ({len(traj.obs)} obs, "
-                            f"{len(traj.acts)} actions, {len(traj.rews)} rews) "
-                            f"to '{new_path}'")
+                            f"{len(traj.acts)} actions, {len(traj.rews)} "
+                            f"rews) to '{new_path}'")
                         with gzip.GzipFile(new_path, 'wb') as fp:
                             cloudpickle.dump(pickle_data, fp)
 
-                # for things we only want to run the FIRST time the env gives is a
-                # 'done' flag
+                # for things we only want to run the FIRST time the env gives
+                # is a 'done' flag
                 was_done_on_prev_step = done
 
             # render to screen

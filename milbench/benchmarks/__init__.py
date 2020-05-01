@@ -12,6 +12,7 @@ import numpy as np
 from milbench.benchmarks.cluster import ClusterColourEnv, ClusterTypeEnv
 from milbench.benchmarks.match_regions import MatchRegionsEnv
 from milbench.benchmarks.move_to_corner import MoveToCornerEnv
+from milbench.benchmarks.move_to_region import MoveToRegionEnv
 
 __all__ = [
     'DEMO_ENVS_TO_TEST_ENVS_MAP',
@@ -171,6 +172,36 @@ def register_envs():
         }),
     ]
 
+    mtr_ep_len = 50
+    move_to_region_variants = [
+        (MoveToRegionEnv, mtr_ep_len, '-Demo', {
+            'rand_poses_minor': False,
+            'rand_poses_full': False,
+            'rand_goal_colour': False,
+        }),
+        (MoveToRegionEnv, mtr_ep_len, '-TestColour', {
+            'rand_poses_minor': False,
+            'rand_poses_full': False,
+            'rand_goal_colour': True,
+        }),
+        (MoveToRegionEnv, mtr_ep_len, '-TestPosesMinor', {
+            'rand_poses_minor': True,
+            'rand_poses_full': False,
+            'rand_goal_colour': False,
+        }),
+        (MoveToRegionEnv, mtr_ep_len, '-TestLayout', {
+            'rand_poses_minor': False,
+            'rand_poses_full': True,
+            'rand_goal_colour': False,
+        }),
+        (MoveToRegionEnv, mtr_ep_len, '-TestAll', {
+            'rand_poses_minor': False,
+            # rand_poses_full subsumes rand_poses_minor
+            'rand_poses_full': True,
+            'rand_goal_colour': True,
+        }),
+    ]
+
     mr_ep_len = 120
     match_regions_variants = [
         (MatchRegionsEnv, mr_ep_len, '-Demo', {
@@ -255,6 +286,7 @@ def register_envs():
     # collection of ALL env specifications
     env_cls_suffix_kwargs = [
         *move_to_corner_variants,
+        *move_to_region_variants,
         *match_regions_variants,
         *cluster_variants,
     ]

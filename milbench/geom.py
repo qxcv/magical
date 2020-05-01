@@ -101,6 +101,8 @@ def pm_randomise_pose(space,
                       rng,
                       rand_pos=True,
                       rand_rot=True,
+                      pos_bounds=None,
+                      rot_bounds=None,
                       rejection_tests=()):
     """Do rejection sampling to choose a position and/or orientation which
     ensures the given bodies and their attached shapes do not collide with any
@@ -119,6 +121,11 @@ def pm_randomise_pose(space,
         arena_lrbt ([int]): bounding box to place the bodies in.
         rand_pos (bool): should position be randomised?
         rand_rot (bool): should rotation be randomised?
+        pos_bounds (((float, float), (float, float))): lower and upper bounds
+            for sampled position along `x` and `y` axes, respectively (if
+            `rand_pos` is `True`).
+        rot_bounds ((float, float)): lower and upper bound for sampled rotation
+            angle (if `rand_rot` is `True`).
         rejection_tests ([(locals()) -> bool]): additional rejection tests to
             apply. If any one of these functions returns "True", then the shape
             pose will be rejected and re-sampled. Useful for, e.g., ensuring
@@ -148,6 +155,22 @@ def pm_randomise_pose(space,
 
     arena_l, arena_r, arena_b, arena_t = arena_lrbt
 
+    if pos_bounds is not None:
+        pos_x_minmax, pos_y_minmax = np.asarray(pos_bounds)
+        assert pos_x_minmax.shape == (2, ) and pos_y_minmax.shape == (2, )
+        assert pos_x_minmax[0] <= pos_x_minmax[1] \
+            and pos_y_minmax[0] <= pos_y_minmax[1]
+    else:
+        pos_x_minmax = (arena_l, arena_r)
+        pos_y_minmax = (arena_b, arena_t)
+
+    if rot_bounds is not None:
+        rot_min, rot_max = rot_bounds
+        assert rot_min < rot_max, (rot_min, rot_max)
+    else:
+        rot_min = -np.pi
+        rot_max = np.pi
+
     # If we exceed this many tries then fitting is probably impossible, or
     # impractically hard. We'll warn if we get anywhere close to that number.
     max_tries = 10000
@@ -158,13 +181,13 @@ def pm_randomise_pose(space,
         # generate random position
         if rand_pos:
             new_main_body_pos = Vec2d(
-                rng.uniform(arena_l, arena_r), rng.uniform(arena_b, arena_t))
+                rng.uniform(*pos_x_minmax), rng.uniform(*pos_y_minmax))
         else:
             new_main_body_pos = orig_main_pos
 
         # generate random orientation
         if rand_rot:
-            new_angle = rng.uniform(-np.pi, np.pi)
+            new_angle = rng.uniform(rot_min, rot_max)
         else:
             new_angle = orig_main_angle
 
