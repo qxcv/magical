@@ -46,33 +46,22 @@ class MoveToRegionEnv(BaseEnv, EzPickle):
         return base_name + (suffix or '') + '-v0'
 
     def on_reset(self):
-        # find location for goal region
+        goal_xyhw = DEFAULT_GOAL_XYHW
         if self.rand_poses_minor or self.rand_poses_full:
+            # randomise width and height of goal region
+            # (unfortunately this has to be done before pose randomisation b/c
+            # I don't have an easy way of changing size later)
             if self.rand_poses_minor:
-                xyhw_default = np.asarray(DEFAULT_GOAL_XYHW)
                 size_range = MINOR_DEVIATION_PCT * (TARGET_SIZE_MAX -
                                                     TARGET_SIZE_MIN)
-                hw_min = np.maximum(xyhw_default[2:] - size_range,
-                                    TARGET_SIZE_MIN)
-                hw_max = np.minimum(xyhw_default[2:] + size_range,
-                                    TARGET_SIZE_MAX)
-                disp_range = MINOR_DEVIATION_PCT
-                x_low, y_low = np.maximum(xyhw_default[:2] - disp_range, -1.0)
-                x_high, y_high = np.minimum(xyhw_default[:2] + disp_range, 1.0)
             else:
-                assert self.rand_poses_full
-                hw_min = (TARGET_SIZE_MIN, TARGET_SIZE_MIN)
-                hw_max = (TARGET_SIZE_MAX, TARGET_SIZE_MAX)
-                x_low = y_low = -1.0
-                x_high = y_high = 1.0
-            sampled_hw = np.random.uniform(hw_min, hw_max)
-            # reminder: x goes left -> right, but y goes top -> bottom
-            sampled_xy = np.random.uniform(
-                (x_low, max(y_low, -1.0 + sampled_hw[0])),
-                (min(x_high, 1.0 - sampled_hw[1]), y_high))
-            goal_xyhw = (*sampled_xy, *sampled_hw)
-        else:
-            goal_xyhw = DEFAULT_GOAL_XYHW
+                size_range = None
+            sampled_hw = geom.randomise_hw(TARGET_SIZE_MIN,
+                                           TARGET_SIZE_MAX,
+                                           self.rng,
+                                           current_hw=goal_xyhw[2:],
+                                           linf_bound=size_range)
+            goal_xyhw = (*goal_xyhw[:2], *sampled_hw)
 
         # colour the goal region
         if self.rand_goal_colour:
@@ -94,28 +83,28 @@ class MoveToRegionEnv(BaseEnv, EzPickle):
         self.__robot_ent_index = en.EntityIndex([robot])
 
         if self.rand_poses_minor or self.rand_poses_full:
+            lrbt = self.ARENA_BOUNDS_LRBT
             if self.rand_poses_minor:
-                rot_bound = 1 * np.pi * MINOR_DEVIATION_PCT
-                robot_rot_bounds = (default_robot_angle - rot_bound,
-                                    default_robot_angle + rot_bound)
-                pos_bound = 1 * MINOR_DEVIATION_PCT
-                robot_pos_bounds = np.asarray(
-                    ((default_robot_pos[0] - pos_bound,
-                      default_robot_pos[0] + pos_bound),
-                     (default_robot_pos[1] - pos_bound,
-                      default_robot_pos[1] + pos_bound)))
-                robot_pos_bounds = np.clip(robot_pos_bounds, -1.0, 1.0)
+                # limit amount by which position and rotation can be randomised
+                arena_size = min(lrbt[1] - lrbt[0], lrbt[3] - lrbt[2])
+                pos_limits = [arena_size * MINOR_DEVIATION_PCT / 2] * 2
+                rot_limits = [None, np.pi * MINOR_DEVIATION_PCT]
             else:
+                # no limits, can randomise as much as needed
                 assert self.rand_poses_full
-                robot_rot_bounds = robot_pos_bounds = None
-            geom.pm_randomise_pose(space=self._space,
-                                   bodies=robot.bodies,
-                                   arena_lrbt=self.ARENA_BOUNDS_LRBT,
-                                   rng=self.rng,
-                                   rand_pos=True,
-                                   rand_rot=True,
-                                   pos_bounds=robot_pos_bounds,
-                                   rot_bounds=robot_rot_bounds)
+                pos_limits = rot_limits = None
+
+            geom.pm_randomise_all_poses(self._space,
+                                        (self.__goal_ref, self._robot),
+                                        lrbt,
+                                        rng=self.rng,
+                                        rand_pos=True,
+                                        rand_rot=(False, True),
+                                        rel_pos_linf_limits=pos_limits,
+                                        rel_rot_limits=rot_limits)
+
+    def step(self, *args, **kwargs):
+        return super().step(*args, **kwargs)
 
     def score_on_end_of_traj(self):
         # this one just has a lazy binary reward

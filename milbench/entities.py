@@ -713,6 +713,7 @@ class GoalRegion(Entity):
         # the rectangle should be rounded.
         self.rect_xform = r.Transform()
         self.rect_xform.set_translation(*self.goal_body.position)
+        self.rect_xform.set_rotation(self.goal_body.angle)
 
         inner_colour = lighten_rgb(self.base_colour, times=2)
         inner_rect = r.make_rect(width=self.w, height=self.h, filled=True)
@@ -793,3 +794,4 @@ class GoalRegion(Entity):
     def pre_draw(self):
         # just so we can see if the thing accidentally moves :-)
         self.rect_xform.set_translation(*self.goal_body.position)
+        self.rect_xform.set_rotation(self.goal_body.angle)

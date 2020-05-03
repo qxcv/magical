@@ -1,5 +1,7 @@
-"""Geometry."""
+"""Tools for working with geometric primitives and randomising aspects of
+geometry (shape, pose, etc.)."""
 
+from collections.abc import Iterable, Sequence
 import math
 import warnings
 
@@ -101,10 +103,10 @@ def pm_randomise_pose(space,
                       rng,
                       rand_pos=True,
                       rand_rot=True,
-                      pos_bounds=None,
-                      rot_bounds=None,
+                      rel_pos_linf_limit=None,
+                      rel_rot_limit=None,
                       rejection_tests=()):
-    """Do rejection sampling to choose a position and/or orientation which
+    r"""Do rejection sampling to choose a position and/or orientation which
     ensures the given bodies and their attached shapes do not collide with any
     other collidable shape in the space, while still falling entirely within
     arena_xyhw. Note that position/orientation will be chosen in terms of the
@@ -119,13 +121,16 @@ def pm_randomise_pose(space,
             when the bodies have a pin joint (e.g. the robot's body is attached
             to its fingers this way).
         arena_lrbt ([int]): bounding box to place the bodies in.
-        rand_pos (bool): should position be randomised?
-        rand_rot (bool): should rotation be randomised?
-        pos_bounds (((float, float), (float, float))): lower and upper bounds
-            for sampled position along `x` and `y` axes, respectively (if
-            `rand_pos` is `True`).
-        rot_bounds ((float, float)): lower and upper bound for sampled rotation
-            angle (if `rand_rot` is `True`).
+        rand_pos (bool or [bool]): should position be randomised? (optionally
+            specified separately for each entity)
+        rand_rot (bool or [bool]): should rotation be randomised? (optionally
+            specified for each entity)
+        rel_pos_linf_limit (float or [float]): bound on the $\ell_\infty$
+            distance between new sampled position and original position.
+            (optionally specified per-entity)
+        rel_rot_limit (float or [float]): maximum difference (in radians)
+            between original main body orientation and new main body
+            orientation. (optionally per-entity)
         rejection_tests ([(locals()) -> bool]): additional rejection tests to
             apply. If any one of these functions returns "True", then the shape
             pose will be rejected and re-sampled. Useful for, e.g., ensuring
@@ -155,18 +160,21 @@ def pm_randomise_pose(space,
 
     arena_l, arena_r, arena_b, arena_t = arena_lrbt
 
-    if pos_bounds is not None:
-        pos_x_minmax, pos_y_minmax = np.asarray(pos_bounds)
-        assert pos_x_minmax.shape == (2, ) and pos_y_minmax.shape == (2, )
-        assert pos_x_minmax[0] <= pos_x_minmax[1] \
-            and pos_y_minmax[0] <= pos_y_minmax[1]
+    if rel_pos_linf_limit is not None:
+        assert 0 <= rel_pos_linf_limit
+        init_x, init_y = main_body.position
+        pos_x_minmax = (max(arena_l, init_x - rel_pos_linf_limit),
+                        min(arena_r, init_x + rel_pos_linf_limit))
+        pos_y_minmax = (max(arena_b, init_y - rel_pos_linf_limit),
+                        min(arena_t, init_y + rel_pos_linf_limit))
     else:
         pos_x_minmax = (arena_l, arena_r)
         pos_y_minmax = (arena_b, arena_t)
 
-    if rot_bounds is not None:
-        rot_min, rot_max = rot_bounds
-        assert rot_min < rot_max, (rot_min, rot_max)
+    if rel_rot_limit is not None:
+        assert 0 <= rel_rot_limit
+        rot_min = orig_main_angle - rel_rot_limit
+        rot_max = orig_main_angle + rel_rot_limit
     else:
         rot_min = -np.pi
         rot_max = np.pi
@@ -180,8 +188,8 @@ def pm_randomise_pose(space,
     while n_tries < max_tries:
         # generate random position
         if rand_pos:
-            new_main_body_pos = Vec2d(
-                rng.uniform(*pos_x_minmax), rng.uniform(*pos_y_minmax))
+            new_main_body_pos = Vec2d(rng.uniform(*pos_x_minmax),
+                                      rng.uniform(*pos_y_minmax))
         else:
             new_main_body_pos = orig_main_pos
 
@@ -199,12 +207,15 @@ def pm_randomise_pose(space,
             space.reindex_shapes_for_body(body)
 
         # apply collision tests
-        collide_shapes = set()
+        reject = False
         for shape in shape_set:
+            # FIXME: this isn't accurate enough.
             query_result = space.shape_query(shape)
-            collide_shapes.update(r.shape for r in query_result)
-        # reject if we have any (non-self-)collisions
-        reject = len(collide_shapes - shape_set) > 0
+            # collisions = [r.shape for r in query_result]
+            # reject if we have any (non-self-)collisions
+            if len(query_result) > 0:
+                reject = True
+                break
 
         # apply custom rejection tests, if any
         if not reject:
@@ -235,4 +246,87 @@ def pm_randomise_pose(space,
     if n_tries > warn_tries:
         warnings.warn(f"Took {n_tries}>{warn_tries} samples to place shape.")
 
+    print('Placement took', n_tries, 'tries')
+
     return n_tries
+
+
+def _listify(value, n):
+    if isinstance(value, Iterable):
+        # if `value` is already an iterable, then cast it to a sequence type
+        # and return it
+        if not isinstance(value, Sequence):
+            rv = list(value)
+        else:
+            rv = value
+        assert len(rv) == n, (len(rv), n)
+        return rv
+    # otherwise, duplicate value `n` times
+    return [value] * n
+
+
+def pm_randomise_all_poses(space,
+                           entities,
+                           arena_lrbt,
+                           rng,
+                           rand_pos=True,
+                           rand_rot=True,
+                           rel_pos_linf_limits=None,
+                           rel_rot_limits=None,
+                           rejection_tests=()):
+    """Randomise poses of *all* entities in the given list of entities."""
+    # create placeholder limits if necessary
+    nents = len(entities)
+    rel_pos_linf_limits = _listify(rel_pos_linf_limits, nents)
+    rel_rot_limits = _listify(rel_rot_limits, nents)
+    rand_pos = _listify(rand_pos, nents)
+    rand_rot = _listify(rand_rot, nents)
+
+    # disable collisions for all entities
+    ent_filters = []
+    for entity in entities:
+        shape_filters = []
+        for s in entity.shapes:
+            shape_filters.append(s.filter)
+            # categories=0 makes it collide with nothing
+            s.filter = s.filter._replace(categories=0)
+        ent_filters.append(shape_filters)
+
+    for (entity, shape_filters, pos_limit, rot_limit, should_rand_pos,
+         should_rand_rot) in zip(entities, ent_filters, rel_pos_linf_limits,
+                                 rel_rot_limits, rand_pos, rand_rot):
+        # re-enable collisions for this entity (previous entities will already
+        # have collisions enabled, and later entities will still have
+        # collisions disabled)
+        for s, filt in zip(entity.shapes, shape_filters):
+            s.filter = filt
+
+        # now randomise pose, avoiding entities that have previously been
+        # placed or which are not in the supplied list
+        pm_randomise_pose(space,
+                          entity.bodies,
+                          arena_lrbt,
+                          rng,
+                          rand_pos=should_rand_pos,
+                          rand_rot=should_rand_rot,
+                          rel_pos_linf_limit=pos_limit,
+                          rel_rot_limit=rot_limit,
+                          rejection_tests=rejection_tests)
+
+
+def randomise_hw(min_side, max_side, rng, current_hw=None, linf_bound=None):
+    """Randomise height and width parameters within some supplied bounds.
+    Useful for randomising goal region height/width in a reasonably uniform
+    way."""
+    assert min_side <= max_side
+    minima = np.asarray((min_side, min_side))
+    maxima = np.asarray((max_side, max_side))
+    if linf_bound is not None:
+        assert linf_bound == float(linf_bound)
+        assert current_hw is not None
+        assert len(current_hw) == 2
+        current_hw = np.asarray(current_hw)
+        minima = np.maximum(minima, current_hw - linf_bound)
+        maxima = np.minimum(maxima, current_hw + linf_bound)
+    h, w = rng.uniform(minima, maxima)
+    return h, w
