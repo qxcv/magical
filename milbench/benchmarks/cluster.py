@@ -42,6 +42,7 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
         """What characteristic should blocks be clustered by?"""
         COLOUR = 'colour'
         TYPE = 'type'
+        # TODO: add a 'both' option! (will require another demo scenario)
 
     def __init__(
             self,
@@ -51,8 +52,10 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
             # should we randomise assignment of types to blocks, or use default
             # ordering?
             rand_shape_type=False,
-            # should we randomise the positions of blocks and the robot?
-            rand_layout=False,
+            # should we jitter the positions of blocks and the robot?
+            rand_layout_minor=False,
+            # should we fully randomise the positions of blocks and the robot?
+            rand_layout_full=False,
             # should we randomise number of blocks? (this requires us to
             # randomise everything else, too)
             rand_shape_count=False,
@@ -64,12 +67,14 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
         self.rand_shape_colour = rand_shape_colour
         self.rand_shape_type = rand_shape_type
         self.rand_shape_count = rand_shape_count
-        self.rand_layout = rand_layout
+        assert not (rand_layout_minor and rand_layout_full)
+        self.rand_layout_minor = rand_layout_minor
+        self.rand_layout_full = rand_layout_full
         self.cluster_by = cluster_by
         if self.rand_shape_count:
-            assert self.rand_layout, \
+            assert self.rand_layout_full, \
                 "if shape count is randomised then layout must also be " \
-                "randomised"
+                "fully randomised"
             assert self.rand_shape_type, \
                 "if shape count is randomised then shape type must also be " \
                 "randomised"
@@ -193,14 +198,20 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
         # to the space correctly
         self.add_entities([robot])
 
-        if self.rand_layout:
-            for entity in [robot, *shape_ents]:
-                geom.pm_randomise_pose(space=self._space,
-                                       bodies=entity.bodies,
-                                       arena_lrbt=self.ARENA_BOUNDS_LRBT,
-                                       rng=self.rng,
-                                       rand_pos=True,
-                                       rand_rot=True)
+        if self.rand_layout_full or self.rand_layout_minor:
+            if self.rand_layout_full:
+                pos_limit = rot_limit = None
+            else:
+                pos_limit = self.JITTER_POS_BOUND
+                rot_limit = self.JITTER_ROT_BOUND
+            geom.pm_randomise_all_poses(space=self._space,
+                                        entities=[robot, *shape_ents],
+                                        arena_lrbt=self.ARENA_BOUNDS_LRBT,
+                                        rng=self.rng,
+                                        rand_pos=True,
+                                        rand_rot=True,
+                                        rel_pos_linf_limits=pos_limit,
+                                        rel_rot_limits=rot_limit)
 
         # set up index for lookups
         self.__ent_index = en.EntityIndex(shape_ents)

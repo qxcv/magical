@@ -246,8 +246,6 @@ def pm_randomise_pose(space,
     if n_tries > warn_tries:
         warnings.warn(f"Took {n_tries}>{warn_tries} samples to place shape.")
 
-    print('Placement took', n_tries, 'tries')
-
     return n_tries
 
 

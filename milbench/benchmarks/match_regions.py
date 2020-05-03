@@ -30,21 +30,26 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
             # shape_randomisation=ShapeRandLevel.NONE,
             rand_shape_type=False,
             rand_shape_count=False,
-            rand_layout=False,
+            rand_layout_minor=False,
+            rand_layout_full=False,
             **kwargs):
         super().__init__(**kwargs)
         self.rand_target_colour = rand_target_colour
         # self.shape_randomisation = shape_randomisation
         self.rand_shape_type = rand_shape_type
         self.rand_shape_count = rand_shape_count
-        self.rand_layout = rand_layout
+        self.rand_layout_minor = rand_layout_minor
+        self.rand_layout_full = rand_layout_full
         if self.rand_shape_count:
-            assert self.rand_layout, \
+            assert self.rand_layout_full, \
                 "if shape count is randomised then layout must also be " \
-                "randomised"
+                "fully randomised"
             assert self.rand_shape_type, \
                 "if shape count is randomised then shape type must also be " \
                 "randomised"
+            assert self.rand_target_colour, \
+                "if shape count is randomised then shape colour must also " \
+                "be randomised"
 
     @classmethod
     def make_name(cls, suffix=None):
@@ -64,17 +69,21 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
         else:
             target_colour = en.ShapeColour.GREEN
         distractor_colours = [c for c in ALL_COLOURS if c != target_colour]
-        if self.rand_layout:
-            # TODO: account for arena shape and shape radius
-            target_h = self.rng.uniform(0.5, 0.9)
-            target_w = self.rng.uniform(0.5, 0.9)
-            target_x = self.rng.uniform(-1, 1 - target_w)
-            target_y = self.rng.uniform(1, -1 + target_h)
-        else:
-            target_h = 0.7
-            target_w = 0.6
-            target_x = 0.1
-            target_y = 0.7
+        target_h = 0.7
+        target_w = 0.6
+        target_x = 0.1
+        target_y = 0.7
+        if self.rand_layout_minor or self.rand_layout_full:
+            if self.rand_layout_minor:
+                hw_bound = self.JITTER_TARGET_BOUND
+            else:
+                hw_bound = None
+            target_h, target_w = geom.randomise_hw(
+                self.RAND_GOAL_MIN_SIZE,
+                self.RAND_GOAL_MAX_SIZE,
+                self.rng,
+                current_hw=(target_h, target_w),
+                linf_bound=hw_bound)
         sensor = en.GoalRegion(target_x, target_y, target_h, target_w,
                                target_colour)
         self.add_entities([sensor])
@@ -123,12 +132,11 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
             target_types = default_target_types
             distractor_types = default_distractor_types
 
-        if self.rand_layout:
+        if self.rand_layout_full:
             # will do post-hoc randomisation at the end
             target_poses = [(0, 0, 0)] * target_count
-            distractor_poses = [
-                [(0, 0, 0)] * dcount for dcount in distractor_counts
-            ]
+            distractor_poses = [[(0, 0, 0)] * dcount
+                                for dcount in distractor_counts]
         else:
             target_poses = default_target_poses
             distractor_poses = default_distractor_poses
@@ -170,14 +178,27 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
         # since it needs to be added to the space before randomising
         self.add_entities([robot])
 
-        if self.rand_layout:
-            for entity in [robot, *shape_ents]:
-                geom.pm_randomise_pose(space=self._space,
-                                       bodies=entity.bodies,
-                                       arena_lrbt=self.ARENA_BOUNDS_LRBT,
-                                       rng=self.rng,
-                                       rand_pos=True,
-                                       rand_rot=True)
+        if self.rand_layout_minor or self.rand_layout_full:
+            all_ents = (sensor, robot, *shape_ents)
+            if self.rand_layout_minor:
+                # limit amount by which position and rotation can be randomised
+                pos_limits = self.JITTER_POS_BOUND
+                rot_limits = self.JITTER_ROT_BOUND
+            else:
+                # no limits, can randomise as much as needed
+                assert self.rand_layout_full
+                pos_limits = rot_limits = None
+            # randomise rotations of all entities but goal region
+            rand_rot = [False] + [True] * (len(all_ents) - 1)
+
+            geom.pm_randomise_all_poses(self._space,
+                                        all_ents,
+                                        self.ARENA_BOUNDS_LRBT,
+                                        rng=self.rng,
+                                        rand_pos=True,
+                                        rand_rot=rand_rot,
+                                        rel_pos_linf_limits=pos_limits,
+                                        rel_rot_limits=rot_limits)
 
         # set up index for lookups
         self.__ent_index = en.EntityIndex(shape_ents)

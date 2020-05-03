@@ -4,6 +4,7 @@ import warnings
 from gym.utils import EzPickle
 import numpy as np
 
+from milbench import geom
 from milbench.base_env import BaseEnv, ez_init
 import milbench.entities as en
 
@@ -13,15 +14,13 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
     def __init__(self,
                  rand_shape_colour=False,
                  rand_shape_type=False,
-                 rand_shape_pose=False,
-                 rand_robot_pose=False,
+                 rand_poses=False,
                  debug_reward=False,
                  **kwargs):
         super().__init__(**kwargs)
         self.rand_shape_colour = rand_shape_colour
         self.rand_shape_type = rand_shape_type
-        self.rand_shape_pose = rand_shape_pose
-        self.rand_robot_pose = rand_robot_pose
+        self.rand_poses = rand_poses
         self.debug_reward = debug_reward
         if self.debug_reward:
             warnings.warn(
@@ -38,10 +37,6 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
         # make the robot
         robot_pos = np.asarray((0.4, -0.0))
         robot_angle = 0.55 * math.pi
-        if self.rand_robot_pose:
-            robot_jitter = np.clip(0.05 * self.rng.randn(2), -0.05, 0.05)
-            robot_pos = robot_pos + robot_jitter
-            robot_angle = self.rng.uniform(-math.pi, math.pi)
         robot = self._make_robot(robot_pos, robot_angle)
         self.add_entities([robot])
 
@@ -49,10 +44,6 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
         shape_angle = 0.13 * math.pi
         shape_colour = 'red'
         shape_type = en.ShapeType.SQUARE
-        if self.rand_shape_pose:
-            shape_jitter = np.clip(0.05 * self.rng.randn(2), -0.05, 0.05)
-            shape_pos = shape_pos + shape_jitter
-            shape_angle = self.rng.uniform(-math.pi, math.pi)
         if self.rand_shape_colour:
             shape_colour = self.rng.choice(
                 np.asarray(en.SHAPE_COLOURS, dtype='object'))
@@ -66,6 +57,16 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
                                  init_angle=shape_angle)
         self.add_entities([shape])
         self.__shape_ref = shape
+
+        if self.rand_poses:
+            geom.pm_randomise_all_poses(
+                self._space, (self._robot, self.__shape_ref),
+                self.ARENA_BOUNDS_LRBT,
+                self.rng,
+                rand_pos=True,
+                rand_rot=True,
+                rel_pos_linf_limits=self.JITTER_POS_BOUND,
+                rel_rot_limits=self.JITTER_ROT_BOUND)
 
     def score_on_end_of_traj(self):
         robot_pos = np.asarray(self.__shape_ref.shape_body.position)

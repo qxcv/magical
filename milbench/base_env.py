@@ -61,6 +61,17 @@ class BaseEnv(gym.Env, abc.ABC):
     ROBOT_MASS = 1.0
     SHAPE_RAD = ROBOT_RAD * 3 / 5
     ARENA_BOUNDS_LRBT = [-1, 1, -1, 1]
+    ARENA_SIZE_MAX = max(ARENA_BOUNDS_LRBT)
+    # minimum and maximum size of goal regions used during randomisation
+    RAND_GOAL_MIN_SIZE = 0.5
+    RAND_GOAL_MAX_SIZE = 0.9
+    RAND_GOAL_SIZE_RANGE = RAND_GOAL_MAX_SIZE - RAND_GOAL_MIN_SIZE
+    # the following are used to standardise what "jitter" means across
+    # different tasks
+    JITTER_PCT = 0.05
+    JITTER_POS_BOUND = ARENA_SIZE_MAX * JITTER_PCT / 2.0
+    JITTER_ROT_BOUND = JITTER_PCT * np.pi
+    JITTER_TARGET_BOUND = JITTER_PCT * RAND_GOAL_SIZE_RANGE / 2
 
     def __init__(self,
                  *,

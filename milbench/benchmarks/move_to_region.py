@@ -16,12 +16,6 @@ SMALL_POS_BOUND = 0.05
 DEFAULT_ROBOT_POSE = ((0.058, 0.53), -2.13)
 DEFAULT_GOAL_COLOUR = ALL_COLOURS[2]
 DEFAULT_GOAL_XYHW = (-0.62, -0.17, 0.76, 0.75)
-TARGET_SIZE_MIN = 0.5
-TARGET_SIZE_MAX = 0.9
-# In "minor pose randomisation" mode, allow deviation by plus or minus this
-# amount along any dimension (x, y, height, width, theta). Expressed as
-# fraction of variation allowed in full randomisation.
-MINOR_DEVIATION_PCT = 0.05
 
 
 class MoveToRegionEnv(BaseEnv, EzPickle):
@@ -52,15 +46,14 @@ class MoveToRegionEnv(BaseEnv, EzPickle):
             # (unfortunately this has to be done before pose randomisation b/c
             # I don't have an easy way of changing size later)
             if self.rand_poses_minor:
-                size_range = MINOR_DEVIATION_PCT * (TARGET_SIZE_MAX -
-                                                    TARGET_SIZE_MIN)
+                hw_bound = self.JITTER_TARGET_BOUND
             else:
-                size_range = None
-            sampled_hw = geom.randomise_hw(TARGET_SIZE_MIN,
-                                           TARGET_SIZE_MAX,
+                hw_bound = None
+            sampled_hw = geom.randomise_hw(self.RAND_GOAL_MIN_SIZE,
+                                           self.RAND_GOAL_MAX_SIZE,
                                            self.rng,
                                            current_hw=goal_xyhw[2:],
-                                           linf_bound=size_range)
+                                           linf_bound=hw_bound)
             goal_xyhw = (*goal_xyhw[:2], *sampled_hw)
 
         # colour the goal region
@@ -86,9 +79,8 @@ class MoveToRegionEnv(BaseEnv, EzPickle):
             lrbt = self.ARENA_BOUNDS_LRBT
             if self.rand_poses_minor:
                 # limit amount by which position and rotation can be randomised
-                arena_size = min(lrbt[1] - lrbt[0], lrbt[3] - lrbt[2])
-                pos_limits = [arena_size * MINOR_DEVIATION_PCT / 2] * 2
-                rot_limits = [None, np.pi * MINOR_DEVIATION_PCT]
+                pos_limits = self.JITTER_POS_BOUND
+                rot_limits = [None, self.JITTER_ROT_BOUND]
             else:
                 # no limits, can randomise as much as needed
                 assert self.rand_poses_full
@@ -102,9 +94,6 @@ class MoveToRegionEnv(BaseEnv, EzPickle):
                                         rand_rot=(False, True),
                                         rel_pos_linf_limits=pos_limits,
                                         rel_rot_limits=rot_limits)
-
-    def step(self, *args, **kwargs):
-        return super().step(*args, **kwargs)
 
     def score_on_end_of_traj(self):
         # this one just has a lazy binary reward

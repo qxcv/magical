@@ -137,50 +137,37 @@ def register_envs():
         (MoveToCornerEnv, mtc_ep_len, '-Demo', {
             'rand_shape_colour': False,
             'rand_shape_type': False,
-            'rand_shape_pose': False,
-            'rand_robot_pose': False,
+            'rand_poses': False,
             'rand_dynamics': False,
         }),
-        (MoveToCornerEnv, mtc_ep_len, '-TestShapeColour', {
+        (MoveToCornerEnv, mtc_ep_len, '-TestColour', {
             'rand_shape_colour': True,
             'rand_shape_type': False,
-            'rand_shape_pose': False,
-            'rand_robot_pose': False,
+            'rand_poses': False,
             'rand_dynamics': False,
         }),
-        (MoveToCornerEnv, mtc_ep_len, '-TestShapeType', {
+        (MoveToCornerEnv, mtc_ep_len, '-TestShape', {
             'rand_shape_colour': False,
             'rand_shape_type': True,
-            'rand_shape_pose': False,
-            'rand_robot_pose': False,
+            'rand_poses': False,
             'rand_dynamics': False,
         }),
-        (MoveToCornerEnv, mtc_ep_len, '-TestShapePose', {
+        (MoveToCornerEnv, mtc_ep_len, '-TestJitter', {
             'rand_shape_colour': False,
             'rand_shape_type': False,
-            'rand_shape_pose': True,
-            'rand_robot_pose': False,
-            'rand_dynamics': False,
-        }),
-        (MoveToCornerEnv, mtc_ep_len, '-TestRobotPose', {
-            'rand_shape_colour': False,
-            'rand_shape_type': False,
-            'rand_shape_pose': False,
-            'rand_robot_pose': True,
+            'rand_poses': True,
             'rand_dynamics': False,
         }),
         (MoveToCornerEnv, mtc_ep_len, '-TestDynamics', {
             'rand_shape_colour': False,
             'rand_shape_type': False,
-            'rand_shape_pose': False,
-            'rand_robot_pose': False,
+            'rand_poses': False,
             'rand_dynamics': True,
         }),
         (MoveToCornerEnv, mtc_ep_len, '-TestAll', {
             'rand_shape_colour': True,
             'rand_shape_type': True,
-            'rand_shape_pose': True,
-            'rand_robot_pose': True,
+            'rand_poses': True,
             'rand_dynamics': True,
         }),
     ]
@@ -193,16 +180,16 @@ def register_envs():
             'rand_goal_colour': False,
             'rand_dynamics': False,
         }),
+        (MoveToRegionEnv, mtr_ep_len, '-TestJitter', {
+            'rand_poses_minor': True,
+            'rand_poses_full': False,
+            'rand_goal_colour': False,
+            'rand_dynamics': False,
+        }),
         (MoveToRegionEnv, mtr_ep_len, '-TestColour', {
             'rand_poses_minor': False,
             'rand_poses_full': False,
             'rand_goal_colour': True,
-            'rand_dynamics': False,
-        }),
-        (MoveToRegionEnv, mtr_ep_len, '-TestPosesMinor', {
-            'rand_poses_minor': True,
-            'rand_poses_full': False,
-            'rand_goal_colour': False,
             'rand_dynamics': False,
         }),
         (MoveToRegionEnv, mtr_ep_len, '-TestLayout', {
@@ -232,50 +219,65 @@ def register_envs():
             'rand_target_colour': False,
             'rand_shape_type': False,
             'rand_shape_count': False,
-            'rand_layout': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
             'rand_dynamics': False,
         }),
-        (MatchRegionsEnv, mr_ep_len, '-TestShapeColour', {
+        (MatchRegionsEnv, mr_ep_len, '-TestJitter', {
+            'rand_target_colour': False,
+            'rand_shape_type': False,
+            'rand_shape_count': False,
+            'rand_layout_minor': True,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (MatchRegionsEnv, mr_ep_len, '-TestColour', {
             'rand_target_colour': True,
             'rand_shape_type': False,
             'rand_shape_count': False,
-            'rand_layout': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
             'rand_dynamics': False,
         }),
-        (MatchRegionsEnv, mr_ep_len, '-TestShapeType', {
+        (MatchRegionsEnv, mr_ep_len, '-TestShape', {
             'rand_target_colour': False,
             'rand_shape_type': True,
             'rand_shape_count': False,
-            'rand_layout': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
             'rand_dynamics': False,
         }),
         (MatchRegionsEnv, mr_ep_len, '-TestLayout', {
             'rand_target_colour': False,
             'rand_shape_type': False,
             'rand_shape_count': False,
-            'rand_layout': True,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
             'rand_dynamics': False,
         }),
-        # test everything EXCEPT colour
-        (MatchRegionsEnv, mr_ep_len, '-TestShapeTypeCountLayout', {
-            'rand_target_colour': False,
+        # test everything except dynamics
+        (MatchRegionsEnv, mr_ep_len, '-TestCountPlus', {
+            'rand_target_colour': True,
             'rand_shape_type': True,
             'rand_shape_count': True,
-            'rand_layout': True,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
             'rand_dynamics': False,
         }),
         (MatchRegionsEnv, mr_ep_len, '-TestDynamics', {
             'rand_target_colour': False,
             'rand_shape_type': False,
             'rand_shape_count': False,
-            'rand_layout': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
             'rand_dynamics': True,
         }),
         (MatchRegionsEnv, mr_ep_len, '-TestAll', {
             'rand_target_colour': True,
             'rand_shape_type': True,
             'rand_shape_count': True,
-            'rand_layout': True,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
             'rand_dynamics': True,
         }),
     ]
@@ -291,42 +293,64 @@ def register_envs():
             (cluster_cls, cluster_ep_len, '-Demo', {
                 'rand_shape_colour': False,
                 'rand_shape_type': False,
-                'rand_layout': False,
+                'rand_layout_minor': False,
+                'rand_layout_full': False,
                 'rand_shape_count': False,
                 'rand_dynamics': False,
             }),
-            (cluster_cls, cluster_ep_len, '-TestShapeColour', {
+            (cluster_cls, cluster_ep_len, '-TestJitter', {
+                'rand_shape_colour': False,
+                'rand_shape_type': False,
+                'rand_layout_minor': True,
+                'rand_layout_full': False,
+                'rand_shape_count': False,
+                'rand_dynamics': False,
+            }),
+            (cluster_cls, cluster_ep_len, '-TestColour', {
                 'rand_shape_colour': True,
                 'rand_shape_type': False,
-                'rand_layout': False,
+                'rand_layout_minor': False,
+                'rand_layout_full': False,
                 'rand_shape_count': False,
                 'rand_dynamics': False,
             }),
-            (cluster_cls, cluster_ep_len, '-TestShapeType', {
+            (cluster_cls, cluster_ep_len, '-TestShape', {
                 'rand_shape_colour': False,
                 'rand_shape_type': True,
-                'rand_layout': False,
+                'rand_layout_minor': False,
+                'rand_layout_full': False,
                 'rand_shape_count': False,
                 'rand_dynamics': False,
             }),
             (cluster_cls, cluster_ep_len, '-TestLayout', {
                 'rand_shape_colour': False,
                 'rand_shape_type': False,
-                'rand_layout': True,
+                'rand_layout_minor': False,
+                'rand_layout_full': True,
                 'rand_shape_count': False,
+                'rand_dynamics': False,
+            }),
+            (cluster_cls, cluster_ep_len, '-TestCountPlus', {
+                'rand_shape_colour': True,
+                'rand_shape_type': True,
+                'rand_layout_minor': False,
+                'rand_layout_full': True,
+                'rand_shape_count': True,
                 'rand_dynamics': False,
             }),
             (cluster_cls, cluster_ep_len, '-TestDynamics', {
                 'rand_shape_colour': False,
                 'rand_shape_type': False,
-                'rand_layout': False,
+                'rand_layout_minor': False,
+                'rand_layout_full': False,
                 'rand_shape_count': False,
                 'rand_dynamics': True,
             }),
             (cluster_cls, cluster_ep_len, '-TestAll', {
                 'rand_shape_colour': True,
                 'rand_shape_type': True,
-                'rand_layout': True,
+                'rand_layout_minor': False,
+                'rand_layout_full': True,
                 'rand_shape_count': True,
                 'rand_dynamics': True,
             }),
@@ -341,6 +365,8 @@ def register_envs():
     ]
 
     # register all the envs and record their names
+    # TODO: make registration lazy, so that I can do it automatically without
+    # importing all the benchmark code (including Pyglet code, etc.).
     registered_env_names = []
     for env_class, env_ep_len, env_suffix, env_kwargs in env_cls_suffix_kwargs:
         base_env_name = env_class.make_name(env_suffix)
