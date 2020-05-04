@@ -76,7 +76,6 @@ class MoveToRegionEnv(BaseEnv, EzPickle):
         self.__robot_ent_index = en.EntityIndex([robot])
 
         if self.rand_poses_minor or self.rand_poses_full:
-            lrbt = self.ARENA_BOUNDS_LRBT
             if self.rand_poses_minor:
                 # limit amount by which position and rotation can be randomised
                 pos_limits = self.JITTER_POS_BOUND
@@ -88,7 +87,7 @@ class MoveToRegionEnv(BaseEnv, EzPickle):
 
             geom.pm_randomise_all_poses(self._space,
                                         (self.__goal_ref, self._robot),
-                                        lrbt,
+                                        self.ARENA_BOUNDS_LRBT,
                                         rng=self.rng,
                                         rand_pos=True,
                                         rand_rot=(False, True),

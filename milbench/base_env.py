@@ -51,7 +51,7 @@ class PhysicsVariables(PhysicsVariablesBase):
     robot_pos_joint_max_force = PhysVar(3, (2.2, 3.5))
     robot_rot_joint_max_force = PhysVar(1, (0.7, 1.5))
     robot_finger_max_force = PhysVar(4, (2.5, 4.5))
-    shape_trans_joint_max_force = PhysVar(1.5, (0.5, 1.8))
+    shape_trans_joint_max_force = PhysVar(1.5, (1.0, 1.8))
     shape_rot_joint_max_force = PhysVar(0.1, (0.07, 0.15))
 
 

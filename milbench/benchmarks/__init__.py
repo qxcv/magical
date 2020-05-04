@@ -10,6 +10,7 @@ from gym.wrappers import FrameStack, GrayScaleObservation, ResizeObservation
 import numpy as np
 
 from milbench.benchmarks.cluster import ClusterColourEnv, ClusterTypeEnv
+from milbench.benchmarks.find_dupe import FindDupeEnv
 from milbench.benchmarks.match_regions import MatchRegionsEnv
 from milbench.benchmarks.move_to_corner import MoveToCornerEnv
 from milbench.benchmarks.move_to_region import MoveToRegionEnv
@@ -282,6 +283,74 @@ def register_envs():
         }),
     ]
 
+    fd_ep_len = 100
+    find_dupe_variants = [
+        (FindDupeEnv, fd_ep_len, '-Demo', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (FindDupeEnv, fd_ep_len, '-TestJitter', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': True,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (FindDupeEnv, fd_ep_len, '-TestColour', {
+            'rand_colours': True,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (FindDupeEnv, fd_ep_len, '-TestShape', {
+            'rand_colours': False,
+            'rand_shapes': True,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (FindDupeEnv, fd_ep_len, '-TestLayout', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
+            'rand_dynamics': False,
+        }),
+        (FindDupeEnv, fd_ep_len, '-TestCountPlus', {
+            'rand_colours': True,
+            'rand_shapes': True,
+            'rand_count': True,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
+            'rand_dynamics': False,
+        }),
+        (FindDupeEnv, fd_ep_len, '-TestDynamics', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': True,
+        }),
+        (FindDupeEnv, fd_ep_len, '-TestAll', {
+            'rand_colours': True,
+            'rand_shapes': True,
+            'rand_count': True,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
+            'rand_dynamics': True,
+        }),
+    ]
+
     # Long episodes because this is a hard environment. You can have up to 12
     # blocks when doing random layouts, and that takes a human 30-35s to
     # process (so 320/8=40s is just enough time to finish a 12-block run if
@@ -362,6 +431,7 @@ def register_envs():
         *move_to_region_variants,
         *match_regions_variants,
         *cluster_variants,
+        *find_dupe_variants,
     ]
 
     # register all the envs and record their names

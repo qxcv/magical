@@ -11,6 +11,7 @@ import milbench.geom as geom
 # As with match_regions.py, we keep colours array internal because some of the
 # hard-coded constants depend on the number of colours not expanding. We need
 # to keep shape types internal for the same reason.
+# TODO: factor these out; they're actually common to all tasks now.
 ALL_COLOURS = np.array([
     en.ShapeColour.RED,
     en.ShapeColour.GREEN,

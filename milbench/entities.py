@@ -696,7 +696,16 @@ class GoalRegion(Entity):
         assert h > 0, w > 0
         self.h = h
         self.w = w
+        self.colour_name = colour_name
         self.base_colour = COLOURS_RGB[colour_name]
+
+    def reconstruct_signature(self):
+        kwargs = dict(x=self.goal_body.position[0] - self.w / 2,
+                      y=self.goal_body.position[1] + self.h / 2,
+                      h=self.h,
+                      w=self.w,
+                      colour_name=self.colour_name)
+        return type(self), kwargs
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)

@@ -105,6 +105,7 @@ def pm_randomise_pose(space,
                       rand_rot=True,
                       rel_pos_linf_limit=None,
                       rel_rot_limit=None,
+                      ignore_shapes=None,
                       rejection_tests=()):
     r"""Do rejection sampling to choose a position and/or orientation which
     ensures the given bodies and their attached shapes do not collide with any
@@ -148,15 +149,20 @@ def pm_randomise_pose(space,
     saved_angles = [float(body.angle) for body in bodies]
     orig_main_angle = float(main_body.angle)
     orig_main_pos = Vec2d(main_body.position)
-    local_pos_offsets = [
-        (body.position - orig_main_pos).rotated(-orig_main_angle)
-        for body in bodies
-    ]
-    local_angle_deltas = [body.angle - orig_main_angle for body in bodies]
+    # local_pos_offsets = [
+    #     (body.position - orig_main_pos).rotated(-orig_main_angle)
+    #     for body in bodies
+    # ]
+    # local_angle_deltas = [body.angle - orig_main_angle for body in bodies]
 
     shape_set = set()
     for body in bodies:
         shape_set.update(body.shapes)
+
+    if ignore_shapes is not None:
+        ignore_set = set(ignore_shapes)
+    else:
+        ignore_set = set()
 
     arena_l, arena_r, arena_b, arena_t = arena_lrbt
 
@@ -200,20 +206,18 @@ def pm_randomise_pose(space,
             new_angle = orig_main_angle
 
         # apply new position/orientation to all bodies
-        for idx, body in enumerate(bodies):
-            new_local_offset = local_pos_offsets[idx].rotated(new_angle)
-            body.position = new_main_body_pos + new_local_offset
-            body.angle = new_angle + local_angle_deltas[idx]
-            space.reindex_shapes_for_body(body)
+        pm_shift_bodies(space,
+                        bodies,
+                        position=new_main_body_pos,
+                        angle=new_angle)
 
         # apply collision tests
         reject = False
         for shape in shape_set:
-            # FIXME: this isn't accurate enough.
             query_result = space.shape_query(shape)
-            # collisions = [r.shape for r in query_result]
+            collisions = set(r.shape for r in query_result) - ignore_set
             # reject if we have any (non-self-)collisions
-            if len(query_result) > 0:
+            if len(collisions) > 0:
                 reject = True
                 break
 
@@ -271,6 +275,7 @@ def pm_randomise_all_poses(space,
                            rand_rot=True,
                            rel_pos_linf_limits=None,
                            rel_rot_limits=None,
+                           ignore_shapes=None,
                            rejection_tests=()):
     """Randomise poses of *all* entities in the given list of entities."""
     # create placeholder limits if necessary
@@ -309,6 +314,7 @@ def pm_randomise_all_poses(space,
                           rand_rot=should_rand_rot,
                           rel_pos_linf_limit=pos_limit,
                           rel_rot_limit=rot_limit,
+                          ignore_shapes=ignore_shapes,
                           rejection_tests=rejection_tests)
 
 
@@ -328,3 +334,28 @@ def randomise_hw(min_side, max_side, rng, current_hw=None, linf_bound=None):
         maxima = np.minimum(maxima, current_hw + linf_bound)
     h, w = rng.uniform(minima, maxima)
     return h, w
+
+
+def pm_shift_bodies(space, bodies, position=None, angle=None):
+    """Apply a rigid transform to the given bodies to move them into the given
+    position and/or angle. Note that position and angle are specified for the
+    first body only; later bodies are modelled as if attached to the first."""
+    assert len(bodies) >= 1
+
+    root_angle = bodies[0].angle
+    root_position = bodies[0].position
+    if angle is None:
+        angle = root_angle
+    if position is None:
+        position = root_position
+
+    # cast to right types
+    position = pm.Vec2d(position)
+    angle = float(angle)
+
+    for body in bodies:
+        local_angle_delta = body.angle - root_angle
+        local_pos_delta = body.position - root_position
+        body.angle = angle + local_angle_delta
+        body.position = position + local_pos_delta.rotated(angle - root_angle)
+        space.reindex_shapes_for_body(body)
