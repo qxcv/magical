@@ -173,7 +173,7 @@ def register_envs():
         }),
     ]
 
-    mtr_ep_len = 50
+    mtr_ep_len = 40
     move_to_region_variants = [
         (MoveToRegionEnv, mtr_ep_len, '-Demo', {
             'rand_poses_minor': False,
