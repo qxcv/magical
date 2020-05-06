@@ -276,6 +276,7 @@ def pm_randomise_all_poses(space,
                            rel_pos_linf_limits=None,
                            rel_rot_limits=None,
                            ignore_shapes=None,
+                           max_retries=10,
                            rejection_tests=()):
     """Randomise poses of *all* entities in the given list of entities."""
     # create placeholder limits if necessary
@@ -285,37 +286,46 @@ def pm_randomise_all_poses(space,
     rand_pos = _listify(rand_pos, nents)
     rand_rot = _listify(rand_rot, nents)
 
-    # disable collisions for all entities
-    ent_filters = []
-    for entity in entities:
-        shape_filters = []
-        for s in entity.shapes:
-            shape_filters.append(s.filter)
-            # categories=0 makes it collide with nothing
-            s.filter = s.filter._replace(categories=0)
-        ent_filters.append(shape_filters)
+    for retry in range(max_retries):
+        # disable collisions for all entities
+        ent_filters = []
+        for entity in entities:
+            shape_filters = []
+            for s in entity.shapes:
+                shape_filters.append(s.filter)
+                # categories=0 makes it collide with nothing
+                s.filter = s.filter._replace(categories=0)
+            ent_filters.append(shape_filters)
 
-    for (entity, shape_filters, pos_limit, rot_limit, should_rand_pos,
-         should_rand_rot) in zip(entities, ent_filters, rel_pos_linf_limits,
-                                 rel_rot_limits, rand_pos, rand_rot):
-        # re-enable collisions for this entity (previous entities will already
-        # have collisions enabled, and later entities will still have
-        # collisions disabled)
-        for s, filt in zip(entity.shapes, shape_filters):
-            s.filter = filt
+        for (entity, shape_filters, pos_limit, rot_limit, should_rand_pos,
+             should_rand_rot) in zip(entities, ent_filters, rel_pos_linf_limits,
+                                     rel_rot_limits, rand_pos, rand_rot):
+            # re-enable collisions for this entity (previous entities will already
+            # have collisions enabled, and later entities will still have
+            # collisions disabled)
+            for s, filt in zip(entity.shapes, shape_filters):
+                s.filter = filt
 
-        # now randomise pose, avoiding entities that have previously been
-        # placed or which are not in the supplied list
-        pm_randomise_pose(space,
-                          entity.bodies,
-                          arena_lrbt,
-                          rng,
-                          rand_pos=should_rand_pos,
-                          rand_rot=should_rand_rot,
-                          rel_pos_linf_limit=pos_limit,
-                          rel_rot_limit=rot_limit,
-                          ignore_shapes=ignore_shapes,
-                          rejection_tests=rejection_tests)
+            # now randomise pose, avoiding entities that have previously been
+            # placed or which are not in the supplied list
+            try:
+                pm_randomise_pose(space,
+                                  entity.bodies,
+                                  arena_lrbt,
+                                  rng,
+                                  rand_pos=should_rand_pos,
+                                  rand_rot=should_rand_rot,
+                                  rel_pos_linf_limit=pos_limit,
+                                  rel_rot_limit=rot_limit,
+                                  ignore_shapes=ignore_shapes,
+                                  rejection_tests=rejection_tests)
+            except PlacementError as ex:
+                if retry == max_retries - 1:
+                    raise
+                print(f"Got PlacementError ({ex}) on retry {retry + 1}/{max_retries}, restarting")
+                break
+        else:
+            break
 
 
 def randomise_hw(min_side, max_side, rng, current_hw=None, linf_bound=None):
