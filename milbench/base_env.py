@@ -64,7 +64,7 @@ class BaseEnv(gym.Env, abc.ABC):
     ARENA_SIZE_MAX = max(ARENA_BOUNDS_LRBT)
     # minimum and maximum size of goal regions used during randomisation
     RAND_GOAL_MIN_SIZE = 0.5
-    RAND_GOAL_MAX_SIZE = 0.9
+    RAND_GOAL_MAX_SIZE = 0.8
     RAND_GOAL_SIZE_RANGE = RAND_GOAL_MAX_SIZE - RAND_GOAL_MIN_SIZE
     # the following are used to standardise what "jitter" means across
     # different tasks

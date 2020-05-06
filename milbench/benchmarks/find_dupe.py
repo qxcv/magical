@@ -98,9 +98,9 @@ class FindDupeEnv(BaseEnv, EzPickle):
         out_block_shapes = DEFAULT_OUT_BLOCK_SHAPES
         n_out_blocks = len(DEFAULT_OUT_BLOCK_COLOURS)
         if self.rand_count:
-            # have between 1 and 6 randomly generated blocks, plus one outside
+            # have between 1 and 5 randomly generated blocks, plus one outside
             # block that always matches the query block
-            n_out_blocks = self.rng.randint(1, 6 + 1) + 1
+            n_out_blocks = self.rng.randint(1, 5 + 1) + 1
         n_distractors = n_out_blocks - 1
 
         if self.rand_colours:
