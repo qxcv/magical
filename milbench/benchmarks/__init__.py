@@ -9,7 +9,7 @@ from gym.spaces import Box
 from gym.wrappers import FrameStack, GrayScaleObservation, ResizeObservation
 import numpy as np
 
-from milbench.benchmarks.cluster import ClusterColourEnv, ClusterTypeEnv
+from milbench.benchmarks.cluster import ClusterColourEnv, ClusterShapeEnv
 from milbench.benchmarks.find_dupe import FindDupeEnv
 from milbench.benchmarks.match_regions import MatchRegionsEnv
 from milbench.benchmarks.move_to_corner import MoveToCornerEnv
@@ -357,7 +357,7 @@ def register_envs():
     # you know what you're doing).
     cluster_ep_len = 320
     cluster_variants = []
-    for cluster_cls in (ClusterColourEnv, ClusterTypeEnv):
+    for cluster_cls in (ClusterColourEnv, ClusterShapeEnv):
         cluster_variants.extend([
             (cluster_cls, cluster_ep_len, '-Demo', {
                 'rand_shape_colour': False,

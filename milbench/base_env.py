@@ -305,3 +305,60 @@ class BaseEnv(gym.Env, abc.ABC):
         if self.viewer:
             self.viewer.close()
             self.viewer = None
+
+    def debug_print_entity_spec(self):
+        """Hacky function to extract specifications for locations & types of
+        entities, etc., from the current state of the environment. Good for
+        constructing new demo configs from world states."""
+        robot_pose = None
+        block_colours = []
+        block_poses = []
+        block_shapes = []
+        goal_region_xyhws = []
+        goal_region_colours = []
+        for entity in self._entities:
+            if isinstance(entity, en.Robot):
+                _, sig = entity.reconstruct_signature()
+                robot_pose = (sig['init_pos'], sig['init_angle'])
+            elif isinstance(entity, en.Shape):
+                _, sig = entity.reconstruct_signature()
+                block_colours.append(sig['colour_name'])
+                block_poses.append((sig['init_pos'], sig['init_angle']))
+                block_shapes.append(sig['shape_type'])
+            elif isinstance(entity, en.GoalRegion):
+                _, sig = entity.reconstruct_signature()
+                goal_region_xyhws.append(
+                    (sig['x'], sig['y'], sig['h'], sig['w']))
+                goal_region_colours.append(sig['colour_name'])
+
+        def f_pose(pose):
+            # string-format a pose
+            (x, y), angle = pose
+            return '((%.3f, %.3f), %.3f)' % (x, y, angle)
+
+        def f_xyhw(xyhw):
+            return '(%.3f, %.3f, %.3f, %.3f)' % xyhw
+
+        def f_colour(colour):
+            # strong-format a colour
+            return f'en.ShapeColour.{colour.name.upper()}'
+
+        def f_shape(shape):
+            # strong-format a shape
+            return f'en.ShapeType.{shape.name.upper()}'
+
+        def lst(f, l):
+            # apply function f to each element of l, convert the results to
+            # string, then present as string-formatted list
+            return '[' + ', '.join(str(f(e)) for e in l) + ']'
+
+        if robot_pose:
+            print(f'ROBOT_POSE = {f_pose(robot_pose)}')
+        if block_colours:
+            print(f'BLOCK_COLOURS = {lst(f_colour, block_colours)}')
+            print(f'BLOCK_SHAPES = {lst(f_shape, block_shapes)}')
+            print(f'BLOCK_POSES = {lst(f_pose, block_poses)}')
+        if goal_region_xyhws:
+            print(f'GOAL_REGION_XYHWS = {lst(f_xyhw, goal_region_xyhws)}')
+            print(
+                f'GOAL_REGION_COLOURS = {lst(f_colour, goal_region_colours)}')
