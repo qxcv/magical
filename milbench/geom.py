@@ -315,11 +315,12 @@ def pm_randomise_all_poses(space,
             ent_filters.append(shape_filters)
 
         for (entity, shape_filters, pos_limit, rot_limit, should_rand_pos,
-             should_rand_rot) in zip(entities, ent_filters, rel_pos_linf_limits,
-                                     rel_rot_limits, rand_pos, rand_rot):
-            # re-enable collisions for this entity (previous entities will already
-            # have collisions enabled, and later entities will still have
-            # collisions disabled)
+             should_rand_rot) in zip(entities, ent_filters,
+                                     rel_pos_linf_limits, rel_rot_limits,
+                                     rand_pos, rand_rot):
+            # re-enable collisions for this entity (previous entities will
+            # already have collisions enabled, and later entities will still
+            # have collisions disabled)
             for s, filt in zip(entity.shapes, shape_filters):
                 s.filter = filt
 
@@ -339,7 +340,8 @@ def pm_randomise_all_poses(space,
             except PlacementError as ex:
                 if retry == max_retries - 1:
                     raise
-                print(f"Got PlacementError ({ex}) on retry {retry + 1}/{max_retries}, restarting")
+                print(f"Got PlacementError ({ex}) on retry {retry + 1}"
+                      f"/{max_retries}, restarting")
                 break
         else:
             break
