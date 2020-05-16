@@ -351,11 +351,11 @@ def register_envs():
         }),
     ]
 
-    # Long episodes because this is a hard environment. You can have up to 12
-    # blocks when doing random layouts, and that takes a human 30-35s to
-    # process (so 320/8=40s is just enough time to finish a 12-block run if
+    # Long episodes because this is a hard environment. You can have up to 10
+    # blocks when doing random layouts, and that takes a human 20-30s to
+    # process (so 240/8=30s is just enough time to finish a 10-block run if
     # you know what you're doing).
-    cluster_ep_len = 320
+    cluster_ep_len = 240
     cluster_variants = []
     for cluster_cls in (ClusterColourEnv, ClusterShapeEnv):
         cluster_variants.extend([
