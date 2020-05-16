@@ -46,6 +46,23 @@ def compute_regular_poly_verts(n_sides, side_length):
     return vertices
 
 
+def compute_star_verts(n_points, out_radius, in_radius):
+    """Vertices for a star. `n_points` controls the number of points;
+    `out_radius` controls distance from points to centre; `in_radius` controls
+    radius from "depressions" (the things between points) to centre."""
+    assert n_points >= 3
+    vertices = []
+    out_vertex = pm.vec2d.Vec2d(0, out_radius)
+    in_vertex = pm.vec2d.Vec2d(0, in_radius)
+    for point_num in range(n_points):
+        out_angle = point_num * 2 * math.pi / n_points
+        vertices.append(out_vertex.rotated(out_angle))
+        in_angle = (2 * point_num + 1) * math.pi / n_points
+        vertices.append(in_vertex.rotated(in_angle))
+    vertices = [(v.x, v.y) for v in vertices]
+    return vertices
+
+
 def _convert_vec(v):
     if isinstance(v, pm.vec2d.Vec2d):
         return v.x, v.y

@@ -59,7 +59,7 @@ class BaseEnv(gym.Env, abc.ABC):
     # constants for all envs
     ROBOT_RAD = 0.2
     ROBOT_MASS = 1.0
-    SHAPE_RAD = ROBOT_RAD * 3 / 5
+    SHAPE_RAD = ROBOT_RAD * 0.6
     ARENA_BOUNDS_LRBT = [-1, 1, -1, 1]
     ARENA_SIZE_MAX = max(ARENA_BOUNDS_LRBT)
     # minimum and maximum size of goal regions used during randomisation

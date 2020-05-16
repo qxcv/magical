@@ -8,10 +8,13 @@ import math
 import weakref
 
 import pymunk as pm
+import pymunk.autogeometry as autogeom
 
 import milbench.geom as gtools
 import milbench.gym_render as r
-from milbench.style import COLOURS_RGB, LINE_THICKNESS, darken_rgb, lighten_rgb
+from milbench.style import (COLOURS_RGB, GOAL_LINE_THICKNESS,
+                            ROBOT_LINE_THICKNESS, SHAPE_LINE_THICKNESS,
+                            darken_rgb, lighten_rgb)
 
 # #############################################################################
 # Entity ABC
@@ -34,13 +37,9 @@ class Entity(abc.ABC):
     def update(self, dt):
         """Do an logic/physics update at some (most likely fixed) time
         interval."""
-        pass
-
     def pre_draw(self):
         """Do a graphics state update to, e.g., update state of internal
         `Geom`s. This doesn't have to be done at every physics time step."""
-        pass
-
     def reconstruct_signature(self):
         """Produce signature necessary to reconstruct this entity in its
         current pose. This is useful for creating new scenarios out of existing
@@ -54,6 +53,14 @@ class Entity(abc.ABC):
         raise NotImplementedError(
             f"no .reconstruct_signature() implementation for object "
             f"'{self}' of type '{type(self)}'")
+
+    def generate_group_id(self):
+        """Generate a new, unique group ID. Intended to be called from
+        `.setup()` when creating `ShapeFilter`s."""
+        if not hasattr(self.space, '_group_ctr'):
+            self.space._group_ctr = 999
+        self.space._group_ctr += 1
+        return self.space._group_ctr
 
     @staticmethod
     def format_reconstruct_signature(cls, kwargs):
@@ -284,11 +291,12 @@ class Robot(Entity):
                 side_sign=finger_side)
             finger_vertices.append(finger_verts)
             finger_inner_verts = make_finger_vertices(
-                upper_arm_len=finger_upper_length - LINE_THICKNESS * 2,
-                forearm_len=finger_lower_length - LINE_THICKNESS * 2,
-                thickness=finger_thickness - LINE_THICKNESS * 2,
+                upper_arm_len=finger_upper_length - ROBOT_LINE_THICKNESS * 2,
+                forearm_len=finger_lower_length - ROBOT_LINE_THICKNESS * 2,
+                thickness=finger_thickness - ROBOT_LINE_THICKNESS * 2,
                 side_sign=finger_side)
-            finger_inner_verts = [[(x, y + LINE_THICKNESS) for x, y in box]
+            finger_inner_verts = [[(x, y + ROBOT_LINE_THICKNESS)
+                                   for x, y in box]
                                   for box in finger_inner_verts]
             finger_inner_vertices.append(finger_inner_verts)
             # these are movement limits; they are useful below, but also
@@ -365,7 +373,7 @@ class Robot(Entity):
 
         # graphics setup
         # draw a circular body
-        circ_body_in = r.make_circle(radius=self.radius - LINE_THICKNESS,
+        circ_body_in = r.make_circle(radius=self.radius - ROBOT_LINE_THICKNESS,
                                      res=100)
         circ_body_out = r.make_circle(radius=self.radius, res=100)
         robot_colour = COLOURS_RGB['grey']
@@ -520,6 +528,7 @@ class ShapeType(str, enum.Enum):
     HEXAGON = 'hexagon'
     OCTAGON = 'octagon'
     CIRCLE = 'circle'
+    STAR = 'star'
 
 
 class ShapeColour(str, enum.Enum):
@@ -597,6 +606,8 @@ class Shape(Entity):
                 0.01 * side_len)
             # FIXME: why is this necessary? Do I need it for the others?
             shape.mass = self.mass
+            shapes = [shape]
+            del shape
         elif self.shape_type == ShapeType.CIRCLE:
             inertia = pm.moment_for_circle(self.mass, 0, self.shape_size,
                                            (0, 0))
@@ -605,6 +616,31 @@ class Shape(Entity):
             body.angle = self.init_angle
             self.add_to_space(body)
             shape = pm.Circle(body, self.shape_size, (0, 0))
+            shapes = [shape]
+            del shape
+        elif self.shape_type == ShapeType.STAR:
+            star_npoints = 5
+            star_out_rad = 1.3 * self.shape_size
+            star_in_rad = 0.5 * star_out_rad
+            star_verts = gtools.compute_star_verts(star_npoints, star_out_rad,
+                                                   star_in_rad)
+            # create an exact convex decpomosition
+            convex_parts = autogeom.convex_decomposition(
+                star_verts + star_verts[:1], 0)
+            star_hull = autogeom.to_convex_hull(star_verts, 1e-5)
+            star_inertia = pm.moment_for_poly(self.mass, star_hull, (0, 0), 0)
+            self.shape_body = body = pm.Body(self.mass, star_inertia)
+            body.position = self.init_pos
+            body.angle = self.init_angle
+            self.add_to_space(body)
+            shapes = []
+            star_group = self.generate_group_id()
+            for convex_part in convex_parts:
+                shape = pm.Poly(body, convex_part)
+                # avoid self-intersection with a shape filter
+                shape.filter = pm.ShapeFilter(group=star_group)
+                shapes.append(shape)
+                del shape
         else:
             # these are free-form shapes b/c no helpers exist in Pymunk
             if self.shape_type == ShapeType.TRIANGLE:
@@ -632,9 +668,12 @@ class Shape(Entity):
             body.angle = self.init_angle
             self.add_to_space(body)
             shape = pm.Poly(body, poly_verts)
+            shapes = [shape]
+            del shape
 
-        shape.friction = 0.5
-        self.add_to_space(shape)
+        for shape in shapes:
+            shape.friction = 0.5
+            self.add_to_space(shape)
 
         trans_joint = pm.PivotJoint(self.space.static_body, body, (0, 0),
                                     (0, 0))
@@ -648,12 +687,26 @@ class Shape(Entity):
 
         # Drawing
         if self.shape_type == ShapeType.SQUARE:
-            geom_inner = r.make_square(side_len - 2 * LINE_THICKNESS)
-            geom_outer = r.make_square(side_len)
+            geoms_inner = [r.make_square(side_len - 2 * SHAPE_LINE_THICKNESS)]
+            geoms_outer = [r.make_square(side_len)]
         elif self.shape_type == ShapeType.CIRCLE:
-            geom_inner = r.make_circle(radius=self.shape_size - LINE_THICKNESS,
-                                       res=100)
-            geom_outer = r.make_circle(radius=self.shape_size, res=100)
+            geoms_inner = [
+                r.make_circle(radius=self.shape_size - SHAPE_LINE_THICKNESS,
+                              res=100),
+            ]
+            geoms_outer = [r.make_circle(radius=self.shape_size, res=100)]
+        elif self.shape_type == ShapeType.STAR:
+            star_short_verts = gtools.compute_star_verts(
+                star_npoints, star_out_rad - SHAPE_LINE_THICKNESS,
+                star_in_rad - SHAPE_LINE_THICKNESS)
+            short_convex_parts = autogeom.convex_decomposition(
+                star_short_verts + star_short_verts[:1], 0)
+            geoms_inner = []
+            for part in short_convex_parts:
+                geoms_inner.append(r.make_polygon(part))
+            geoms_outer = []
+            for part in convex_parts:
+                geoms_outer.append(r.make_polygon(part))
         elif self.shape_type == ShapeType.OCTAGON \
                 or self.shape_type == ShapeType.HEXAGON \
                 or self.shape_type == ShapeType.PENTAGON \
@@ -661,18 +714,20 @@ class Shape(Entity):
             apothem = gtools.regular_poly_side_length_to_apothem(
                 num_sides, side_len)
             short_side_len = gtools.regular_poly_apothem_to_side_legnth(
-                num_sides, apothem - LINE_THICKNESS)
+                num_sides, apothem - SHAPE_LINE_THICKNESS)
             short_verts = gtools.compute_regular_poly_verts(
                 num_sides, short_side_len)
-            geom_inner = r.make_polygon(short_verts)
-            geom_outer = r.make_polygon(poly_verts)
+            geoms_inner = [r.make_polygon(short_verts)]
+            geoms_outer = [r.make_polygon(poly_verts)]
         else:
             raise NotImplementedError("haven't implemented", self.shape_type)
 
-        geom_inner.set_color(*self.colour)
-        geom_outer.set_color(*darken_rgb(self.colour))
+        for g in geoms_inner:
+            g.set_color(*self.colour)
+        for g in geoms_outer:
+            g.set_color(*darken_rgb(self.colour))
         self.shape_xform = r.Transform()
-        shape_compound = r.Compound([geom_outer, geom_inner])
+        shape_compound = r.Compound(geoms_outer + geoms_inner)
         shape_compound.add_attr(self.shape_xform)
         self.viewer.add_geom(shape_compound)
 
@@ -734,7 +789,7 @@ class GoalRegion(Entity):
         outer_rect = r.make_rect(width=self.w, height=self.h, filled=False)
         outer_rect.set_color(*outer_colour)
         outer_rect.add_attr(r.LineStyle(0x00FF))
-        outer_rect.set_linewidth(250 * LINE_THICKNESS)
+        outer_rect.set_linewidth(250 * GOAL_LINE_THICKNESS)
         outer_rect.add_attr(self.rect_xform)
         self.viewer.add_geom(outer_rect)
 

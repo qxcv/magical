@@ -22,7 +22,9 @@ def lighten_rgb(rgb, times=1):
     return colorsys.hls_to_rgb(*hls_new)
 
 
-LINE_THICKNESS = 0.01
+GOAL_LINE_THICKNESS = 0.01
+SHAPE_LINE_THICKNESS = 0.015
+ROBOT_LINE_THICKNESS = 0.01
 COLOURS_RGB = {
     # Original colours from Wikipedia. They were all pastel base colours useful
     # for shape bodies; can use darken_rgb to get highlights (e.g. borders) and

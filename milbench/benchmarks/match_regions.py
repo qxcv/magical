@@ -91,7 +91,7 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
 
         # set up spec for remaining blocks
         default_target_types = [
-            en.ShapeType.HEXAGON,
+            en.ShapeType.STAR,
             en.ShapeType.SQUARE,
         ]
         default_distractor_types = [

@@ -20,7 +20,7 @@ DEFAULT_OUT_BLOCK_SHAPES = [
     en.ShapeType.CIRCLE,
     en.ShapeType.CIRCLE,
     en.ShapeType.SQUARE,
-    en.ShapeType.HEXAGON,
+    en.ShapeType.STAR,
     # last one is the target shape
     DEFAULT_QUERY_SHAPE,
 ]
@@ -35,14 +35,14 @@ DEFAULT_OUT_BLOCK_COLOURS = [
 ]
 DEFAULT_OUT_BLOCK_POSES = [
     ((-0.066751, 0.7552), -2.9266),
-    ((-0.19195, 0.19468), 1.5418),
+    ((-0.05195, 0.31468), 1.5418),
     ((0.57528, -0.46865), -2.2141),
     ((0.40594, -0.74977), 0.24582),
-    ((0.56254, 0.051481), -1.0834),
+    ((0.45254, 0.3681), -1.0834),
     # last one is the target shape
     ((0.76849, -0.10652), 0.10028),
 ]
-DEFAULT_ROBOT_POSE = ((-0.57, 0.25), 0.36)
+DEFAULT_ROBOT_POSE = ((-0.57, 0.25), 3.83)
 DEFAULT_TARGET_REGION_XYHW = (-0.72, -0.22, 0.67, 0.72)
 DEFAULT_QUERY_BLOCK_POSE = ((-0.33, -0.49), -0.51)
 
