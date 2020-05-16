@@ -33,8 +33,6 @@ DEFAULT_OUT_BLOCK_COLOURS = [
     # last one is the target shape
     DEFAULT_QUERY_COLOUR,
 ]
-# TODO: update all these poses after (complete) randomisation, as well as the
-# height/width of the target region
 DEFAULT_OUT_BLOCK_POSES = [
     ((-0.066751, 0.7552), -2.9266),
     ((-0.19195, 0.19468), 1.5418),
