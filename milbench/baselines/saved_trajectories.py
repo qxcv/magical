@@ -32,9 +32,8 @@ class _TrajRewriteUnpickler(Unpickler):
 
 
 def load_demos(demo_paths, rewrite_traj_cls=True, verbose=False):
-    """Use GzipFile & pickle to load a list of demo dictionaries from a series
-    of file paths."""
-    demo_dicts = []
+    """Use GzipFile & pickle to generate a sequence of demo dictionaries from a
+    sequence of file paths."""
     n_demos = len(demo_paths)
     for d_num, d_path in enumerate(demo_paths, start=1):
         if verbose:
@@ -44,8 +43,8 @@ def load_demos(demo_paths, rewrite_traj_cls=True, verbose=False):
                 unpickler = _TrajRewriteUnpickler(fp)
             else:
                 unpickler = Unpickler(fp)
-            demo_dicts.append(unpickler.load())
-    return demo_dicts
+            this_dict = unpickler.load()
+        yield this_dict
 
 
 def splice_in_preproc_name(base_env_name, preproc_name):

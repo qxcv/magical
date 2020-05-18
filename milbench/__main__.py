@@ -18,7 +18,7 @@ from milbench.entities import RobotAction as RA
 
 def get_unique_fn(env_name):
     now = datetime.datetime.now()
-    time_str = now.strftime('%FT%k:%M:%S')
+    time_str = now.strftime('%FT%H:%M:%S')
     return f"demo-{env_name}-{time_str}.pkl.gz"
 
 

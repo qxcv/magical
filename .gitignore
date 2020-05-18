@@ -9,3 +9,4 @@ scratch/
 report-baselines/
 film/
 *.pkl.gz
+*.mp4
