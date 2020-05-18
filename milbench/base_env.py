@@ -13,6 +13,7 @@ import pymunk as pm
 import milbench.entities as en
 import milbench.gym_render as r
 from milbench.phys_vars import PhysicsVariablesBase, PhysVar
+from milbench.style import ARENA_ZOOM_OUT, COLOURS_RGB, lighten_rgb
 
 
 def ez_init(*args, **kwargs):
@@ -80,12 +81,14 @@ class BaseEnv(gym.Env, abc.ABC):
                  phys_steps=10,
                  phys_iter=10,
                  max_episode_steps=None,
-                 rand_dynamics=False):
+                 rand_dynamics=False,
+                 egocentric=False):
         self.phys_iter = phys_iter
         self.phys_steps = phys_steps
         self.fps = fps
         self.res_hw = res_hw
         self.max_episode_steps = max_episode_steps
+        self.egocentric = egocentric
         # RGB observation, stored as bytes
         self.observation_space = spaces.Box(low=0.0,
                                             high=255,
@@ -150,8 +153,6 @@ class BaseEnv(gym.Env, abc.ABC):
         Returns:
             name (str): full, Gym-compatible name for this env, with the
                 included name suffix."""
-        pass
-
     @abc.abstractmethod
     def on_reset(self):
         """Set up entities necessary for this environment, and reset any other
@@ -164,8 +165,6 @@ class BaseEnv(gym.Env, abc.ABC):
                 user.
             ents ([en.Entity]): list of other entities necessary for this
                 environment."""
-        pass
-
     def add_entities(self, entities):
         """Adds a list of entities to the current entities list and sets it up.
         Only intended to be used from within on_reset(). Needs to be called for
@@ -188,7 +187,11 @@ class BaseEnv(gym.Env, abc.ABC):
         self._phys_vars = None
         if self.viewer is None:
             res_h, res_w = self.res_hw
-            self.viewer = r.Viewer(res_w, res_h, visible=False)
+            background_colour = lighten_rgb(COLOURS_RGB['grey'], times=4)
+            self.viewer = r.Viewer(res_w,
+                                   res_h,
+                                   visible=False,
+                                   background_rgb=background_colour)
         else:
             # these will get added back later
             self.viewer.reset_geoms()
@@ -209,6 +212,8 @@ class BaseEnv(gym.Env, abc.ABC):
                                          right=arena_r,
                                          bottom=arena_b,
                                          top=arena_t)
+        self._arena_w = arena_r - arena_l
+        self._arena_h = arena_t - arena_b
         self.add_entities([self._arena])
         reset_rv = self.on_reset()
         assert reset_rv is None, \
@@ -217,13 +222,17 @@ class BaseEnv(gym.Env, abc.ABC):
         assert isinstance(self._robot, en.Robot)
         assert len(self._entities) >= 1
 
-        self.viewer.set_bounds(left=self._arena.left,
-                               right=self._arena.right,
-                               bottom=self._arena.bottom,
-                               top=self._arena.top)
+        assert np.allclose(self._arena.left + self._arena.right, 0)
+        assert np.allclose(self._arena.bottom + self._arena.top, 0)
+        self.viewer.set_bounds(left=self._arena.left * ARENA_ZOOM_OUT,
+                               right=self._arena.right * ARENA_ZOOM_OUT,
+                               bottom=self._arena.bottom * ARENA_ZOOM_OUT,
+                               top=self._arena.top * ARENA_ZOOM_OUT)
 
         # # step forward by one second so PyMunk can recover from bad initial
         # # conditions
+        # # (disabled some time in 2019; don't think it's necessary with
+        # # well-designed envs)
         # forward_time = 1.0
         # forward_frames = int(math.ceil(forward_time * self.fps))
         # for _ in range(forward_frames):
@@ -249,8 +258,6 @@ class BaseEnv(gym.Env, abc.ABC):
            score (float): number in [0, 1] indicating the worst possible
                performance (0), the best possible performance (1) or something
                in between. Should apply to the WHOLE trajectory."""
-        pass
-
     def step(self, action):
         # step forward physics
         ac_flag_ud, ac_flag_lr, ac_flag_grip = self.action_to_flags(action)
@@ -290,11 +297,19 @@ class BaseEnv(gym.Env, abc.ABC):
 
         return obs_u8, reward, done, info
 
-    def render(self, mode='human'):
+    def render(self, mode='human', egocentric=None):
         if self.viewer is None:
             return None
         for ent in self._entities:
             ent.pre_draw()
+        if (egocentric is not None and egocentric) or self.egocentric:
+            self.viewer.set_cam_follow(
+                source_xy_world=(self._robot.robot_body.position.x,
+                                 self._robot.robot_body.position.y),
+                target_xy_01=(0.5, 0.15),
+                viewport_hw_world=(self._arena_h * ARENA_ZOOM_OUT,
+                                   self._arena_w * ARENA_ZOOM_OUT),
+                rotation=self._robot.robot_body.angle)
         if mode == 'human':
             self.viewer.window.set_visible(True)
         else:

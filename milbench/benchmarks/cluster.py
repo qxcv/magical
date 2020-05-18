@@ -186,8 +186,6 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
         # set up index for lookups
         self.__ent_index = en.EntityIndex(shape_ents)
 
-        print('init score', self.score_on_end_of_traj())
-
     def score_on_end_of_traj(self):
         # Compute centroids for each value of the relevant characteristic
         # (either colour or shape type). Also compute mean squared distance

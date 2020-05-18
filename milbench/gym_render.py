@@ -122,11 +122,17 @@ def blit_fbo(width, height, src_id, target_id, target_image=gl.GL_BACK):
 
 
 class Viewer(object):
-    def __init__(self, width, height, visible, display=None):
+    def __init__(self,
+                 width,
+                 height,
+                 visible,
+                 display=None,
+                 background_rgb=(1, 1, 1)):
         display = get_display(display)
 
         self.width = width
         self.height = height
+        self.background_rgb = background_rgb
         self.window = pyglet.window.Window(width=width,
                                            height=height,
                                            display=display,
@@ -142,7 +148,7 @@ class Viewer(object):
         self.window.on_close = self.window_closed_by_user
         self.isopen = True
         self.reset_geoms()
-        self.transform = Transform()
+        self.transforms = Transform()
 
         gl.glEnable(gl.GL_BLEND)
         # tricks from OpenAI's multiagent particle env repo:
@@ -163,13 +169,31 @@ class Viewer(object):
     def window_closed_by_user(self):
         self.isopen = False
 
-    def set_bounds(self, left, right, bottom, top):
+    def set_bounds(self, left, right, bottom, top, rotation=0.0):
         assert right > left and top > bottom
         scalex = self.width / (right - left)
         scaley = self.height / (top - bottom)
         self.transform = Transform(translation=(-left * scalex,
                                                 -bottom * scaley),
                                    scale=(scalex, scaley))
+
+    def set_cam_follow(self, source_xy_world, target_xy_01, viewport_hw_world,
+                       rotation):
+        """Set camera so that point at `source_xy_world` (in world coordinates)
+        appears at `screen_target_xy` (in screen coordinates, in [0,1] on each
+        axis), and so that viewport covers region defined by
+        `viewport_hw_world` in world coordinates. Oh, and the world is rotated
+        by `rotation` around the point `source_xy_world` before doing anything
+        else."""
+        world_h, world_w = viewport_hw_world
+        scalex = self.width / world_w
+        scaley = self.height / world_h
+        target_x_01, target_y_01 = target_xy_01
+        self.transform = TransformEgocentric(centre=source_xy_world,
+                                             newpos=(world_w * target_x_01,
+                                                     world_h * target_y_01),
+                                             scale=(scalex, scaley),
+                                             rotation=rotation)
 
     def add_geom(self, geom):
         self.geoms.append(geom)
@@ -183,7 +207,7 @@ class Viewer(object):
         self.render_fbo.bind()
 
         # actual rendering
-        gl.glClearColor(1, 1, 1, 1)
+        gl.glClearColor(*self.background_rgb, 1)
         self.window.clear()
         self.window.dispatch_events()
         self.transform.enable()
@@ -200,15 +224,18 @@ class Viewer(object):
         # optionally write RGB array
         arr = None
         if return_rgb_array:
+            # this initial blit call will crash if you're calling it from a
+            # fork()ed subprocess; use the 'spawn' MP method instead of 'fork'
+            # to make it work
             blit_fbo(self.width, self.height, self.render_fbo.id,
-                     self.no_msaa_fbo.id, gl.GL_COLOR_ATTACHMENT0)  # XXX: crashes in subprocess
+                     self.no_msaa_fbo.id, gl.GL_COLOR_ATTACHMENT0)
             image_data = self.no_msaa_fbo._colour_texture.get_image_data(
                 fmt='RGB', gl_format=gl.GL_RGB)
             arr = np.frombuffer(image_data.data, dtype=np.uint8)
             arr = arr.reshape(self.height, self.width, 3)[::-1]
 
         # also draw to main window
-        gl.glClearColor(1, 1, 1, 1)
+        gl.glClearColor(*self.background_rgb, 1)
         self.window.clear()
         blit_fbo(self.width, self.height, self.render_fbo.id, 0)
         self.window.flip()
@@ -324,6 +351,27 @@ class Transform(Attr):
     def set_scale(self, newx, newy):
         self.scale = (float(newx), float(newy))
         return self
+
+
+class TransformEgocentric(Attr):
+    """Transform class for egocentric top-down camera. Rotates the world around
+    a particular point, moves that point to another position, then scales the
+    world."""
+    def __init__(self, centre, newpos, rotation, scale):
+        self.centre = centre
+        self.newpos = newpos
+        self.rotation = rotation
+        self.scale = scale
+
+    def enable(self):
+        gl.glPushMatrix()
+        gl.glScalef(self.scale[0], self.scale[1], 1)
+        gl.glTranslatef(self.newpos[0], self.newpos[1], 0)
+        gl.glRotatef(RAD2DEG * -self.rotation, 0, 0, 1.0)
+        gl.glTranslatef(-self.centre[0], -self.centre[1], 0)
+
+    def disable(self):
+        gl.glPopMatrix()
 
 
 class Color(Attr):

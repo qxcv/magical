@@ -513,6 +513,26 @@ class ArenaBoundaries(Entity):
             arena_segments.append(segment)
         self.add_to_space(*arena_segments)
 
+        width = self.right - self.left
+        height = self.top - self.bottom
+        arena_square = r.make_rect(width=width, height=height, filled=True)
+        arena_bounds = r.make_rect(width=width, height=height, filled=False)
+        # we don't really need this at the moment (2020-05-17) because the
+        # middle of the arena is at (0,0) anyway; it will become useful if we
+        # move the arena or something like that.
+        # centre_xform = r.Transform(self.left + width / 2,
+        #                            self.bottom + height / 2)
+        # centre_xform.set_translation(self.left, self.top)
+        # arena_square.add_attr(centre_xform)
+        # arena_bounds.add_attr(centre_xform)
+        # arena is white, bounds are dark grey
+        arena_square.set_color(1, 1, 1)
+        arena_bounds.set_color(*COLOURS_RGB['grey'])
+        # also the bounds have same thickness as goals
+        arena_bounds.add_attr(r.LineWidth(GOAL_LINE_THICKNESS))
+        self.viewer.add_geom(arena_square)
+        self.viewer.add_geom(arena_bounds)
+
 
 # #############################################################################
 # Pushable shapes

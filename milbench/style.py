@@ -48,3 +48,6 @@ COLOURS_RGB = {
     'grey': rgb(162, 163, 175),  # cool grey (not sure which one)
     'brown': rgb(224, 171, 118),  # buff
 }
+# "zoom out" factor when rendering arena; values above 1 will show parts of the
+# arena border
+ARENA_ZOOM_OUT = 1.02
