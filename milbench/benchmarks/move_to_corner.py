@@ -70,16 +70,14 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
 
     def score_on_end_of_traj(self):
         robot_pos = np.asarray(self.__shape_ref.shape_body.position)
-        # should be in top left corner
-        shortfall_x = max(0, robot_pos[0] + 0.5)
-        shortfall_y = max(0, 0.5 - robot_pos[1])
-        dist = np.linalg.norm((shortfall_x, shortfall_y))
-        # max reward is for being in 0.5x0.5 square in top left corner. Reward
-        # decreases linearly outside of that, until we're more than 0.5 units
-        # outside of that 0.5x0.5 square and & we get nothing.
-        reward = max(1 - dist / 0.5, 0)
-        assert reward <= 1
-        return reward
+        # target is top left
+        dist = np.linalg.norm(np.asarray([-1.0, 1.0]) - robot_pos)
+        succeed_dist = np.sqrt(2) / 2
+        furthest_dist = np.sqrt(2)
+        drange = (furthest_dist - succeed_dist)
+        score = min(1.0, max(0.0, furthest_dist - dist) / drange)
+        assert 0 <= score <= 1
+        return score
 
     def step(self, *args, **kwargs):
         obs, rew, done, info = super().step(*args, **kwargs)
