@@ -565,7 +565,7 @@ class ShapeColour(str, enum.Enum):
 SHAPE_TYPES = [
     ShapeType.SQUARE,
     ShapeType.PENTAGON,
-    ShapeType.HEXAGON,
+    ShapeType.STAR,
     ShapeType.CIRCLE,
 ]
 SHAPE_COLOURS = [
