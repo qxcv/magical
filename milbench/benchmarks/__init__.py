@@ -11,6 +11,7 @@ import numpy as np
 
 from milbench.benchmarks.cluster import ClusterColourEnv, ClusterShapeEnv
 from milbench.benchmarks.find_dupe import FindDupeEnv
+from milbench.benchmarks.make_line import MakeLineEnv
 from milbench.benchmarks.match_regions import MatchRegionsEnv
 from milbench.benchmarks.move_to_corner import MoveToCornerEnv
 from milbench.benchmarks.move_to_region import MoveToRegionEnv
@@ -20,6 +21,9 @@ __all__ = [
     'MoveToCornerEnv',
     'MatchRegionsEnv',
     'ClusterColourEnv',
+    'ClusterShapeEnv',
+    'FindDupeEnv',
+    'MakeLineEnv',
     'register_envs',
     'EnvName',
 ]
@@ -294,6 +298,75 @@ def register_envs():
         }),
     ]
 
+    ml_ep_len = 180
+    make_line_variants = [
+        (MakeLineEnv, ml_ep_len, '-Demo', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (MakeLineEnv, ml_ep_len, '-TestJitter', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': True,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (MakeLineEnv, ml_ep_len, '-TestColour', {
+            'rand_colours': True,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (MakeLineEnv, ml_ep_len, '-TestShape', {
+            'rand_colours': False,
+            'rand_shapes': True,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (MakeLineEnv, ml_ep_len, '-TestLayout', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
+            'rand_dynamics': False,
+        }),
+        # test everything except dynamics
+        (MakeLineEnv, ml_ep_len, '-TestCountPlus', {
+            'rand_colours': True,
+            'rand_shapes': True,
+            'rand_count': True,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
+            'rand_dynamics': False,
+        }),
+        (MakeLineEnv, ml_ep_len, '-TestDynamics', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': True,
+        }),
+        (MakeLineEnv, ml_ep_len, '-TestAll', {
+            'rand_colours': True,
+            'rand_shapes': True,
+            'rand_count': True,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
+            'rand_dynamics': True,
+        }),
+    ]
+
     fd_ep_len = 100
     find_dupe_variants = [
         (FindDupeEnv, fd_ep_len, '-Demo', {
@@ -443,6 +516,7 @@ def register_envs():
         *match_regions_variants,
         *cluster_variants,
         *find_dupe_variants,
+        *make_line_variants,
     ]
 
     # register all the envs and record their names

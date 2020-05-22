@@ -30,7 +30,10 @@ def get_unique_fn(env_name):
 @click.option("--env-name",
               default='MoveToCorner-Demo-LoResStack-v0',
               help='name of environment')
-def main(record, env_name):
+@click.option("--print-spec/--no-print-spec",
+              default=False,
+              help="print env spec?")
+def main(record, env_name, print_spec):
     if record:
         record_dir = os.path.abspath(record)
         print(f"Will record demos to '{record_dir}'")
@@ -41,6 +44,9 @@ def main(record, env_name):
     env = gym.make(env_name)
     try:
         obs = env.reset()
+        if print_spec:
+            print('\n')
+            env.debug_print_entity_spec()
         was_done_on_prev_step = False
         if record:
             traj_accum.add_step({"obs": obs})
@@ -62,6 +68,9 @@ def main(record, env_name):
             if key_map[key.R]:
                 # drop traj and don't save
                 obs = env.reset()
+                if print_spec:
+                    print('\n')
+                    env.debug_print_entity_spec()
                 if record:
                     started = False
                     traj_accum = TrajectoryAccumulator()
@@ -115,10 +124,9 @@ def main(record, env_name):
                             'trajectory': traj,
                             'score': info['eval_score'],
                         }
-                        print(
-                            f"Saving trajectory ({len(traj.obs)} obs, "
-                            f"{len(traj.acts)} actions, {len(traj.rews)} "
-                            f"rews) to '{new_path}'")
+                        print(f"Saving trajectory ({len(traj.obs)} obs, "
+                              f"{len(traj.acts)} actions, {len(traj.rews)} "
+                              f"rews) to '{new_path}'")
                         with gzip.GzipFile(new_path, 'wb') as fp:
                             cloudpickle.dump(pickle_data, fp)
 
