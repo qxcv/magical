@@ -5,16 +5,9 @@ from milbench import geom
 from milbench.base_env import BaseEnv, ez_init
 import milbench.entities as en
 
-ALL_COLOURS = np.array([
-    en.ShapeColour.RED,
-    en.ShapeColour.GREEN,
-    en.ShapeColour.BLUE,
-    en.ShapeColour.YELLOW,
-],
-                       dtype='object')
 SMALL_POS_BOUND = 0.05
 DEFAULT_ROBOT_POSE = ((0.058, 0.53), -2.13)
-DEFAULT_GOAL_COLOUR = ALL_COLOURS[2]
+DEFAULT_GOAL_COLOUR = en.ShapeColour.BLUE
 DEFAULT_GOAL_XYHW = (-0.62, -0.17, 0.76, 0.75)
 
 
@@ -59,7 +52,7 @@ class MoveToRegionEnv(BaseEnv, EzPickle):
         # colour the goal region
         if self.rand_goal_colour:
             goal_colour = self.rng.choice(
-                np.asarray(ALL_COLOURS, dtype='object'))
+                np.asarray(en.SHAPE_COLOURS, dtype='object'))
         else:
             goal_colour = DEFAULT_GOAL_COLOUR
 

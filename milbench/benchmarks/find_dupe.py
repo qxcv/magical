@@ -1,18 +1,9 @@
 from gym.utils import EzPickle
-import numpy as np
 
 from milbench.base_env import BaseEnv, ez_init
 import milbench.entities as en
 import milbench.geom as geom
 
-ALL_COLOURS = np.array([
-    en.ShapeColour.RED,
-    en.ShapeColour.GREEN,
-    en.ShapeColour.BLUE,
-    en.ShapeColour.YELLOW,
-],
-                       dtype='object')
-ALL_SHAPE_TYPES = np.array(en.SHAPE_TYPES, dtype='object')
 DEFAULT_QUERY_COLOUR = en.ShapeColour.YELLOW
 DEFAULT_QUERY_SHAPE = en.ShapeType.PENTAGON
 DEFAULT_OUT_BLOCK_SHAPES = [
@@ -102,14 +93,14 @@ class FindDupeEnv(BaseEnv, EzPickle):
         n_distractors = n_out_blocks - 1
 
         if self.rand_colours:
-            query_colour = self.rng.choice(ALL_COLOURS)
-            out_block_colours = self.rng.choice(ALL_COLOURS,
+            query_colour = self.rng.choice(en.SHAPE_COLOURS)
+            out_block_colours = self.rng.choice(en.SHAPE_COLOURS,
                                                 size=n_distractors).tolist()
             # last block always matches the query
             out_block_colours.append(query_colour)
         if self.rand_shapes:
-            query_shape = self.rng.choice(ALL_SHAPE_TYPES)
-            out_block_shapes = self.rng.choice(ALL_SHAPE_TYPES,
+            query_shape = self.rng.choice(en.SHAPE_TYPES)
+            out_block_shapes = self.rng.choice(en.SHAPE_TYPES,
                                                size=n_distractors).tolist()
             out_block_shapes.append(query_shape)
 

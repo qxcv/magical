@@ -8,25 +8,6 @@ from milbench.base_env import BaseEnv, ez_init
 import milbench.entities as en
 import milbench.geom as geom
 
-# As with match_regions.py, we keep colours array internal because some of the
-# hard-coded constants depend on the number of colours not expanding. We need
-# to keep shape types internal for the same reason.
-# TODO: factor these out; they're actually common to all tasks now.
-ALL_COLOURS = np.array([
-    en.ShapeColour.RED,
-    en.ShapeColour.GREEN,
-    en.ShapeColour.BLUE,
-    en.ShapeColour.YELLOW,
-],
-                       dtype='object')
-ALL_SHAPE_TYPES = np.array([
-    en.ShapeType.STAR,
-    en.ShapeType.SQUARE,
-    en.ShapeType.PENTAGON,
-    en.ShapeType.CIRCLE,
-],
-                           dtype='object')
-
 
 class BaseClusterEnv(BaseEnv, abc.ABC):
     """There are blocks of many colours and types. You must arrange them into
@@ -113,9 +94,9 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
 
         if self.rand_shape_colour:
             # make sure we have at least one of each colour
-            colours = list(ALL_COLOURS)
+            colours = list(en.SHAPE_COLOURS)
             colours.extend([
-                self.rng.choice(ALL_COLOURS)
+                self.rng.choice(en.SHAPE_COLOURS)
                 for _ in range(n_shapes - len(colours))
             ])
             self.rng.shuffle(colours)
@@ -124,9 +105,9 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
 
         if self.rand_shape_type:
             # make sure we have at least one of each type, too
-            shape_types = list(ALL_SHAPE_TYPES)
+            shape_types = list(en.SHAPE_TYPES)
             shape_types.extend([
-                self.rng.choice(ALL_SHAPE_TYPES)
+                self.rng.choice(en.SHAPE_TYPES)
                 for _ in range(n_shapes - len(shape_types))
             ])
             self.rng.shuffle(shape_types)

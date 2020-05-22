@@ -7,6 +7,7 @@ import enum
 import math
 import weakref
 
+import numpy as np
 import pymunk as pm
 import pymunk.autogeometry as autogeom
 
@@ -562,18 +563,20 @@ class ShapeColour(str, enum.Enum):
 # (WARNING: not all benchmarks use the two arrays below! Some have used their
 # own arrays so that changes to the base SHAPE_TYPES array don't break the
 # benchmark's default shape layout.)
-SHAPE_TYPES = [
+SHAPE_TYPES = np.asarray([
     ShapeType.SQUARE,
     ShapeType.PENTAGON,
     ShapeType.STAR,
     ShapeType.CIRCLE,
-]
-SHAPE_COLOURS = [
+],
+                         dtype='object')
+SHAPE_COLOURS = np.asarray([
     ShapeColour.RED,
     ShapeColour.GREEN,
     ShapeColour.BLUE,
     ShapeColour.YELLOW,
-]
+],
+                           dtype='object')
 
 
 class Shape(Entity):

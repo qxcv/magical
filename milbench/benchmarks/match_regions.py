@@ -7,22 +7,13 @@ from milbench.base_env import BaseEnv, ez_init
 import milbench.entities as en
 import milbench.geom as geom
 
-# we don't use en.SHAPE_COLOURS because some of the default constants in this
-# environment depend on the total number of colours remaining the same
-ALL_COLOURS = np.array([
-    en.ShapeColour.RED,
-    en.ShapeColour.GREEN,
-    en.ShapeColour.BLUE,
-    en.ShapeColour.YELLOW,
-],
-                       dtype='object')
-
 
 class MatchRegionsEnv(BaseEnv, EzPickle):
     """Need to push blocks of a certain colour to the corresponding coloured
     region. Aim is for the robot to generalise _that_ rule instead of
     generalising others (e.g. "always move squares to this position" or
     something)."""
+
     @ez_init()
     def __init__(
             self,
@@ -65,10 +56,12 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
 
         # set up target colour/region/pose
         if self.rand_target_colour:
-            target_colour = self.rng.choice(ALL_COLOURS)
+            target_colour = self.rng.choice(en.SHAPE_COLOURS)
         else:
             target_colour = en.ShapeColour.GREEN
-        distractor_colours = [c for c in ALL_COLOURS if c != target_colour]
+        distractor_colours = [
+            c for c in en.SHAPE_COLOURS if c != target_colour
+        ]
         target_h = 0.7
         target_w = 0.6
         target_x = 0.1
@@ -154,22 +147,24 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
             for poses, dcount in zip(distractor_poses, distractor_counts))
 
         self.__target_shapes = [
-            self._make_shape(shape_type=shape_type,
-                             colour_name=target_colour,
-                             init_pos=(shape_x, shape_y),
-                             init_angle=shape_angle)
-            for shape_type, (shape_x, shape_y,
-                             shape_angle) in zip(target_types, target_poses)
+            self._make_shape(
+                shape_type=shape_type,
+                colour_name=target_colour,
+                init_pos=(shape_x, shape_y),
+                init_angle=shape_angle)
+            for shape_type, (shape_x, shape_y, shape_angle
+                             ) in zip(target_types, target_poses)
         ]
         self.__distractor_shapes = []
         for dist_colour, dist_types, dist_poses \
                 in zip(distractor_colours, distractor_types, distractor_poses):
             for shape_type, (shape_x, shape_y, shape_angle) \
                     in zip(dist_types, dist_poses):
-                dist_shape = self._make_shape(shape_type=shape_type,
-                                              colour_name=dist_colour,
-                                              init_pos=(shape_x, shape_y),
-                                              init_angle=shape_angle)
+                dist_shape = self._make_shape(
+                    shape_type=shape_type,
+                    colour_name=dist_colour,
+                    init_pos=(shape_x, shape_y),
+                    init_angle=shape_angle)
                 self.__distractor_shapes.append(dist_shape)
         shape_ents = self.__target_shapes + self.__distractor_shapes
         self.add_entities(shape_ents)
@@ -191,14 +186,15 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
             # randomise rotations of all entities but goal region
             rand_rot = [False] + [True] * (len(all_ents) - 1)
 
-            geom.pm_randomise_all_poses(self._space,
-                                        all_ents,
-                                        self.ARENA_BOUNDS_LRBT,
-                                        rng=self.rng,
-                                        rand_pos=True,
-                                        rand_rot=rand_rot,
-                                        rel_pos_linf_limits=pos_limits,
-                                        rel_rot_limits=rot_limits)
+            geom.pm_randomise_all_poses(
+                self._space,
+                all_ents,
+                self.ARENA_BOUNDS_LRBT,
+                rng=self.rng,
+                rand_pos=True,
+                rand_rot=rand_rot,
+                rel_pos_linf_limits=pos_limits,
+                rel_rot_limits=rot_limits)
 
         # set up index for lookups
         self.__ent_index = en.EntityIndex(shape_ents)
