@@ -169,19 +169,19 @@ class FixColourEnv(BaseEnv, EzPickle):
                                         rel_rot_limits=rot_limit,
                                         ignore_shapes=block_pm_shapes)
 
+            # shift blocks out of the way of each other
+            for block, sensor in zip(blocks, sensors):
+                geom.pm_shift_bodies(self._space,
+                                     block.bodies,
+                                     position=sensor.bodies[0].position)
             # randomise each inner block position separately
             for block, sensor, (_, _,
                                 *sensor_hw) in zip(blocks, sensors,
                                                    region_xyhws):
-                pass
-                block_pos_limit = max(0,
-                                      min(sensor_hw) / 2 - self.SHAPE_RAD / 2)
+                block_pos_limit = max(0, min(sensor_hw) / 2 - self.SHAPE_RAD)
                 if self.rand_layout_minor:
                     block_pos_limit = min(self.JITTER_POS_BOUND,
                                           block_pos_limit)
-                geom.pm_shift_bodies(self._space,
-                                     block.bodies,
-                                     position=sensor.bodies[0].position)
                 geom.pm_randomise_pose(self._space,
                                        block.bodies,
                                        self.ARENA_BOUNDS_LRBT,
