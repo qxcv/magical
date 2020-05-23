@@ -436,7 +436,7 @@ def register_envs():
         }),
     ]
 
-    fc_ep_len = 80
+    fc_ep_len = 60
     fix_colour_variants = [
         (FixColourEnv, fc_ep_len, '-Demo', {
             'rand_colours': False,
