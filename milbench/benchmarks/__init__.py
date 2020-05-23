@@ -217,17 +217,15 @@ def register_envs():
             'rand_goal_colour': True,
             'rand_dynamics': True,
         }),
-        # FIXME: this is just a test env for egocentric observations; if this
-        # works, then I should add egocentric views as an option in the same
-        # way that I've added frame stacking etc. (ideal: combine egocentric
-        # views AND a global view!)
-        (MoveToRegionEnv, mtr_ep_len, '-TestEgo', {
-            'rand_poses_minor': False,
-            'rand_poses_full': False,
-            'rand_goal_colour': False,
-            'rand_dynamics': False,
-            'egocentric': True,
-        }),
+        # egocentric view shift (probably a bad idea to add this as a test env,
+        # rather than a postprocessor or something)
+        # (MoveToRegionEnv, mtr_ep_len, '-TestEgo', {
+        #     'rand_poses_minor': False,
+        #     'rand_poses_full': False,
+        #     'rand_goal_colour': False,
+        #     'rand_dynamics': False,
+        #     'egocentric': True,
+        # }),
     ]
 
     mr_ep_len = 120
