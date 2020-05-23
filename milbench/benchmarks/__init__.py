@@ -11,6 +11,7 @@ import numpy as np
 
 from milbench.benchmarks.cluster import ClusterColourEnv, ClusterShapeEnv
 from milbench.benchmarks.find_dupe import FindDupeEnv
+from milbench.benchmarks.fix_colour import FixColourEnv
 from milbench.benchmarks.make_line import MakeLineEnv
 from milbench.benchmarks.match_regions import MatchRegionsEnv
 from milbench.benchmarks.move_to_corner import MoveToCornerEnv
@@ -209,7 +210,7 @@ def register_envs():
             'rand_goal_colour': False,
             'rand_dynamics': True,
         }),
-        (MoveToRegionEnv, mtr_ep_len, '-TestAll', {
+        (MoveToRegionEnv, mtr_ep_len, '-TestAll', {  # to stop yapf
             'rand_poses_minor': False,
             # rand_poses_full subsumes rand_poses_minor
             'rand_poses_full': True,
@@ -435,6 +436,74 @@ def register_envs():
         }),
     ]
 
+    fc_ep_len = 80
+    fix_colour_variants = [
+        (FixColourEnv, fc_ep_len, '-Demo', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (FixColourEnv, fc_ep_len, '-TestJitter', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': True,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (FixColourEnv, fc_ep_len, '-TestColour', {
+            'rand_colours': True,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (FixColourEnv, fc_ep_len, '-TestShape', {
+            'rand_colours': False,
+            'rand_shapes': True,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': False,
+        }),
+        (FixColourEnv, fc_ep_len, '-TestLayout', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
+            'rand_dynamics': False,
+        }),
+        (FixColourEnv, fc_ep_len, '-TestCountPlus', {
+            'rand_colours': True,
+            'rand_shapes': True,
+            'rand_count': True,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
+            'rand_dynamics': False,
+        }),
+        (FixColourEnv, fc_ep_len, '-TestDynamics', {
+            'rand_colours': False,
+            'rand_shapes': False,
+            'rand_count': False,
+            'rand_layout_minor': False,
+            'rand_layout_full': False,
+            'rand_dynamics': True,
+        }),
+        (FixColourEnv, fc_ep_len, '-TestAll', {
+            'rand_colours': True,
+            'rand_shapes': True,
+            'rand_count': True,
+            'rand_layout_minor': False,
+            'rand_layout_full': True,
+            'rand_dynamics': True,
+        }),
+    ]
+
     # Long episodes because this is a hard environment. You can have up to 10
     # blocks when doing random layouts, and that takes a human 20-30s to
     # process (so 240/8=30s is just enough time to finish a 10-block run if
@@ -511,12 +580,13 @@ def register_envs():
 
     # collection of ALL env specifications
     env_cls_suffix_kwargs = [
-        *move_to_corner_variants,
-        *move_to_region_variants,
-        *match_regions_variants,
         *cluster_variants,
         *find_dupe_variants,
+        *fix_colour_variants,
         *make_line_variants,
+        *match_regions_variants,
+        *move_to_corner_variants,
+        *move_to_region_variants,
     ]
 
     # register all the envs and record their names
