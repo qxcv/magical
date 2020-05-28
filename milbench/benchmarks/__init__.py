@@ -54,7 +54,8 @@ def _gym_tree_map(f, *structures):
 
 
 class EagerDictFrameStack(gym.Wrapper):
-    """Version of Gym's frame stack wrapper that is (1) totally eager, and (2)
+    """Version of Gym's frame stack wrapper that is (1) totally eager, (2)
+    stacks along channels axis instead of a separate leading axis, and (3)
     supports nested Dict observation spaces with Box values at the leaves."""
     def __init__(self, env, depth):
         super().__init__(env)
@@ -62,8 +63,8 @@ class EagerDictFrameStack(gym.Wrapper):
         self.frames = collections.deque(maxlen=depth)
 
         def box_map(box):
-            low = np.repeat(box.low[None], depth, axis=0)
-            high = np.repeat(box.high[None], depth, axis=0)
+            low = np.repeat(box.low, depth, axis=-1)
+            high = np.repeat(box.high, depth, axis=-1)
             return Box(low=low, high=high, dtype=box.dtype)
 
         self.observation_space = _gym_tree_map(box_map, env.observation_space)
@@ -113,8 +114,8 @@ class FlattenFrameStack(gym.Wrapper):
         assert isinstance(env.observation_space, Dict)
         _gym_tree_map(box_map, env.observation_space)
         self.depth_sum = sum(self.depth_by_key.values())
-        new_low = np.repeat(orig_space.low[None], self.depth_sum, axis=0)
-        new_high = np.repeat(orig_space.high[None], self.depth_sum, axis=0)
+        new_low = np.repeat(orig_space.low, self.depth_sum, axis=-1)
+        new_high = np.repeat(orig_space.high, self.depth_sum, axis=-1)
         self.observation_space = Box(low=new_low,
                                      high=new_high,
                                      dtype=orig_space.dtype)
