@@ -7,6 +7,7 @@ import re
 import cv2
 import gym
 from gym.spaces import Box, Dict
+from gym.wrappers import ResizeObservation
 import numpy as np
 
 from milbench.benchmarks.cluster import ClusterColourEnv, ClusterShapeEnv
@@ -61,8 +62,8 @@ class EagerDictFrameStack(gym.Wrapper):
         self.frames = collections.deque(maxlen=depth)
 
         def box_map(box):
-            low = np.repeat(box.low[np.newaxis, ...], depth, axis=0)
-            high = np.repeat(box.high[np.newaxis, ...], depth, axis=0)
+            low = np.repeat(box.low[None], depth, axis=0)
+            high = np.repeat(box.high[None], depth, axis=0)
             return Box(low=low, high=high, dtype=box.dtype)
 
         self.observation_space = _gym_tree_map(box_map, env.observation_space)
@@ -82,6 +83,63 @@ class EagerDictFrameStack(gym.Wrapper):
         observation = self.env.reset(**kwargs)
         for _ in range(self.depth):
             self.frames.append(observation)
+        return self._get_observation()
+
+
+class FlattenFrameStack(gym.Wrapper):
+    """Like EagerFrameStack, except it stacks all images into one big frame.
+    Supports variable lookback for each key."""
+    def __init__(self, env, depth_by_key):
+        super().__init__(env)
+        self.depth_by_key = depth_by_key
+        self.frames_by_key = collections.OrderedDict([
+            (k, collections.deque(maxlen=k_depth))
+            for k, k_depth in depth_by_key.items()
+        ])
+
+        orig_space = None
+
+        def box_map(box):
+            nonlocal orig_space
+            if orig_space is None:
+                orig_space = box
+            else:
+                assert np.all(box.low == orig_space.low)
+                assert np.all(box.high == orig_space.high)
+                assert box.dtype == orig_space.dtype
+            return box  # this is never used
+
+        # figure out what the space is inside the dict
+        assert isinstance(env.observation_space, Dict)
+        _gym_tree_map(box_map, env.observation_space)
+        self.depth_sum = sum(self.depth_by_key.values())
+        new_low = np.repeat(orig_space.low[None], self.depth_sum, axis=0)
+        new_high = np.repeat(orig_space.high[None], self.depth_sum, axis=0)
+        self.observation_space = Box(low=new_low,
+                                     high=new_high,
+                                     dtype=orig_space.dtype)
+
+    def _get_observation(self):
+        # assume depth 1 dict
+        all_frames = []
+        for frames in self.frames_by_key.values():
+            all_frames.extend(frames)
+        len(all_frames) == self.depth_sum
+        stacked_image = np.concatenate(all_frames, axis=-1)
+        return stacked_image
+
+    def step(self, action):
+        observation, reward, done, info = self.env.step(action)
+        for key, frame in observation.items():
+            self.frames_by_key[key].append(frame)
+        return self._get_observation(), reward, done, info
+
+    def reset(self, **kwargs):
+        observation = self.env.reset(**kwargs)
+        for key, frame in observation.items():
+            depth = self.depth_by_key[key]
+            for _ in range(depth):
+                self.frames_by_key[key].append(frame)
         return self._get_observation()
 
 
@@ -128,11 +186,44 @@ def lores_stack_entry_point(env_cls, small_res, frames=4):
     return make_lores_stack
 
 
+def lores_ea_entry_point(env_cls, small_res, allo_frames=1, ego_frames=3):
+    """For stacking ego/allo frames together."""
+    def make_lores_ea(**kwargs):
+        base_env = env_cls(**kwargs)
+        stack_env = FlattenFrameStack(
+            base_env,
+            collections.OrderedDict([
+                ('allo', allo_frames),
+                ('ego', ego_frames),
+            ]))
+        resize_env = ResizeObservation(stack_env, small_res)
+        return resize_env
+
+    return make_lores_ea
+
+
 DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS = collections.OrderedDict([
-    # Images downsampled to 96x96 four adjacent frames stacked together. That
-    # is about the smallest size at which you can distinguish pentagon vs.
-    # hexagon vs. circle. It's also about 20% as many pixels as an ImageNet
-    # network, so should be reasonably memory-efficient to train.
+    # stacking latest allo view with three most recent ego views (output is
+    # just a stacked array, not a 3D array)
+    ('LoRes3EA',
+     functools.partial(lores_ea_entry_point,
+                       small_res=(96, 96),
+                       allo_frames=1,
+                       ego_frames=3)),
+    # stacking egocentric views from four ego/allo dicts & stacking them
+    # together
+    ('LoRes4E',
+     functools.partial(lores_ea_entry_point,
+                       small_res=(96, 96),
+                       allo_frames=0,
+                       ego_frames=4)),
+    # stacking four allocentric views instead
+    ('LoRes4A',
+     functools.partial(lores_ea_entry_point,
+                       small_res=(96, 96),
+                       allo_frames=4,
+                       ego_frames=0)),
+    # stacking values of four dicts together to produce a single new dict
     ('LoResStack',
      functools.partial(lores_stack_entry_point, small_res=(96, 96), frames=4)),
 ])
