@@ -73,6 +73,8 @@ def main(record, env_name, print_spec):
                     env.debug_print_entity_spec()
                 if record:
                     started = False
+                    # FIXME: don't use the imitation TrajectoryAccumulator, use
+                    # my own hand-rolled code.
                     traj_accum = TrajectoryAccumulator()
                     traj_accum.add_step({"obs": obs})
                 else:

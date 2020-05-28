@@ -201,7 +201,7 @@ class Viewer(object):
     def add_onetime(self, geom):
         self.onetime_geoms.append(geom)
 
-    def render(self, return_rgb_array=False):
+    def render(self, return_rgb_array=False, update_foreground=True):
         # switch to window and ONLY render to FBO
         self.window.switch_to()
         self.render_fbo.bind()
@@ -234,11 +234,13 @@ class Viewer(object):
             arr = np.frombuffer(image_data.data, dtype=np.uint8)
             arr = arr.reshape(self.height, self.width, 3)[::-1]
 
-        # also draw to main window
-        gl.glClearColor(*self.background_rgb, 1)
-        self.window.clear()
-        blit_fbo(self.width, self.height, self.render_fbo.id, 0)
-        self.window.flip()
+        # optionally blit to main window (should be on by default, but we can
+        # skip it if we only want an offscreen render)
+        if update_foreground:
+            gl.glClearColor(*self.background_rgb, 1)
+            self.window.clear()
+            blit_fbo(self.width, self.height, self.render_fbo.id, 0)
+            self.window.flip()
 
         return arr if return_rgb_array else self.isopen
 

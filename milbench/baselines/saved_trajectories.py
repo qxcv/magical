@@ -16,7 +16,7 @@ class MILBenchTrajectory(NamedTuple):
     `imitation` installed."""
 
     acts: np.ndarray
-    obs: np.ndarray
+    obs: dict
     rews: np.ndarray
     infos: Optional[List[dict]]
 
@@ -24,6 +24,8 @@ class MILBenchTrajectory(NamedTuple):
 class _TrajRewriteUnpickler(Unpickler):
     """Custom unpickler that replaces references to `Trajectory` class in
     `imitation` with custom trajectory class in this module."""
+    # FIXME: can I remove this now? I remember it being necessary when I first
+    # started recording trajectories, but that should be fixed now.
     def find_class(self, module, name):
         # print('find_class(%r, %r)' % (module, name))
         if (module, name) == ('imitation.util.rollout', 'Trajectory'):

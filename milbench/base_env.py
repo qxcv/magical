@@ -1,6 +1,7 @@
 """Gym wrapper for shape-pushing environment."""
 
 import abc
+import collections
 import functools
 import inspect
 
@@ -82,18 +83,28 @@ class BaseEnv(gym.Env, abc.ABC):
                  phys_iter=10,
                  max_episode_steps=None,
                  rand_dynamics=False,
-                 egocentric=False):
+                 ego_view=True,
+                 allo_view=True):
         self.phys_iter = phys_iter
         self.phys_steps = phys_steps
         self.fps = fps
         self.res_hw = res_hw
         self.max_episode_steps = max_episode_steps
-        self.egocentric = egocentric
-        # RGB observation, stored as bytes
-        self.observation_space = spaces.Box(low=0.0,
-                                            high=255,
-                                            shape=(*res_hw, 3),
-                                            dtype=np.uint8)
+        self.ego_view = ego_view
+        self.allo_view = allo_view
+        assert self.ego_view or self.allo_view, \
+            "must use egocentric view or allocentric view (or both)"
+        make_image_space = functools.partial(spaces.Box,
+                                             low=0.0,
+                                             high=255,
+                                             shape=(*res_hw, 3),
+                                             dtype=np.uint8)
+        space_dict = collections.OrderedDict()
+        if self.allo_view:
+            space_dict['allo'] = make_image_space()
+        if self.ego_view:
+            space_dict['ego'] = make_image_space()
+        self.observation_space = spaces.Dict(space_dict)
         # action space includes every combination of those
         self.action_space = spaces.Discrete(len(en.ACTION_NUMS_FLAGS_NAMES))
 
@@ -224,10 +235,7 @@ class BaseEnv(gym.Env, abc.ABC):
 
         assert np.allclose(self._arena.left + self._arena.right, 0)
         assert np.allclose(self._arena.bottom + self._arena.top, 0)
-        self.viewer.set_bounds(left=self._arena.left * ARENA_ZOOM_OUT,
-                               right=self._arena.right * ARENA_ZOOM_OUT,
-                               bottom=self._arena.bottom * ARENA_ZOOM_OUT,
-                               top=self._arena.top * ARENA_ZOOM_OUT)
+        self._use_allo_cam()
 
         # # step forward by one second so PyMunk can recover from bad initial
         # # conditions
@@ -293,28 +301,55 @@ class BaseEnv(gym.Env, abc.ABC):
         # the first time step.
         info.update(eval_score=eval_score)
 
-        obs_u8 = self.render(mode='rgb_array')
+        obs_dict_u8 = self.render(mode='rgb_array')
 
-        return obs_u8, reward, done, info
+        return obs_dict_u8, reward, done, info
 
-    def render(self, mode='human', egocentric=None):
+    def _use_ego_cam(self):
+        self.viewer.set_cam_follow(
+            source_xy_world=(self._robot.robot_body.position.x,
+                             self._robot.robot_body.position.y),
+            target_xy_01=(0.5, 0.15),
+            viewport_hw_world=(self._arena_h * ARENA_ZOOM_OUT,
+                               self._arena_w * ARENA_ZOOM_OUT),
+            rotation=self._robot.robot_body.angle)
+
+    def _use_allo_cam(self):
+        self.viewer.set_bounds(left=self._arena.left * ARENA_ZOOM_OUT,
+                               right=self._arena.right * ARENA_ZOOM_OUT,
+                               bottom=self._arena.bottom * ARENA_ZOOM_OUT,
+                               top=self._arena.top * ARENA_ZOOM_OUT)
+
+    def render(self, mode='human'):
+        # FIXME: would be simpler for this to special-case to mode='human',
+        # mode='ego', and mode='allo', then handle the logic for combining ego
+        # + allo in .step().
         if self.viewer is None:
             return None
+
         for ent in self._entities:
             ent.pre_draw()
-        if (egocentric is not None and egocentric) or self.egocentric:
-            self.viewer.set_cam_follow(
-                source_xy_world=(self._robot.robot_body.position.x,
-                                 self._robot.robot_body.position.y),
-                target_xy_01=(0.5, 0.15),
-                viewport_hw_world=(self._arena_h * ARENA_ZOOM_OUT,
-                                   self._arena_w * ARENA_ZOOM_OUT),
-                rotation=self._robot.robot_body.angle)
+
         if mode == 'human':
             self.viewer.window.set_visible(True)
         else:
             assert mode == 'rgb_array'
-        return self.viewer.render(return_rgb_array=True)
+
+        view_dict = collections.OrderedDict()
+        is_human = mode == 'human'
+        if self.allo_view:
+            self._use_allo_cam()
+            view_dict['allo'] = self.viewer.render(return_rgb_array=True,
+                                                   update_foreground=is_human)
+        if self.ego_view:
+            self._use_ego_cam()
+            # allo view is the default foreground view; we only show ego view
+            # in foreground if it's the only thing available
+            view_dict['ego'] = self.viewer.render(return_rgb_array=True,
+                                                  update_foreground=is_human
+                                                  and not self.allo_view)
+
+        return view_dict
 
     def close(self):
         if self.viewer:

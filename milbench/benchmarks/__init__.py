@@ -4,9 +4,9 @@ import collections
 import functools
 import re
 
+import cv2
 import gym
-from gym.spaces import Box
-from gym.wrappers import FrameStack, GrayScaleObservation, ResizeObservation
+from gym.spaces import Box, Dict
 import numpy as np
 
 from milbench.benchmarks.cluster import ClusterColourEnv, ClusterShapeEnv
@@ -32,36 +32,97 @@ __all__ = [
 DEFAULT_RES = (384, 384)
 
 
-class EagerFrameStack(FrameStack):
-    """Variant of FrameStack that concatenates along the last (channels)
-    axis."""
-    def __init__(self, env, num_stack):
-        super().__init__(env, num_stack, lz4_compress=False)
-        old_shape = env.observation_space.shape
-        assert len(old_shape) == 3 and old_shape[-1] in {3, 1}, \
-            f"expected old shape to be 3D tensor with RGB or greyscale " \
-            f"colour axis at end, but got shape {old_shape}"
-        low = np.repeat(env.observation_space.low, num_stack, axis=-1)
-        high = np.repeat(env.observation_space.high, num_stack, axis=-1)
-        self.observation_space = Box(low=low,
-                                     high=high,
-                                     dtype=self.observation_space.dtype)
+def _gym_tree_map(f, *structures):
+    """Apply a function f to the given structures. If the structures are
+    dictionaries or Gym dictionary observation spaces, then it recursively
+    applies the function to their values and returns a new dict (or new Dict
+    observation space), as appropriate."""
+    s0 = structures[0]
+    if isinstance(s0, Dict):
+        return Dict(
+            collections.OrderedDict([
+                (k,
+                 _gym_tree_map(f, *(struct.spaces[k]
+                                    for struct in structures)))
+                for k in s0.spaces.keys()
+            ]))
+    elif isinstance(s0, (dict, collections.OrderedDict)):
+        return type(s0)((k, _gym_tree_map(f, *(s[k] for s in structures)))
+                        for k in s0.keys())
+    return f(*structures)
+
+
+class EagerDictFrameStack(gym.Wrapper):
+    """Version of Gym's frame stack wrapper that is (1) totally eager, and (2)
+    supports nested Dict observation spaces with Box values at the leaves."""
+    def __init__(self, env, depth):
+        super().__init__(env)
+        self.depth = depth
+        self.frames = collections.deque(maxlen=depth)
+
+        def box_map(box):
+            low = np.repeat(box.low[np.newaxis, ...], depth, axis=0)
+            high = np.repeat(box.high[np.newaxis, ...], depth, axis=0)
+            return Box(low=low, high=high, dtype=box.dtype)
+
+        self.observation_space = _gym_tree_map(box_map, env.observation_space)
 
     def _get_observation(self):
-        assert len(self.frames) == self.num_stack, \
-            (len(self.frames), self.num_stack)
-        return np.concatenate(self.frames, axis=-1)
+        assert len(self.frames) == self.depth, \
+            (len(self.frames), self.depth)
+        return _gym_tree_map(lambda *frames: np.concatenate(frames, axis=-1),
+                             *self.frames)
+
+    def step(self, action):
+        observation, reward, done, info = self.env.step(action)
+        self.frames.append(observation)
+        return self._get_observation(), reward, done, info
+
+    def reset(self, **kwargs):
+        observation = self.env.reset(**kwargs)
+        for _ in range(self.depth):
+            self.frames.append(observation)
+        return self._get_observation()
 
 
-def lores_stack_entry_point(env_cls, small_res, frames=4, greyscale=False):
+class ResizeDictObservation(gym.ObservationWrapper):
+    """Version of Gym's ResizeObservation wrapper that supports dict
+    observations."""
+    def __init__(self, env, res):
+        super().__init__(env)
+
+        if isinstance(res, int):
+            res = (res, res)
+        assert all(x > 0 for x in res), res
+        self.res = tuple(res)
+
+        def space_mapper(box):
+            # copy channels from the box, but replace height/width (assumed to
+            # be leading two dims)
+            new_shape = self.res + box.shape[2:]
+            return Box(low=0, high=255, shape=new_shape, dtype=np.uint8)
+
+        self.observation_space = _gym_tree_map(space_mapper,
+                                               env.observation_space)
+
+    def observation(self, observation):
+        # use exactly the same resizing method as ResizeObservation in Gym
+        def obs_mapper(box_obs):
+            box_obs = cv2.resize(box_obs,
+                                 self.res[::-1],
+                                 interpolation=cv2.INTER_AREA)
+            if box_obs.ndim == 2:
+                box_obs = np.expand_dims(box_obs, -1)
+            return box_obs
+
+        return _gym_tree_map(obs_mapper, observation)
+
+
+def lores_stack_entry_point(env_cls, small_res, frames=4):
     def make_lores_stack(**kwargs):
         base_env = env_cls(**kwargs)
-        if greyscale:
-            col_env = GrayScaleObservation(base_env, keep_dim=True)
-        else:
-            col_env = base_env
-        resize_env = ResizeObservation(col_env, small_res)
-        stack_env = EagerFrameStack(resize_env, frames)
+        resize_env = ResizeDictObservation(base_env, small_res)
+        stack_env = EagerDictFrameStack(resize_env, frames)
         return stack_env
 
     return make_lores_stack
@@ -74,14 +135,6 @@ DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS = collections.OrderedDict([
     # network, so should be reasonably memory-efficient to train.
     ('LoResStack',
      functools.partial(lores_stack_entry_point, small_res=(96, 96), frames=4)),
-    # This next one is only intended for debugging RL algorithms. The images
-    # are too small to resolve, e.g., octagons vs. circles, and it also omits
-    # colour, which is necessary for some tasks.
-    ('AtariStyle',
-     functools.partial(lores_stack_entry_point,
-                       small_res=(84, 84),
-                       frames=4,
-                       greyscale=True)),
 ])
 _ENV_NAME_RE = re.compile(
     r'^(?P<name_prefix>[^-]+)(?P<demo_test_spec>-(Demo|Test[^-]*))'
