@@ -11,10 +11,10 @@ from gym.utils import EzPickle
 import numpy as np
 import pymunk as pm
 
-import milbench.entities as en
-import milbench.gym_render as r
-from milbench.phys_vars import PhysicsVariablesBase, PhysVar
-from milbench.style import ARENA_ZOOM_OUT, COLOURS_RGB, lighten_rgb
+import magical.entities as en
+import magical.gym_render as r
+from magical.phys_vars import PhysicsVariablesBase, PhysVar
+from magical.style import ARENA_ZOOM_OUT, COLOURS_RGB, lighten_rgb
 
 
 def ez_init(*args, **kwargs):

@@ -1,9 +1,9 @@
 from gym.utils import EzPickle
 import numpy as np
 
-from milbench import geom
-from milbench.base_env import BaseEnv, ez_init
-import milbench.entities as en
+from magical import geom
+from magical.base_env import BaseEnv, ez_init
+import magical.entities as en
 
 SMALL_POS_BOUND = 0.05
 DEFAULT_ROBOT_POSE = ((0.058, 0.53), -2.13)

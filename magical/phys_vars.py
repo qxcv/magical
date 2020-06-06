@@ -8,7 +8,7 @@ randomisation variants of a task might randomise that single number on
 environment reset.
 
 See `base_env.py` for actual values of the real physics variables used in the
-MILBench environments.
+MAGICAL environments.
 
 (in hindsight this is wayyyyy more complicated than it will to be for the
 foreseeable future, but I had fun making it :D)"""

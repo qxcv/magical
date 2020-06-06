@@ -57,7 +57,7 @@ except ImportError:
 import math  # noqa: E402
 import numpy as np  # noqa: E402
 
-from milbench.pyglet_backport.image import Framebuffer, \
+from magical.pyglet_backport.image import Framebuffer, \
     Renderbuffer, Texture  # noqa: E402
 
 RAD2DEG = 57.29577951308232

@@ -3,9 +3,9 @@ import itertools as it
 from gym.utils import EzPickle
 import numpy as np
 
-from milbench import geom
-from milbench.base_env import BaseEnv, ez_init
-import milbench.entities as en
+from magical import geom
+from magical.base_env import BaseEnv, ez_init
+import magical.entities as en
 
 INLIER_RAD_MULT = 1.5
 MAX_SEP_RADS = 3.5

@@ -5,7 +5,7 @@ from pyglet import gl
 from pyglet.image import ImageException
 from pyglet.image.codecs import get_encoders, ImageEncodeException
 
-from milbench.pyglet_backport.image.imagebuffer import \
+from magical.pyglet_backport.image.imagebuffer import \
     get_max_color_attachments, Renderbuffer, Framebuffer
 
 

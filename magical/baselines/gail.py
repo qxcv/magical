@@ -12,10 +12,10 @@ import numpy as np
 from stable_baselines import logger
 import tensorflow as tf
 
-from milbench.baselines.common import SimpleCNNPolicy, make_convnet_builder
-from milbench.baselines.saved_trajectories import (
+from magical.baselines.common import SimpleCNNPolicy, make_convnet_builder
+from magical.baselines.saved_trajectories import (
     load_demos, preprocess_demos_with_wrapper, splice_in_preproc_name)
-from milbench.benchmarks import register_envs
+from magical.benchmarks import register_envs
 
 
 @click.group()

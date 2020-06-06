@@ -4,9 +4,9 @@ import enum
 from gym.utils import EzPickle
 import numpy as np
 
-from milbench.base_env import BaseEnv, ez_init
-import milbench.entities as en
-import milbench.geom as geom
+from magical.base_env import BaseEnv, ez_init
+import magical.entities as en
+import magical.geom as geom
 
 
 class BaseClusterEnv(BaseEnv, abc.ABC):

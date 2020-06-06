@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from statsmodels.stats.weightstats import DescrStatsW
 
-from milbench.benchmarks import DEMO_ENVS_TO_TEST_ENVS_MAP
+from magical.benchmarks import DEMO_ENVS_TO_TEST_ENVS_MAP
 
 
 class EvaluationProtocol(abc.ABC):

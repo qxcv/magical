@@ -10,13 +10,13 @@ from gym.spaces import Box, Dict
 from gym.wrappers import ResizeObservation
 import numpy as np
 
-from milbench.benchmarks.cluster import ClusterColourEnv, ClusterShapeEnv
-from milbench.benchmarks.find_dupe import FindDupeEnv
-from milbench.benchmarks.fix_colour import FixColourEnv
-from milbench.benchmarks.make_line import MakeLineEnv
-from milbench.benchmarks.match_regions import MatchRegionsEnv
-from milbench.benchmarks.move_to_corner import MoveToCornerEnv
-from milbench.benchmarks.move_to_region import MoveToRegionEnv
+from magical.benchmarks.cluster import ClusterColourEnv, ClusterShapeEnv
+from magical.benchmarks.find_dupe import FindDupeEnv
+from magical.benchmarks.fix_colour import FixColourEnv
+from magical.benchmarks.make_line import MakeLineEnv
+from magical.benchmarks.match_regions import MatchRegionsEnv
+from magical.benchmarks.move_to_corner import MoveToCornerEnv
+from magical.benchmarks.move_to_region import MoveToRegionEnv
 
 __all__ = [
     'DEMO_ENVS_TO_TEST_ENVS_MAP',

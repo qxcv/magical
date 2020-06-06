@@ -1,4 +1,4 @@
-"""Tool for demonstrating MILBench and collecting demos."""
+"""Tool for demonstrating MAGICAL and collecting demos."""
 
 import datetime
 import gzip
@@ -12,8 +12,8 @@ import gym
 from imitation.util.rollout import TrajectoryAccumulator
 from pyglet.window import key
 
-from milbench.benchmarks import register_envs
-from milbench.entities import RobotAction as RA
+from magical.benchmarks import register_envs
+from magical.entities import RobotAction as RA
 
 
 def get_unique_fn(env_name):

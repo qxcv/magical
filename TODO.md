@@ -4,14 +4,8 @@
   class which can handle keyboard I/O (if desired), resetting, saving
   demonstrations, recording videos, etc. This should be useful for all the
   baselines.
-- Refactor the viewer so that it can do a separate render at a higher resolution
-  for the human. This would be very useful for demonstrating the code, so that
-  people don't have to squint at a 256x256 window on my laptop. I could
-  additionally the default machine-readable image resolution to 512x512 or
-  something else that seems reasonable (probably the arena is too small right
-  now for the more advanced things I want to do). It would also be nice to have
-  an interface for collecting demos that includes a counter for time remaining,
-  a scoring interface, and some on-screen description of the task.
+- Refactor the viewer so that it can do a separate render at a higher
+  resolution, but for the human demonstrator only.
 - Refactor state preprocessors so that demos aren't tied to a particular
   preprocessing of the environment.
 - Move the test() and testall() functions in bc.py into their own rollout script

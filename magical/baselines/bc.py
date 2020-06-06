@@ -15,11 +15,11 @@ import numpy as np
 import tensorflow as tf
 import tqdm
 
-from milbench.baselines.common import SimpleCNNPolicy
-from milbench.baselines.saved_trajectories import (
+from magical.baselines.common import SimpleCNNPolicy
+from magical.baselines.saved_trajectories import (
     load_demos, preprocess_demos_with_wrapper, splice_in_preproc_name)
-from milbench.benchmarks import register_envs
-from milbench.evaluation import EvaluationProtocol, latexify_results
+from magical.benchmarks import register_envs
+from magical.evaluation import EvaluationProtocol, latexify_results
 
 # put this here so that it happens even in subprocesses spawned for vecenvs
 register_envs()

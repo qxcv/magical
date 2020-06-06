@@ -2,9 +2,9 @@
 from setuptools import setup
 
 setup(
-    name='milbench',
+    name='magical',
     version='0.0.1',
-    packages=['milbench'],
+    packages=['magical'],
     install_requires=[
         'pymunk~=5.6.0',
         'pyglet>=1.3.0,<1.4.0',

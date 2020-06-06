@@ -10,9 +10,9 @@ from imitation.algorithms.dagger import (DAggerTrainer, NeedsDemosException,
 from imitation.util.util import make_session
 from pyglet.window import key
 
-from milbench.baselines.common import SimpleCNNPolicy
-from milbench.benchmarks import register_envs
-from milbench.entities import RobotAction as RA
+from magical.baselines.common import SimpleCNNPolicy
+from magical.benchmarks import register_envs
+from magical.entities import RobotAction as RA
 
 
 @click.group()

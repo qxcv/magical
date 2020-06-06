@@ -2,9 +2,9 @@ import functools
 
 from gym.utils import EzPickle
 
-from milbench.base_env import BaseEnv, ez_init
-import milbench.entities as en
-import milbench.geom as geom
+from magical.base_env import BaseEnv, ez_init
+import magical.entities as en
+import magical.geom as geom
 
 MIN_REGIONS = 2
 MAX_REGIONS = 3

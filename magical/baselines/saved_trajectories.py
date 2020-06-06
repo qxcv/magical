@@ -7,10 +7,10 @@ from typing import List, NamedTuple, Optional
 import gym
 import numpy as np
 
-from milbench.benchmarks import DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS
+from magical.benchmarks import DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS
 
 
-class MILBenchTrajectory(NamedTuple):
+class MAGICALTrajectory(NamedTuple):
     """Duplicate of `imitation.util.rollout.Trajectory`. It's here so that I
     can unpickle trajectories semi-faithfully without needing to have
     `imitation` installed."""
@@ -28,8 +28,10 @@ class _TrajRewriteUnpickler(Unpickler):
     # started recording trajectories, but that should be fixed now.
     def find_class(self, module, name):
         # print('find_class(%r, %r)' % (module, name))
-        if (module, name) == ('imitation.util.rollout', 'Trajectory'):
-            return MILBenchTrajectory
+        if (module, name) == ('imitation.util.rollout', 'Trajectory') \
+          or (module, name) == ('milbench.baselines.saved_trajectories',
+                                'MILBenchTrajectory'):
+            return MAGICALTrajectory
         return super().find_class(module, name)
 
 
@@ -50,7 +52,7 @@ def load_demos(demo_paths, rewrite_traj_cls=True, verbose=False):
 
 
 def splice_in_preproc_name(base_env_name, preproc_name):
-    """Splice the name of a preprocessor into a milbench benchmark name. e.g.
+    """Splice the name of a preprocessor into a magical benchmark name. e.g.
     you might start with "MoveToCorner-Demo-v0" and insert "LoResStack" to end
     up with "MoveToCorner-Demo-LoResStack-v0". Will do a sanity check to ensure
     that the preprocessor actually exists."""
@@ -101,7 +103,7 @@ def preprocess_demos_with_wrapper(trajectories,
             metadata.
         preproc_name (str or None): name of preprocessor to apply. Should be
             available in
-            `milbench.benchmarks.DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS`.
+            `magical.benchmarks.DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS`.
         wrapper (callable or None): wrapper constructor. Should take a
             constructed Gym environment and return a wrapped Gym-like
             environment. Either `preproc_name` or `wrapper` must be specified,
@@ -145,7 +147,7 @@ def preprocess_demos_with_wrapper(trajectories,
         # keep infos as a list (hard to get at elements otherwise)
         stack_values['infos'] = values.get('infos')
         # use type(traj) to preserve either Trajectory namedtuple type (from
-        # imitation module), or MILBenchTrajectory type (from milbench module)
+        # imitation module), or MAGICAL type (from magical module)
         new_traj = type(traj)(**stack_values)
         rv_trajectories.append(new_traj)
     return rv_trajectories

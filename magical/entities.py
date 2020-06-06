@@ -11,11 +11,11 @@ import numpy as np
 import pymunk as pm
 import pymunk.autogeometry as autogeom
 
-import milbench.geom as gtools
-import milbench.gym_render as r
-from milbench.style import (COLOURS_RGB, GOAL_LINE_THICKNESS,
-                            ROBOT_LINE_THICKNESS, SHAPE_LINE_THICKNESS,
-                            darken_rgb, lighten_rgb)
+import magical.geom as gtools
+import magical.gym_render as r
+from magical.style import (COLOURS_RGB, GOAL_LINE_THICKNESS,
+                           ROBOT_LINE_THICKNESS, SHAPE_LINE_THICKNESS,
+                           darken_rgb, lighten_rgb)
 
 # #############################################################################
 # Entity ABC

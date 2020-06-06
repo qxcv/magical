@@ -8,9 +8,9 @@ import click
 import cloudpickle
 import gym
 
-from milbench.baselines.saved_trajectories import (  # this appeases isort
-    MILBenchTrajectory, load_demos)
-from milbench.benchmarks import register_envs
+from magical.baselines.saved_trajectories import (  # this appeases isort
+    MAGICALTrajectory, load_demos)
+from magical.benchmarks import register_envs
 
 SUFFIX = '.pkl.gz'
 
@@ -27,7 +27,7 @@ def main(out_dir, target_env_name, demo_paths):
         os.makedirs(out_dir, exist_ok=True)
     register_envs()
     # don't bother seeding env; we'll just hope it's deterministic (which is
-    # true of demo variants of milbench envs)
+    # true of demo variants of magical envs)
     env = gym.make(target_env_name)
     try:
         for old_path, demo_dict in zip(demo_paths, demo_itr):
@@ -58,10 +58,10 @@ def main(out_dir, target_env_name, demo_paths):
                 print(f"Padded to {pad_acts} noops")
             score = info.get('eval_score')
             print(f"Traj done. sum(rew) is {sum(rews)}, score is {score}")
-            new_traj = MILBenchTrajectory(acts=actions,
-                                          obs=observations,
-                                          rews=rews,
-                                          infos=infos)
+            new_traj = MAGICALTrajectory(acts=actions,
+                                         obs=observations,
+                                         rews=rews,
+                                         infos=infos)
             new_dict = {
                 'trajectory': new_traj,
                 'score': score,

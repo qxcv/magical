@@ -10,3 +10,4 @@ report-baselines/
 film/
 *.pkl.gz
 *.mp4
+.idea/

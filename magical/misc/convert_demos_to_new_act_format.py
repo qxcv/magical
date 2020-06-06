@@ -6,9 +6,9 @@ import os
 import cloudpickle
 import numpy as np
 
-from milbench.baselines.saved_trajectories import (  # this appeases isort
-    MILBenchTrajectory, load_demos)
-import milbench.entities as en
+from magical.baselines.saved_trajectories import (  # this appeases isort
+    MAGICALTrajectory, load_demos)
+import magical.entities as en
 
 SOURCE_TREE = "demos/"
 DEST_TREE = "demos-new/"
@@ -56,10 +56,10 @@ def main():
 
             # splice the new actions into a new demonstration with the right
             # trajectory
-            new_demo_traj = MILBenchTrajectory(acts=new_act_tensor,
-                                               obs=demo_traj.obs,
-                                               rews=demo_traj.rews,
-                                               infos=demo_traj.infos)
+            new_demo_traj = MAGICALTrajectory(acts=new_act_tensor,
+                                              obs=demo_traj.obs,
+                                              rews=demo_traj.rews,
+                                              infos=demo_traj.infos)
             new_demo_dict = {k: v for k, v in demo_dict.items()}
             new_demo_dict['trajectory'] = new_demo_traj
 
