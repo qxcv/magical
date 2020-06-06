@@ -11,9 +11,8 @@ from magical.benchmarks import DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS
 
 
 class MAGICALTrajectory(NamedTuple):
-    """Duplicate of `imitation.util.rollout.Trajectory`. It's here so that I
-    can unpickle trajectories semi-faithfully without needing to have
-    `imitation` installed."""
+    """Trajectory representation compatible with imitation's trajectory data
+    class."""
 
     acts: np.ndarray
     obs: dict
@@ -24,8 +23,6 @@ class MAGICALTrajectory(NamedTuple):
 class _TrajRewriteUnpickler(Unpickler):
     """Custom unpickler that replaces references to `Trajectory` class in
     `imitation` with custom trajectory class in this module."""
-    # FIXME: can I remove this now? I remember it being necessary when I first
-    # started recording trajectories, but that should be fixed now.
     def find_class(self, module, name):
         # print('find_class(%r, %r)' % (module, name))
         if (module, name) == ('imitation.util.rollout', 'Trajectory') \
@@ -146,8 +143,8 @@ def preprocess_demos_with_wrapper(trajectories,
         }
         # keep infos as a list (hard to get at elements otherwise)
         stack_values['infos'] = values.get('infos')
-        # use type(traj) to preserve either Trajectory namedtuple type (from
-        # imitation module), or MAGICAL type (from magical module)
+        # use type(traj) to preserve either MAGICAL trajectory type or custom
+        # type
         new_traj = type(traj)(**stack_values)
         rv_trajectories.append(new_traj)
     return rv_trajectories

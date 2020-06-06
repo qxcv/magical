@@ -1,5 +1,6 @@
 """Tool for demonstrating MAGICAL and collecting demos."""
 
+import collections
 import datetime
 import gzip
 import os
@@ -9,17 +10,39 @@ import time
 import click
 import cloudpickle
 import gym
-from imitation.util.rollout import TrajectoryAccumulator
+import numpy as np
 from pyglet.window import key
 
 from magical.benchmarks import register_envs
 from magical.entities import RobotAction as RA
+from magical.saved_trajectories import MAGICALTrajectory
 
 
 def get_unique_fn(env_name):
     now = datetime.datetime.now()
     time_str = now.strftime('%FT%H:%M:%S')
     return f"demo-{env_name}-{time_str}.pkl.gz"
+
+
+class Accumulator:
+    """Accumulates trajectory steps."""
+    def __init__(self):
+        self.partial_traj = []
+
+    def add_step(self, step_dict):
+        self.partial_traj.append(step_dict)
+
+    def finish_trajectory(self):
+        out_unstacked = collections.defaultdict(list)
+        for step_d in self.partial_traj:
+            for k, v in step_d.items():
+                out_unstacked[k].append(v)
+        out_stacked = {
+            k: np.stack(v, axis=0)
+            for k, v in out_unstacked.items()
+        }
+        self.partial_traj = []
+        return MAGICALTrajectory(**out_stacked)
 
 
 @click.command()
@@ -38,7 +61,7 @@ def main(record, env_name, print_spec):
         record_dir = os.path.abspath(record)
         print(f"Will record demos to '{record_dir}'")
         os.makedirs(record_dir, exist_ok=True)
-        traj_accum = TrajectoryAccumulator()
+        traj_accum = Accumulator()
 
     register_envs()
     env = gym.make(env_name)
@@ -73,9 +96,7 @@ def main(record, env_name, print_spec):
                     env.debug_print_entity_spec()
                 if record:
                     started = False
-                    # FIXME: don't use the imitation TrajectoryAccumulator, use
-                    # my own hand-rolled code.
-                    traj_accum = TrajectoryAccumulator()
+                    traj_accum = Accumulator()
                     traj_accum.add_step({"obs": obs})
                 else:
                     started = True

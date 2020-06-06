@@ -13,12 +13,4 @@ setup(
         'numpy>=1.17.4',
         'cloudpickle>=1.2.2',
         'statsmodels>=0.10.2',
-    ],
-    extras_require={
-        # for imitation baselines
-        'baselines': [
-            ('imitation @ '
-             'git+https://github.com/HumanCompatibleAI/imitation.git'
-             '#43e23fa0386d37b532ef58baae19ec67852ae8e4'),
-        ],
-    })
+    ])
