@@ -48,6 +48,11 @@ the builtin observation preprocessors that ship with MAGICAL.
 
 ## Available tasks
 
+<img alt="movetocorner" src="images/static-movetocorner-demo-v0.png" style="float: left; width: 128px; margin: 10px;" />
+**MoveToCorner:** here is some text
+
+<p style="clear: both;"></p>
+
 ![movetocorner task](images/static-movetocorner-demo-v0.png) **MoveToCorner:**
 Layout and CountPlus variants are unavailable for this task.
 
