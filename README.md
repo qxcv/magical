@@ -1,16 +1,20 @@
 # Multitask Assessment of Generalisation in Imitative Control Algorithms (MAGICAL)
 
 MAGICAL is a benchmark suite to evaluate the generalisation capabilities of
-imitation learning algorithms.
-
+imitation learning algorithms. Rather than using the same setting for training
+and testing, MAGICAL provides one set of "training" environments where demonstrations
+are observed, and another, distinct set of "testing" environments which each vary
+in different ways. MAGICAL is a multitask suite, and we refer to the training environment for a given task as the "demo variant", and the testing environments for task as "test variants". This structure makes it possible to evaluate how well an imitation learning (or reward learning) algorithm is able to generalise the intent behind a set of demonstrations to a substantially different setting.
 
 ![demonstration variant of one environment presented alongside three labelled test variants](images/lead.png)
+
+The different tasks that comprise the MAGICAL suite each require similar skills, such as manipulation of 2D blocks, perception of shape and colour, relational reasoning, and so on. This makes it possible, in principle, to use multi-task and meta-IL algorithms that allow for transfer of skills between tasks, and (hopefully) extrapolation of demonstrator intent across the different variants for each task.
 
 ## Installing and using MAGICAL
 
 You can install MAGICAL using `pip`:
 
-```#!sh
+```sh
 cd /path/to/this/directory
 pip install -e .
 ```
@@ -19,8 +23,8 @@ MAGICAL tasks and variants are exposed as Gym environments. Once you've
 installed MAGICAL, you can use the Gym environments as follows:
 
 ```python
-import magical
 import gym
+import magical
 
 # magical.register_envs() must be called before making any Gym envs
 magical.register_envs()
@@ -43,36 +47,35 @@ print('Observation shape:', obs.shape)  # (96, 96, 3)
 env.close()
 ```
 
-Keep reading to see a list of all available tasks and variants, as well as all
-the builtin observation preprocessors that ship with MAGICAL.
+In general, Gym environment names for MAGICAL take the form `<task-name>-<variant>[-<preprocessor]-v0`, where the final preprocessor name is optional. For instance,`FindDupe-Demo-v0`, `MoveToCorner-Demo-LoResStack-v0` and `ClusterColour-TestAll-v0` are all available Gym environments.  Keep reading to see a list of all available tasks and variants, as well as all the builtin observation preprocessors that ship with MAGICAL.
 
-## Available tasks
+## Tasks and variants
 
-<img alt="movetocorner" src="images/static-movetocorner-demo-v0.png" style="float: left; width: 128px; margin: 10px;" />
-**MoveToCorner:** here is some text
+Here are the available tasks, along with a picture of the initial state of the demo variant:
 
-<p style="clear: both;"></p>
+| | Task |
+| :---: | --- |
+| ![movetocorner task](images/static-movetocorner-demo-v0.png) | **MoveToCorner:** Robot must push a block from the bottom right corner to the top left. Does not support Layout and CountPlus variants. |
+| ![movetoregion task](images/static-movetoregion-demo-v0.png) | **MoveToRegion:** Move into the goal region and stay there. Does not support Shape and CountPlus variants. |
+| ![matchregions task](images/static-matchregions-demo-v0.png) | **MatchRegions:** Fill the goal region with all blocks of the same colour as the goal region. |
+| ![makeline task](images/static-makeline-demo-v0.png) | **MakeLine:** Arrange all blocks into a line. |
+| ![finddupe task](images/static-finddupe-demo-v0.png) | **FindDupe:** The goal region starts with one block inside it. The robot must find a duplicate of the block, and push it inside the goal region too. |
+| ![fixcolour task](images/static-fixcolour-demo-v0.png) | **FixColour:** There are several goal regions, each containing one block. One goal region has a block which doesn't match the regions colour. That block should be pushed out of its region, while keeping all other colours the same. |
+| ![clustercolour task](images/static-clustercolour-demo-v0.png) | **ClusterColour:** Sort the blocks into spatially separated clusters of uniform colour. |
+| ![clustershape task](images/static-clustershape-demo-v0.png) | **ClusterShape:** Sort the blocks into spatially separated clusters of uniform shape. |
 
-![movetocorner task](images/static-movetocorner-demo-v0.png) **MoveToCorner:**
-Layout and CountPlus variants are unavailable for this task.
+Each task can be instantiated in one of several _variants_, each of which changes one or more aspects of the environment to evaluate combinatorial generalisation:
 
-![movetoregion task](images/static-movetoregion-demo-v0.png) **MoveToRegion:**
-Shape and CountPlus variants are unavailable for this task.
+- **Demo:** the default variant in which all demonstrations are observed. Initial states of the demo variants for each task are pictured above.
+- **Jitter:** the rotations and orientations of all objects, and the size of goal regions, is jittered by up to 5% of the maximum range.
+- **Layout:** positions and rotations of all objects are completely randomised.
+- **Colour:** colours of blocks and goal reginos are randomised, subject to task-specific constraints (e.g. that there should always be at least one block of each colour in ClusterColour).
+- **Shape:** shapes of pushable blocks are randomised, again subject to task-specific constraints.
+- **CountPlus:** the layout, colour, shape, and _number_ of objects is randomised.
+- **Dynamics:** mass and friction of objects is randomsied.
+- **All:** all applicable randomisations are applied.
 
-![matchregions task](images/static-matchregions-demo-v0.png) **MatchRegions:**
-
-![makeline task](images/static-makeline-demo-v0.png) **MakeLine:**
-
-![finddupe task](images/static-finddupe-demo-v0.png) **FindDupe:**
-
-![fixcolour task](images/static-fixcolour-demo-v0.png) **FixColour:**
-
-![clustercolour task](images/static-clustercolour-demo-v0.png) **ClusterColour:**
-
-![clustershape task](images/static-clustershape-demo-v0.png) **ClusterShape:**
-
-## Available variants
-
+Except where listsed in the task table above, all tasks support all variants.
 
 ## Preprocessors
 
