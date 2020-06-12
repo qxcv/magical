@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-from setuptools import setup
+from setuptools import find_packages, setup
 
 setup(
     name='magical',
     version='0.0.1',
-    packages=['magical'],
+    packages=find_packages(),
     install_requires=[
         'pymunk~=5.6.0',
         'pyglet>=1.3.0,<1.4.0',
