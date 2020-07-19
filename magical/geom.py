@@ -8,6 +8,7 @@ import warnings
 import numpy as np
 import pymunk as pm
 from pymunk.vec2d import Vec2d
+import triangle
 
 
 def regular_poly_circumrad(n_sides, side_length):
@@ -63,6 +64,17 @@ def compute_star_verts(n_points, out_radius, in_radius):
     return vertices
 
 
+def compute_circle_verts(n_points, rad):
+    assert n_points >= 3
+    vertices = []
+    base_vertex = pm.vec2d.Vec2d(0, rad)
+    for point_num in range(n_points):
+        angle = point_num * 2 * math.pi / n_points
+        vertices.append(base_vertex.rotated(angle))
+    vertices = [(v.x, v.y) for v in vertices]
+    return vertices
+
+
 def _convert_vec(v):
     if isinstance(v, pm.vec2d.Vec2d):
         return v.x, v.y
@@ -106,6 +118,29 @@ def rect_verts(w, h):
         pm.vec2d.Vec2d(-w / 2, -h / 2),
         pm.vec2d.Vec2d(w / 2, -h / 2),
     ]
+
+
+def triangulate_simple_polygon_ogl(verts):
+    """Decompose a simple polygon into a flat array of triangle vertex
+    coordinates, suitable for drawing with GL_TRIANGLES."""
+    # segments (lines) just go from vertex to vertex
+    segments = np.stack(
+        (np.arange(len(verts)), np.arange(1, len(verts) + 1)), axis=1)
+    segments[-1] = [0, len(verts) - 1]
+
+    # this will give us a constrained delaunay triangulation
+    triangle_dict = triangle.triangulate({
+        'vertices': verts,
+        'segments': segments
+    }, 'pa')
+
+    tri_verts = triangle_dict['vertices']
+    tri_inds = triangle_dict['triangles']
+
+    # this float32 array can be passed into a GL_TRIANGLES draw call
+    ogl_verts = tri_verts[tri_inds.flatten()].flatten().astype('f4')
+
+    return ogl_verts
 
 
 class PlacementError(Exception):
