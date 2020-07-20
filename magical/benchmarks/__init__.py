@@ -177,6 +177,29 @@ class ResizeDictObservation(gym.ObservationWrapper):
         return _gym_tree_map(obs_mapper, observation)
 
 
+class ChannelsFirst(gym.ObservationWrapper):
+    """Moves last axis around to first position. Useful for going from
+    channels-last to channels-first representation."""
+    def __init__(self, env):
+        super().__init__(env)
+
+        def space_mapper(box):
+            assert isinstance(box, gym.spaces.Box), box
+            return gym.spaces.Box(low=self._rotate(box.low),
+                                  high=self._rotate(box.high),
+                                  dtype=box.dtype)
+
+        self.observation_space = _gym_tree_map(space_mapper,
+                                               env.observation_space)
+
+    @staticmethod
+    def _rotate(array):
+        return np.moveaxis(array, -1, 0)
+
+    def observation(self, observation):
+        return _gym_tree_map(self._rotate, observation)
+
+
 def lores_stack_entry_point(env_cls, small_res, frames=4):
     def make_lores_stack(**kwargs):
         base_env = env_cls(**kwargs)
@@ -187,7 +210,7 @@ def lores_stack_entry_point(env_cls, small_res, frames=4):
     return make_lores_stack
 
 
-def lores_ea_entry_point(env_cls, small_res, allo_frames=1, ego_frames=3):
+def lores_ea_entry_point(env_cls, small_res, allo_frames=1, ego_frames=3, channels_first=False):
     """For stacking ego/allo frames together."""
     def make_lores_ea(**kwargs):
         base_env = env_cls(**kwargs)
@@ -198,6 +221,8 @@ def lores_ea_entry_point(env_cls, small_res, allo_frames=1, ego_frames=3):
                 ('ego', ego_frames),
             ]))
         resize_env = ResizeObservation(stack_env, small_res)
+        if channels_first:
+            return ChannelsFirst(resize_env)
         return resize_env
 
     return make_lores_ea
@@ -227,6 +252,14 @@ DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS = collections.OrderedDict([
     # stacking values of four dicts together to produce a single new dict
     ('LoResStack',
      functools.partial(lores_stack_entry_point, small_res=(96, 96), frames=4)),
+    # stacking egocentric views from four ego/allo dicts & stacking them
+    # together
+    ('LoResCHW4E',
+     functools.partial(lores_ea_entry_point,
+                       small_res=(96, 96),
+                       allo_frames=0,
+                       ego_frames=4,
+                       channels_first=True)),
 ])
 _ENV_NAME_RE = re.compile(
     r'^(?P<name_prefix>[^-]+)(?P<demo_test_spec>-(Demo|Test[^-]*))'
