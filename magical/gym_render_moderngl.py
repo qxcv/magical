@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-2D rendering framework from Gym, ported to ModernGL, EGL, and OpenGL ES.
+2D rendering framework from Gym, ported to ModernGL and EGL
 
 Copyright (c) 2016 OpenAI (https://openai.com)
 Copyright (c) 2020 Sam Toyer
@@ -25,18 +25,16 @@ SOFTWARE.
 """
 import abc
 import math
-import warnings
 import weakref
 
 import moderngl
 import moderngl_window as mglw
 import numpy as np
-import pyglet
 
 from magical import geom
 
 SHADERS = {
-    'simple_triangles_2d': {
+    'render_tris_unif_colour_2d': {
         # vertex shader does a simple transform + draw
         'vertex_shader':
         '''#version 330
@@ -49,205 +47,226 @@ SHADERS = {
         # fragment shader simply copies uniform colour across
         'fragment_shader':
         '''#version 330
-           uniform vec3 u_color;
-           out vec4 f_color;
+           uniform vec4 u_colour;
+           out vec4 f_colour;
            void main() {
-               f_color = vec4(u_color, 1.0);
+               f_colour = u_colour;
+           }''',
+    },
+    'render_inset_line_2d': {
+        # vertex shader again does a trivial transform
+        # TODO: actually implement this god damn thing.
+        'vertex_shader':
+        '''#version 330
+           in vec2 in_vert;
+           uniform mat3 u_xform;
+           void main() {
+               vec3 pos_pad = u_xform * vec3(in_vert, 1.0);
+               gl_Position = vec4(pos_pad.x, pos_pad.y, 0.0, 1.0);
+           }''',
+        # fragment shader simply copies uniform colour across
+        'fragment_shader':
+        '''#version 330
+           uniform vec4 u_colour;
+           out vec4 f_colour;
+           void main() {
+               f_colour = u_colour;
            }''',
     }
 }
 
 
-def get_offscreen_fbo(width, height, msaa_samples=4):
-    # FIXME: do this with ModernGL and maybe EGL, not Pyglet
-    raise NotImplementedError("need to re-implement this with ModernGL")
+# def get_offscreen_fbo(width, height, msaa_samples=4):
+#     # FIXME: do this with ModernGL and maybe EGL, not Pyglet
+#     raise NotImplementedError("need to re-implement this with ModernGL")
 
-    fbo = Framebuffer()
-    # using None for the format specifier in Texture.create means we have to
-    # allocate memory ourselves, which is important here because we seem to
-    # need to pass nullptr to allocation routine's destination arg (why?).
-    if msaa_samples > 1:
-        fbo._colour_texture = Texture.create(
-            width,
-            height,
-            target=gl.GL_TEXTURE_2D_MULTISAMPLE,
-            internalformat=None)
-        gl.glTexImage2DMultisample(gl.GL_TEXTURE_2D_MULTISAMPLE, msaa_samples,
-                                   gl.GL_RGB, width, height, True)
-    else:
-        fbo._colour_texture = Texture.create(width,
-                                             height,
-                                             internalformat=None)
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height, 0,
-                        gl.GL_RGB, gl.GL_UNSIGNED_BYTE, None)
-    fbo.attach_texture(gl.GL_FRAMEBUFFER, gl.GL_COLOR_ATTACHMENT0,
-                       fbo._colour_texture)
-    fbo._depth_rb = Renderbuffer(width,
-                                 height,
-                                 gl.GL_DEPTH_COMPONENT,
-                                 samples=msaa_samples)
-    fbo.attach_renderbuffer(gl.GL_FRAMEBUFFER, gl.GL_DEPTH_ATTACHMENT,
-                            fbo._depth_rb)
-    assert fbo.is_complete, \
-        "FramebufferObject not complete after attaching all buffers (?)"
-    return fbo
-
-
-def blit_fbo(width, height, src_id, target_id, target_image=gl.GL_BACK):
-    # For drawing a multisampled FBO to a non-multisampled FBO or to the
-    # screen. See
-    # https://www.khronos.org/opengl/wiki/Multisampling#Allocating_a_Multisample_Render_Target
-    gl.glBindFramebuffer(gl.GL_READ_FRAMEBUFFER, src_id)
-    gl.glBindFramebuffer(gl.GL_DRAW_FRAMEBUFFER, target_id)
-    gl.glDrawBuffer(target_image)
-    gl.glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
-                         gl.GL_COLOR_BUFFER_BIT, gl.GL_NEAREST)
+#     fbo = Framebuffer()
+#     # using None for the format specifier in Texture.create means we have to
+#     # allocate memory ourselves, which is important here because we seem to
+#     # need to pass nullptr to allocation routine's destination arg (why?).
+#     if msaa_samples > 1:
+#         fbo._colour_texture = Texture.create(
+#             width,
+#             height,
+#             target=gl.GL_TEXTURE_2D_MULTISAMPLE,
+#             internalformat=None)
+#         gl.glTexImage2DMultisample(gl.GL_TEXTURE_2D_MULTISAMPLE, msaa_samples,
+#                                    gl.GL_RGB, width, height, True)
+#     else:
+#         fbo._colour_texture = Texture.create(width,
+#                                              height,
+#                                              internalformat=None)
+#         gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, width, height, 0,
+#                         gl.GL_RGB, gl.GL_UNSIGNED_BYTE, None)
+#     fbo.attach_texture(gl.GL_FRAMEBUFFER, gl.GL_COLOUR_ATTACHMENT0,
+#                        fbo._colour_texture)
+#     fbo._depth_rb = Renderbuffer(width,
+#                                  height,
+#                                  gl.GL_DEPTH_COMPONENT,
+#                                  samples=msaa_samples)
+#     fbo.attach_renderbuffer(gl.GL_FRAMEBUFFER, gl.GL_DEPTH_ATTACHMENT,
+#                             fbo._depth_rb)
+#     assert fbo.is_complete, \
+#         "FramebufferObject not complete after attaching all buffers (?)"
+#     return fbo
 
 
-class Viewer(object):
-    def __init__(self,
-                 width,
-                 height,
-                 visible,
-                 display=None,
-                 background_rgb=(1, 1, 1)):
-        display = get_display(display)
+# def blit_fbo(width, height, src_id, target_id, target_image=gl.GL_BACK):
+#     # For drawing a multisampled FBO to a non-multisampled FBO or to the
+#     # screen. See
+#     # https://www.khronos.org/opengl/wiki/Multisampling#Allocating_a_Multisample_Render_Target
+#     gl.glBindFramebuffer(gl.GL_READ_FRAMEBUFFER, src_id)
+#     gl.glBindFramebuffer(gl.GL_DRAW_FRAMEBUFFER, target_id)
+#     gl.glDrawBuffer(target_image)
+#     gl.glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
+#                          gl.GL_COLOUR_BUFFER_BIT, gl.GL_NEAREST)
 
-        self.width = width
-        self.height = height
-        self.background_rgb = background_rgb
-        self.window = pyglet.window.Window(width=width,
-                                           height=height,
-                                           display=display,
-                                           visible=visible)
-        if not visible:
-            # get around stupid bug (?) where OpenGL refuses to render anything
-            # to FBOs until the window is displayed
-            self.window.set_visible(True)
-            self.window.set_visible(False)
-        # need to use a second FBO to actually get image data
-        self.render_fbo = get_offscreen_fbo(width, height, msaa_samples=1)
-        self.no_msaa_fbo = get_offscreen_fbo(width, height, msaa_samples=1)
-        self.window.on_close = self.window_closed_by_user
-        self.isopen = True
-        self.reset_geoms()
-        self.transforms = Transform()
 
-        # FIXME(sam): none of these options are likely to work in OpenGL ES.
-        # Need to re-implement everything as shaders.
-        gl.glEnable(gl.GL_BLEND)
-        # tricks from OpenAI's multiagent particle env repo:
-        # gl.glEnable(gl.GL_MULTISAMPLE)
-        gl.glEnable(gl.GL_LINE_SMOOTH)
-        # gl.glHint(gl.GL_LINE_SMOOTH_HINT, gl.GL_DONT_CARE)
-        gl.glHint(gl.GL_LINE_SMOOTH_HINT, gl.GL_NICEST)
-        gl.glLineWidth(2.0)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+# class Viewer(object):
+#     def __init__(self,
+#                  width,
+#                  height,
+#                  visible,
+#                  display=None,
+#                  background_rgb=(1, 1, 1)):
+#         display = get_display(display)
 
-    def reset_geoms(self):
-        self.geoms = []
+#         self.width = width
+#         self.height = height
+#         self.background_rgb = background_rgb
+#         self.window = pyglet.window.Window(width=width,
+#                                            height=height,
+#                                            display=display,
+#                                            visible=visible)
+#         if not visible:
+#             # get around stupid bug (?) where OpenGL refuses to render anything
+#             # to FBOs until the window is displayed
+#             self.window.set_visible(True)
+#             self.window.set_visible(False)
+#         # need to use a second FBO to actually get image data
+#         self.render_fbo = get_offscreen_fbo(width, height, msaa_samples=1)
+#         self.no_msaa_fbo = get_offscreen_fbo(width, height, msaa_samples=1)
+#         self.window.on_close = self.window_closed_by_user
+#         self.isopen = True
+#         self.reset_geoms()
+#         self.transforms = Transform()
 
-    def close(self):
-        self.window.close()
+#         # FIXME(sam): none of these options are likely to work in OpenGL ES.
+#         # Need to re-implement everything as shaders.
+#         gl.glEnable(gl.GL_BLEND)
+#         # tricks from OpenAI's multiagent particle env repo:
+#         # gl.glEnable(gl.GL_MULTISAMPLE)
+#         gl.glEnable(gl.GL_LINE_SMOOTH)
+#         # gl.glHint(gl.GL_LINE_SMOOTH_HINT, gl.GL_DONT_CARE)
+#         gl.glHint(gl.GL_LINE_SMOOTH_HINT, gl.GL_NICEST)
+#         gl.glLineWidth(2.0)
+#         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
 
-    def window_closed_by_user(self):
-        self.isopen = False
+#     def reset_geoms(self):
+#         self.geoms = []
 
-    def set_bounds(self, left, right, bottom, top, rotation=0.0):
-        assert right > left and top > bottom
-        scalex = self.width / (right - left)
-        scaley = self.height / (top - bottom)
-        self.transform = Transform(translation=(-left * scalex,
-                                                -bottom * scaley),
-                                   scale=(scalex, scaley))
+#     def close(self):
+#         self.window.close()
 
-    def set_cam_follow(self, source_xy_world, target_xy_01, viewport_hw_world,
-                       rotation):
-        """Set camera so that point at `source_xy_world` (in world coordinates)
-        appears at `screen_target_xy` (in screen coordinates, in [0,1] on each
-        axis), and so that viewport covers region defined by
-        `viewport_hw_world` in world coordinates. Oh, and the world is rotated
-        by `rotation` around the point `source_xy_world` before doing anything
-        else."""
-        world_h, world_w = viewport_hw_world
-        scalex = self.width / world_w
-        scaley = self.height / world_h
-        target_x_01, target_y_01 = target_xy_01
-        self.transform = TransformEgocentric(centre=source_xy_world,
-                                             newpos=(world_w * target_x_01,
-                                                     world_h * target_y_01),
-                                             scale=(scalex, scaley),
-                                             rotation=rotation)
+#     def window_closed_by_user(self):
+#         self.isopen = False
 
-    def add_geom(self, geom):
-        self.geoms.append(geom)
+#     def set_bounds(self, left, right, bottom, top, rotation=0.0):
+#         assert right > left and top > bottom
+#         scalex = self.width / (right - left)
+#         scaley = self.height / (top - bottom)
+#         self.transform = Transform(translation=(-left * scalex,
+#                                                 -bottom * scaley),
+#                                    scale=(scalex, scaley))
 
-    def render(self, return_rgb_array=False, update_foreground=True):
-        # switch to window and ONLY render to FBO
-        # FIXME(sam): this is a bad idea. Instead, I should render to EGL by
-        # default.
-        self.window.switch_to()
-        self.render_fbo.bind()
+#     def set_cam_follow(self, source_xy_world, target_xy_01, viewport_hw_world,
+#                        rotation):
+#         """Set camera so that point at `source_xy_world` (in world coordinates)
+#         appears at `screen_target_xy` (in screen coordinates, in [0,1] on each
+#         axis), and so that viewport covers region defined by
+#         `viewport_hw_world` in world coordinates. Oh, and the world is rotated
+#         by `rotation` around the point `source_xy_world` before doing anything
+#         else."""
+#         world_h, world_w = viewport_hw_world
+#         scalex = self.width / world_w
+#         scaley = self.height / world_h
+#         target_x_01, target_y_01 = target_xy_01
+#         self.transform = TransformEgocentric(centre=source_xy_world,
+#                                              newpos=(world_w * target_x_01,
+#                                                      world_h * target_y_01),
+#                                              scale=(scalex, scaley),
+#                                              rotation=rotation)
 
-        # actual rendering
-        gl.glClearColor(*self.background_rgb, 1)
-        self.window.clear()
-        self.window.dispatch_events()
-        self.transform.enable()
-        for geom in self.geoms:
-            geom.render()
-        for geom in self.onetime_geoms:
-            geom.render()
-        self.transform.disable()
-        self.onetime_geoms = []
+#     def add_geom(self, geom):
+#         self.geoms.append(geom)
 
-        # done, don't need FBO in main context
-        self.render_fbo.unbind()
+#     def render(self, return_rgb_array=False, update_foreground=True):
+#         # switch to window and ONLY render to FBO
+#         # FIXME(sam): this is a bad idea. Instead, I should render to EGL by
+#         # default.
+#         self.window.switch_to()
+#         self.render_fbo.bind()
 
-        # optionally write RGB array
-        arr = None
-        if return_rgb_array:
-            # this initial blit call will crash if you're calling it from a
-            # fork()ed subprocess; use the 'spawn' MP method instead of 'fork'
-            # to make it work
-            blit_fbo(self.width, self.height, self.render_fbo.id,
-                     self.no_msaa_fbo.id, gl.GL_COLOR_ATTACHMENT0)
-            image_data = self.no_msaa_fbo._colour_texture.get_image_data(
-                fmt='RGB', gl_format=gl.GL_RGB)
-            arr = np.frombuffer(image_data.data, dtype=np.uint8)
-            arr = arr.reshape(self.height, self.width, 3)[::-1]
+#         # actual rendering
+#         gl.glClearColour(*self.background_rgb, 1)
+#         self.window.clear()
+#         self.window.dispatch_events()
+#         self.transform.enable()
+#         for geom in self.geoms:
+#             geom.render()
+#         for geom in self.onetime_geoms:
+#             geom.render()
+#         self.transform.disable()
+#         self.onetime_geoms = []
 
-        # optionally blit to main window (should be on by default, but we can
-        # skip it if we only want an offscreen render)
-        if update_foreground:
-            gl.glClearColor(*self.background_rgb, 1)
-            self.window.clear()
-            blit_fbo(self.width, self.height, self.render_fbo.id, 0)
-            self.window.flip()
+#         # done, don't need FBO in main context
+#         self.render_fbo.unbind()
 
-        return arr if return_rgb_array else self.isopen
+#         # optionally write RGB array
+#         arr = None
+#         if return_rgb_array:
+#             # this initial blit call will crash if you're calling it from a
+#             # fork()ed subprocess; use the 'spawn' MP method instead of 'fork'
+#             # to make it work
+#             blit_fbo(self.width, self.height, self.render_fbo.id,
+#                      self.no_msaa_fbo.id, gl.GL_COLOUR_ATTACHMENT0)
+#             image_data = self.no_msaa_fbo._colour_texture.get_image_data(
+#                 fmt='RGB', gl_format=gl.GL_RGB)
+#             arr = np.frombuffer(image_data.data, dtype=np.uint8)
+#             arr = arr.reshape(self.height, self.width, 3)[::-1]
 
-    def get_array(self):
-        self.window.flip()
-        image_data = pyglet.image.get_buffer_manager() \
-            .get_color_buffer().get_image_data()
-        self.window.flip()
-        arr = np.fromstring(image_data.data, dtype=np.uint8, sep='')
-        arr = arr.reshape(self.height, self.width, 4)
-        return arr[::-1, :, 0:3]
+#         # optionally blit to main window (should be on by default, but we can
+#         # skip it if we only want an offscreen render)
+#         if update_foreground:
+#             gl.glClearColour(*self.background_rgb, 1)
+#             self.window.clear()
+#             blit_fbo(self.width, self.height, self.render_fbo.id, 0)
+#             self.window.flip()
 
-    def __del__(self):
-        try:
-            self.close()
-        except Exception as ex:
-            warnings.warn(f'Exception on env auto-close, you probably need '
-                          f'to manually close your Gym envs. Error messsage: '
-                          f'{ex!s}')
+#         return arr if return_rgb_array else self.isopen
+
+#     def get_array(self):
+#         self.window.flip()
+#         image_data = pyglet.image.get_buffer_manager() \
+#             .get_colour_buffer().get_image_data()
+#         self.window.flip()
+#         arr = np.fromstring(image_data.data, dtype=np.uint8, sep='')
+#         arr = arr.reshape(self.height, self.width, 4)
+#         return arr[::-1, :, 0:3]
+
+#     def __del__(self):
+#         try:
+#             self.close()
+#         except Exception as ex:
+#             warnings.warn(f'Exception on env auto-close, you probably need '
+#                           f'to manually close your Gym envs. Error messsage: '
+#                           f'{ex!s}')
 
 
 class ProgramIndex:
     """An index of OpenGL programs. Will compile each program under a given
-    context each time it needs to be accessed."""
+    context each time it needs to be accessed. Programs can be accessed by name
+    using, e.g., `prog_index["prog_name"]` syntax."""
     def __init__(self, ctx, prog_dict):
         self._ctx = ctx
         self._source_dict = prog_dict
@@ -276,27 +295,33 @@ class DrawContext:
     """Represents a single rendering context (e.g. an OpenGL context attached
     to a window, or an OpenGL context attached to an offscreen FBO). This API
     is primarily intended to be used by Drawables."""
-    def __init__(self, moderngl_ctx):
-        self.moderngl_ctx = moderngl_ctx
-        self.programs = ProgramIndex(moderngl_ctx, SHADERS)
+    def __init__(self, mgl_ctx):
+        self.mgl_ctx = mgl_ctx
+        self.programs = ProgramIndex(mgl_ctx, SHADERS)
         # use weak keys just in case one of the drawables keeps a reference to
-        # this context…
+        # this context (this may be excessively defensive)
         self._drawable_data = weakref.WeakKeyDictionary()
 
-    def set_drawable_data(self, drawable, return_data):
-        self._drawable_data[drawable] = return_data
-
-    def get_drawable_data(self, drawable):
-        return self._drawable_data.get(drawable, {})
+    def render(self, drawable, view_matrix):
+        if drawable not in self._drawable_data:
+            self._drawable_data[drawable] = drawable.context_data(self)
+        kwargs = self._drawable_data[drawable]
+        return drawable.render(self, view_matrix, **kwargs)
 
 
 class Drawable(abc.ABC):
     """Interface for drawable objects."""
+    def __init__(**kwargs):
+        super().__init__(**kwargs)
+
     @abc.abstractmethod
     def render(self, draw_context, view_matrix, **kwargs):
         """Render the object under action of a 3✕3 camera matrix, with render
         context variables supplied as kwargs."""
         raise NotImplementedError()
+
+    def context_data(self, draw_context):
+        return {}
 
 
 class Compound(Drawable):
@@ -309,16 +334,12 @@ class Compound(Drawable):
             g.render(view_matrix)
 
 
-class SimplePolygonFilled(Drawable):
-    """A simple polygon filled with uniform colour."""
-    def __init__(self, poly_verts, colour=None, xform=None):
-        # FIXME: duplicating vertices is wasteful for large polygons. I should
-        # use an index array instead.
-        self._tri_verts = geom.triangulate_simple_polygon_ogl(poly_verts)
-        self.colour = colour or (0.5, 0.5, 0.5)
-        self.xform = xform
+class ColourMixin:
+    """Drawable mixin for things that need to maintain an colour attribute."""
+    def __init__(self, colour, **kwargs):
+        super().__init__(**kwargs)
+        self.colour = colour if colour is not None else (0.5, 0.5, 0.5)
 
-    # FIXME: turn these into property setters
     @property
     def colour(self):
         """The RGBA colour of the shape (RGB values will be converted to RGBA
@@ -326,27 +347,43 @@ class SimplePolygonFilled(Drawable):
         return self._colour
 
     @colour.setter
-    def _set_colour(self, colour):
-        colour = np.asarray(colour, dtype='float32')
-        if colour.shape == (3, ):
-            colour = np.concatenate((colour, (1.0, )))
-        assert colour.shape == (4, )
-        assert np.all(colour >= 0.0)
-        assert np.all(colour <= 1.0)
+    def colour(self, colour):
+        colour = tuple(float(c) for c in colour)
+        if len(colour) == 3:
+            colour = colour + (1.0, )
+        assert len(colour) == 4
+        assert all(0 <= c <= 1 for c in colour)
         self._colour = colour
+
+
+class XFormMixin:
+    """Drawable mixin for things that need to maintain an xform (transform)
+    attribute."""
+    def __init__(self, xform, **kwargs):
+        super().__init__(**kwargs)
+        self.xform = xform if xform is not None else np.eye(3)
 
     @property
     def xform(self):
-        return self.xform
+        return self._xform
 
     @xform.setter
-    def _set_xform(self, xform):
+    def xform(self, xform):
         assert xform.shape == (3, 3), "expect 3x3 transformation matrix"
         self._xform = xform.astype('float32')
 
+
+class SimplePolygonFilled(ColourMixin, XFormMixin, Drawable):
+    """A simple polygon filled with uniform colour."""
+    def __init__(self, poly_verts, colour=None, xform=None):
+        # FIXME: duplicating vertices is wasteful for large polygons. I should
+        # use an index array instead (could plausibly matter for circles etc.)
+        super().__init__(colour=colour, xform=xform)
+        self._tri_verts = geom.triangulate_simple_polygon_ogl(poly_verts)
+
     def context_data(self, draw_context):
-        vbo = draw_context.mgl_context.buffer(self._tri_verts)
-        vao = draw_context.mgl_context.vertex_array(
+        vbo = draw_context.mgl_ctx.buffer(self._tri_verts)
+        vao = draw_context.mgl_ctx.vertex_array(
             draw_context.programs.render_tris_unif_colour_2d,
             [(vbo, '2f', 'in_vert')])
 
@@ -355,8 +392,34 @@ class SimplePolygonFilled(Drawable):
         }
 
     def render(self, draw_context, view_xform, vao):
-        vao.program['u_color'] = self.colour
-        vao.program['u_xform'] = view_xform @ self.model_xform
+        vao.program['u_colour'] = self.colour
+        vao.program['u_xform'] = tuple((view_xform @ self.xform).flatten())
+        vao.render(moderngl.TRIANGLES)
+
+
+class InsetPolyLine(ColourMixin, XFormMixin, Drawable):
+    """Inset line in the shape of a polygon."""
+    def __init__(self, poly_verts, line_width, stipple=False, colour=None,
+                 xform=None):
+        super().__init__(colour=colour, xform=xform)
+        self.verts = poly_verts
+        self.line_width = line_width
+        self.stipple = False
+        assert not self.stipple, "stipple not supported yet"
+
+    def context_data(self, draw_context):
+        vbo = draw_context.mgl_ctx.buffer(self._tri_verts)
+        vao = draw_context.mgl_ctx.vertex_array(
+            draw_context.programs.render_tris_unif_colour_2d,
+            [(vbo, '2f', 'in_vert')])
+
+        return {
+            'vao': vao,
+        }
+
+    def render(self, draw_context, view_xform, vao):
+        vao.program['u_colour'] = self.colour
+        vao.program['u_xform'] = tuple((view_xform @ self.xform).flatten())
         vao.render(moderngl.TRIANGLES)
 
 
@@ -426,14 +489,25 @@ def make_square(side_length=10):
 class ViewerWindow(mglw.WindowConfig):
     gl_version = (3, 3)
     window_size = (384, 384)
+    aspect_ratio = 1.0
+    samples = 1
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.draw_context = DrawContext(self.moderngl_ctx)
-        make_circle()
+        self.draw_context = DrawContext(self.ctx)
+        self.drawables = []
+
+        # add some demo geoms
+        circle = make_circle(radius=0.5)
+        # self.drawables.append(circle)
+        square = make_rect(1.95, 1.95)
+        self.drawables.append(square)
 
     def render(self, time, frametime):
-        pass
+        self.draw_context.mgl_ctx.clear(1.0, 1.0, 1.0)
+        view_matrix = np.eye(3)
+        for drawable in self.drawables:
+            self.draw_context.render(drawable, view_matrix)
 
 
 def main():

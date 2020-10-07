@@ -14,4 +14,5 @@ setup(
         'cloudpickle>=1.2.2',
         'statsmodels>=0.10.2',
         'opencv-python-headless>=4.2.0.34',
+        'triangle~=20200424',
     ])

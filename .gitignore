@@ -1,13 +1,19 @@
+# Python junk
 *.pyc
 *.egg-info
+
+# IDE/dev tool junk
+.idea/
 .#*
 *.swp
 *~
-demos/
-demos-old/
-scratch/
-report-baselines/
-film/
+
+# Demonstrations and script outputs (e.g. stats, checkpoints)
+*.png
 *.pkl.gz
+*.pkl
 *.mp4
-.idea/
+*.pt
+*.json
+*.csv
+*.log
