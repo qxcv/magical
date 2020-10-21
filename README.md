@@ -17,8 +17,7 @@ The different tasks that comprise the MAGICAL suite each require similar skills,
 You can install MAGICAL using `pip`:
 
 ```sh
-cd /path/to/this/directory
-pip install -e .
+pip install magical-il
 ```
 
 MAGICAL tasks and variants are exposed as Gym environments. Once you've
