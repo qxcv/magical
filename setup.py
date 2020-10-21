@@ -2,8 +2,8 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='magical',
-    version='0.0.1',
+    name='magical-il',
+    version='0.0.1alpha0',
     packages=find_packages(),
     install_requires=[
         'pymunk~=5.6.0',
