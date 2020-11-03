@@ -1,5 +1,7 @@
 # Multitask Assessment of Generalisation in Imitative Control Algorithms (MAGICAL)
 
+## A Benchmark Suite for Robust imitation Learning
+
 MAGICAL is a benchmark suite to evaluate the generalisation capabilities of
 imitation learning algorithms. Rather than using the same setting for training
 and testing, MAGICAL provides one set of "training" environments where
