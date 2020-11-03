@@ -271,6 +271,7 @@ _ENV_NAME_RE = re.compile(
 _REGISTERED = False
 # this will be filled in later
 DEMO_ENVS_TO_TEST_ENVS_MAP = collections.OrderedDict()
+AVAILABLE_PREPROCESSORS = [key for key in DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS]
 
 
 class EnvName:

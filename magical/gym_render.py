@@ -106,7 +106,8 @@ def get_offscreen_fbo(width, height, msaa_samples=4):
     fbo.attach_renderbuffer(gl.GL_FRAMEBUFFER, gl.GL_DEPTH_ATTACHMENT,
                             fbo._depth_rb)
     assert fbo.is_complete, \
-        "FramebufferObject not complete after attaching all buffers (?)"
+        "FramebufferObject not complete after attaching all buffers (bug?); " \
+        f"status {{fbo.get_status()}}"
     return fbo
 
 

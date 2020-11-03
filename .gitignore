@@ -10,4 +10,8 @@ report-baselines/
 film/
 *.pkl.gz
 *.mp4
-.idea/
+/.idea
+/out-frames
+/build
+/dist
+.ipynb_checkpoints
