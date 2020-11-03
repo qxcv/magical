@@ -232,7 +232,7 @@ class Viewer(object):
                      self.no_msaa_fbo.id, gl.GL_COLOR_ATTACHMENT0)
             image_data = self.no_msaa_fbo._colour_texture.get_image_data(
                 fmt='RGB', gl_format=gl.GL_RGB)
-            arr = np.frombuffer(image_data.get_data(), dtype=np.uint8)
+            arr = np.frombuffer(image_data.data, dtype=np.uint8)
             arr = arr.reshape(self.height, self.width, 3)[::-1]
 
         # optionally blit to main window (should be on by default, but we can

@@ -210,11 +210,7 @@ def lores_stack_entry_point(env_cls, small_res, frames=4):
     return make_lores_stack
 
 
-def lores_ea_entry_point(env_cls,
-                         small_res,
-                         allo_frames=1,
-                         ego_frames=3,
-                         channels_first=False):
+def lores_ea_entry_point(env_cls, small_res, allo_frames=1, ego_frames=3, channels_first=False):
     """For stacking ego/allo frames together."""
     def make_lores_ea(**kwargs):
         base_env = env_cls(**kwargs)
