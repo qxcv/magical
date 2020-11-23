@@ -3,17 +3,25 @@ import os
 
 from setuptools import find_packages, setup
 
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def readme():
     """Load README for use as package's long description."""
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(this_dir, 'README.md'), 'r') as fp:
+    with open(os.path.join(THIS_DIR, 'README.md'), 'r') as fp:
         return fp.read()
+
+
+def get_version():
+    locals_dict = {}
+    with open(os.path.join(THIS_DIR, 'magical', 'version.py'), 'r') as fp:
+        exec(fp.read(), globals(), locals_dict)
+    return locals_dict['__version__']
 
 
 setup(
     name='magical-il',
-    version='0.0.1alpha1',
+    version=get_version(),
     author='Sam Toyer',
     license='ISC',
     url='https://github.com/qxcv/magical/',
@@ -31,5 +39,5 @@ setup(
         'cloudpickle>=1.2.2',
         'statsmodels>=0.10.2',
         'requests>=2.20.0,==2.*',
-        'opencv-python-headless==4.*'
+        'opencv-python-headless==4.*',
     ])

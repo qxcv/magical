@@ -5,3 +5,4 @@ from magical.reference_demos import try_download_demos  # noqa: F401
 from magical.saved_trajectories import (load_demos,
                                         preprocess_demos_with_wrapper,
                                         splice_in_preproc_name)
+from magical.version import __version__
