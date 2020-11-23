@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+
 from setuptools import find_packages, setup
 
 
@@ -17,7 +18,7 @@ setup(
     license='ISC',
     url='https://github.com/qxcv/magical/',
     description='MAGICAL is a benchmark suite for robust imitation learning',
-    python_requires='>=3.7',
+    python_requires='>=3.6',
     long_description=readme(),
     long_description_content_type='text/markdown',
     packages=find_packages(),
@@ -30,4 +31,5 @@ setup(
         'cloudpickle>=1.2.2',
         'statsmodels>=0.10.2',
         'requests>=2.20.0,==2.*',
+        'opencv-python-headless==4.*'
     ])
