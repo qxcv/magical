@@ -38,11 +38,12 @@ def main(out_path, fps, demo_paths):
         print(f"Will make dir '{out_dir}' if it does not exist yet")
         os.makedirs(out_dir, exist_ok=True)
     print(f"Writing video to '{out_path}'")
-    writer = vidio.FFmpegWriter(out_path, outputdict={
-                     '-r': str(fps),
-                     '-vcodec': 'libx264',
-                     '-pix_fmt': 'yuv420p',
-                 })
+    writer = vidio.FFmpegWriter(out_path,
+                                outputdict={
+                                    '-r': str(fps),
+                                    '-vcodec': 'libx264',
+                                    '-pix_fmt': 'yuv420p',
+                                })
     nframes = 0
     for frame_segment in frame_segments:
         print(f"Writing frame segment ({nframes} frames written so far)")

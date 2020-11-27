@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: pip install -e .
+          command: pip install -e '.[dev]'
           name: Install dependencies and MAGICAL package
       - run:
           command: |

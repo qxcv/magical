@@ -3,10 +3,10 @@ from ctypes import byref
 import pyglet
 from pyglet import gl
 from pyglet.image import ImageException
-from pyglet.image.codecs import get_encoders, ImageEncodeException
+from pyglet.image.codecs import ImageEncodeException, get_encoders
 
-from magical.pyglet_backport.image.imagebuffer import \
-    get_max_color_attachments, Renderbuffer, Framebuffer
+from magical.pyglet_backport.image.imagebuffer import (  # noqa: F401
+    Framebuffer, Renderbuffer, get_max_color_attachments)
 
 
 class AbstractImage:
@@ -29,11 +29,12 @@ class AbstractImage:
         self.height = height
 
     def __repr__(self):
-        return "{}(size={}x{})".format(self.__class__.__name__, self.width, self.height)
+        return "{}(size={}x{})".format(self.__class__.__name__, self.width,
+                                       self.height)
 
     def get_image_data(self):
-        """Get an ImageData view of this image.  
-        
+        """Get an ImageData view of this image.
+
         Changes to the returned instance may or may not be reflected in this
         image.
         :rtype: :py:class:`~pyglet.image.ImageData`
@@ -42,18 +43,18 @@ class AbstractImage:
         raise ImageException('Cannot retrieve image data for %r' % self)
 
     def get_texture(self, rectangle=False):
-        """A :py:class:`~pyglet.image.Texture` view of this image.  
+        """A :py:class:`~pyglet.image.Texture` view of this image.
         By default, textures are created with dimensions that are powers of
-        two.  Smaller images will return a :py:class:`~pyglet.image.TextureRegion` that covers just
-        the image portion of the larger texture.  This restriction is required
-        on older video cards, and for compressed textures, or where texture
-        repeat modes will be used, or where mipmapping is desired.
-        If the `rectangle` parameter is ``True``, this restriction is ignored
-        and a texture the size of the image may be created if the driver
-        supports the ``GL_ARB_texture_rectangle`` or
-        ``GL_NV_texture_rectangle`` extensions.  If the extensions are not
-        present, the image already is a texture, or the image has power 2
-        dimensions, the `rectangle` parameter is ignored.
+        two. Smaller images will return a
+        :py:class:`~pyglet.image.TextureRegion` that covers just the image
+        portion of the larger texture. This restriction is required on older
+        video cards, and for compressed textures, or where texture repeat modes
+        will be used, or where mipmapping is desired. If the `rectangle`
+        parameter is ``True``, this restriction is ignored and a texture the
+        size of the image may be created if the driver supports the
+        ``GL_ARB_texture_rectangle`` or ``GL_NV_texture_rectangle`` extensions.
+        If the extensions are not present, the image already is a texture, or
+        the image has power 2 dimensions, the `rectangle` parameter is ignored.
         Examine `Texture.target` to determine if the returned texture is a
         rectangle (``GL_TEXTURE_RECTANGLE``) or not (``GL_TEXTURE_2D``).
         Changes to the returned instance may or may not be reflected in this
@@ -68,8 +69,8 @@ class AbstractImage:
         raise ImageException('Cannot retrieve texture for %r' % self)
 
     def get_mipmapped_texture(self):
-        """Retrieve a :py:class:`~pyglet.image.Texture` instance with all mipmap levels filled in.
-        Requires that image dimensions be powers of 2. 
+        """Retrieve a :py:class:`~pyglet.image.Texture` instance with all
+        mipmap levels filled in. Requires that image dimensions be powers of 2.
         :rtype: :py:class:`~pyglet.image.Texture`
         .. versionadded:: 1.1
         """
@@ -124,8 +125,8 @@ class AbstractImage:
 
     def blit(self, x, y, z=0):
         """Draw this image to the active framebuffers.
-        
-        The image will be drawn with the lower-left corner at 
+
+        The image will be drawn with the lower-left corner at
         (``x -`` `anchor_x`, ``y -`` `anchor_y`, ``z``).
         """
         raise ImageException('Cannot blit %r.' % self)
@@ -135,7 +136,7 @@ class AbstractImage:
         `source` will be copied into this image such that its anchor point
         is aligned with the `x` and `y` parameters.  If this image is a 3D
         texture, the `z` coordinate gives the image slice to copy into.
-        
+
         Note that if `source` is larger than this image (or the positioning
         would cause the copy to go out of bounds) then you must pass a
         region of `source` to this method, typically using get_region().
@@ -144,7 +145,7 @@ class AbstractImage:
 
     def blit_to_texture(self, target, level, x, y, z=0):
         """Draw this image on the currently bound texture at `target`.
-        
+
         This image is copied into the texture such that this image's anchor
         point is aligned with the given `x` and `y` coordinates of the
         destination texture.  If the currently bound texture is a 3D texture,
@@ -190,7 +191,7 @@ class Texture(AbstractImage):
     def __del__(self):
         try:
             self._context.delete_texture(self.id)
-        except:
+        except:  # noqa: E722
             pass
 
     @classmethod
@@ -210,14 +211,18 @@ class Texture(AbstractImage):
             `height` : int
                 Height of texture in pixels.
             `target` : int
-                GL constant giving texture target to use, typically ``GL_TEXTURE_2D``.
+                GL constant giving texture target to use, typically
+                ``GL_TEXTURE_2D``.
             `internalformat` : int
-                GL constant giving internal format of texture; for example, ``GL_RGBA``.
-                If ``None``, the texture will be created but not initialized.
+                GL constant giving internal format of texture; for example,
+                ``GL_RGBA``. If ``None``, the texture will be created but not
+                initialized.
             `min_filter` : int
-                The minifaction filter used for this texture, commonly ``GL_LINEAR`` or ``GL_NEAREST``
+                The minifaction filter used for this texture, commonly
+                ``GL_LINEAR`` or ``GL_NEAREST``
             `mag_filter` : int
-                The magnification filter used for this texture, commonly ``GL_LINEAR`` or ``GL_NEAREST``
+                The magnification filter used for this texture, commonly
+                ``GL_LINEAR`` or ``GL_NEAREST``
         :rtype: :py:class:`~pyglet.image.Texture`
         """
         min_filter = min_filter or cls.default_min_filter
@@ -277,8 +282,8 @@ class Texture(AbstractImage):
     def get_texture(self, rectangle=False):
         if rectangle and not self.target == gl.GL_TEXTURE_RECTANGLE:
             raise gl.ImageException(
-                'Texture is not a rectangle, it must be created as a rectangle.'
-            )
+                'Texture is not a rectangle, it must be created as a '
+                'rectangle.')
         return self
 
     # no implementation of blit_to_texture yet (could use aux buffer)
@@ -307,17 +312,18 @@ class Texture(AbstractImage):
         return self.region_class(x, y, 0, width, height, self)
 
     def get_transform(self, flip_x=False, flip_y=False, rotate=0):
-        """Create a copy of this image applying a simple transformation.
-        The transformation is applied to the texture coordinates only;
-        :py:meth:`~pyglet.image.ImageData.get_image_data` will return the untransformed data.  The
-        transformation is applied around the anchor point.
+        """Create a copy of this image applying a simple transformation. The
+        transformation is applied to the texture coordinates only;
+        :py:meth:`~pyglet.image.ImageData.get_image_data` will return the
+        untransformed data. The transformation is applied around the anchor
+        point.
         :Parameters:
             `flip_x` : bool
                 If True, the returned image will be flipped horizontally.
             `flip_y` : bool
                 If True, the returned image will be flipped vertically.
             `rotate` : int
-                Degrees of clockwise rotation of the returned image.  Only 
+                Degrees of clockwise rotation of the returned image.  Only
                 90-degree increments are supported.
         :rtype: :py:class:`~pyglet.image.TextureRegion`
         """
@@ -338,18 +344,21 @@ class Texture(AbstractImage):
             pass
         elif rotate == 90:
             bl, br, tr, tl = br, tr, tl, bl
-            transform.anchor_x, transform.anchor_y = transform.anchor_y, transform.width - transform.anchor_x
+            transform.anchor_x, transform.anchor_y \
+                = transform.anchor_y, transform.width - transform.anchor_x
         elif rotate == 180:
             bl, br, tr, tl = tr, tl, bl, br
             transform.anchor_x = transform.width - transform.anchor_x
             transform.anchor_y = transform.height - transform.anchor_y
         elif rotate == 270:
             bl, br, tr, tl = tl, bl, br, tr
-            transform.anchor_x, transform.anchor_y = transform.height - transform.anchor_y, transform.anchor_x
+            transform.anchor_x, transform.anchor_y \
+                = transform.height - transform.anchor_y, transform.anchor_x
         else:
             assert False, 'Only 90 degree rotations are supported.'
         if rotate in (90, 270):
-            transform.width, transform.height = transform.height, transform.width
+            transform.width, transform.height \
+                = transform.height, transform.width
         transform._set_tex_coords_order(bl, br, tr, tl)
         return transform
 

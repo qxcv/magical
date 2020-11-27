@@ -164,6 +164,7 @@ class BaseEnv(gym.Env, abc.ABC):
         Returns:
             name (str): full, Gym-compatible name for this env, with the
                 included name suffix."""
+
     @abc.abstractmethod
     def on_reset(self):
         """Set up entities necessary for this environment, and reset any other
@@ -176,6 +177,7 @@ class BaseEnv(gym.Env, abc.ABC):
                 user.
             ents ([en.Entity]): list of other entities necessary for this
                 environment."""
+
     def add_entities(self, entities):
         """Adds a list of entities to the current entities list and sets it up.
         Only intended to be used from within on_reset(). Needs to be called for
@@ -266,6 +268,7 @@ class BaseEnv(gym.Env, abc.ABC):
            score (float): number in [0, 1] indicating the worst possible
                performance (0), the best possible performance (1) or something
                in between. Should apply to the WHOLE trajectory."""
+
     def step(self, action):
         # step forward physics
         ac_flag_ud, ac_flag_lr, ac_flag_grip = self.action_to_flags(action)
@@ -397,10 +400,10 @@ class BaseEnv(gym.Env, abc.ABC):
             # strong-format a shape
             return f'en.ShapeType.{shape.name.upper()}'
 
-        def lst(f, l):
-            # apply function f to each element of l, convert the results to
+        def lst(f, lst):
+            # apply function f to each element of lst, convert the results to
             # string, then present as string-formatted list
-            return '[' + ', '.join(str(f(e)) for e in l) + ']'
+            return '[' + ', '.join(str(f(e)) for e in lst) + ']'
 
         if robot_pose:
             print(f'ROBOT_POSE = {f_pose(robot_pose)}')
