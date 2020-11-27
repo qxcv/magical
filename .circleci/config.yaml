@@ -1,0 +1,20 @@
+version: 2.1
+
+jobs:
+  build-and-test:
+    docker:
+      - image: qxcv/magical:v0
+    steps:
+      - checkout
+      - run:
+          command: pip install -e .
+          name: Install dependencies and MAGICAL package
+      - run:
+          command: |
+            mkdir -p test-results
+            xvfb-run -a pytest --junitxml=test-results/junit.xml tests/
+          name: Run Tests
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
