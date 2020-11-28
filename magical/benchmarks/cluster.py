@@ -64,10 +64,6 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
                 "if shape count is randomised then colour must be " \
                 "randomised too"
 
-    @classmethod
-    def make_name(cls, suffix=None):
-        pass
-
     def on_reset(self):
         # make the robot at default position (will be randomised at end if
         # rand_layout is true)
@@ -259,11 +255,6 @@ class ClusterColourEnv(BaseClusterEnv, EzPickle):
                          cluster_by=BaseClusterEnv.ClusterBy.COLOUR,
                          **kwargs)
 
-    @classmethod
-    def make_name(cls, suffix=None):
-        base_name = 'ClusterColour'
-        return base_name + (suffix or '') + '-v0'
-
 
 class ClusterShapeEnv(BaseClusterEnv, EzPickle):
     # demo variant
@@ -304,8 +295,3 @@ class ClusterShapeEnv(BaseClusterEnv, EzPickle):
         super().__init__(*args,
                          cluster_by=BaseClusterEnv.ClusterBy.TYPE,
                          **kwargs)
-
-    @classmethod
-    def make_name(cls, suffix=None):
-        base_name = 'ClusterShape'
-        return base_name + (suffix or '') + '-v0'

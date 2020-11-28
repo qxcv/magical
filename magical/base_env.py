@@ -148,23 +148,6 @@ class BaseEnv(gym.Env, abc.ABC):
     def _make_shape(self, **kwargs):
         return en.Shape(shape_size=self.SHAPE_RAD, **kwargs)
 
-    @classmethod
-    @abc.abstractmethod
-    def make_name(cls, suffix=None):
-        """Return a name for an env based on this one, but using the supplied
-        suffix. For instance, if an environment were called 'CircleMove' and
-        its version were v0, then env_cls.make_name('Hard') would return
-        'CircleMoveHard-v0'. If no suffix is supplied then it will just return
-        the base name with a version.
-
-        Args:
-            suffix (str): the suffix to append to the base name for this
-            env.
-
-        Returns:
-            name (str): full, Gym-compatible name for this env, with the
-                included name suffix."""
-
     @abc.abstractmethod
     def on_reset(self):
         """Set up entities necessary for this environment, and reset any other

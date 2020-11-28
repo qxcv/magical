@@ -41,11 +41,6 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
                 "if shape count is randomised then shape colour must also " \
                 "be randomised"
 
-    @classmethod
-    def make_name(cls, suffix=None):
-        base_name = 'MatchRegions'
-        return base_name + (suffix or '') + '-v0'
-
     def on_reset(self):
         # make the robot
         robot_pos = np.asarray((-0.5, 0.1))

@@ -42,7 +42,8 @@ setup(name='magical-il',
       ],
       extras_require={
           'dev': [
-              'pytest~=5.4.3',
+              'pytest~=6.1.2',
+              'pytest-xdist~=2.1.0',
               'isort~=5.0',
               'yapf~=0.30.0',
               'flake8~=3.8.3',

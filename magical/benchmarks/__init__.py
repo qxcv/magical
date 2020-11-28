@@ -6,29 +6,17 @@ import re
 
 import cv2
 import gym
+from gym.envs.registration import load as cls_lookup
 from gym.spaces import Box, Dict
 from gym.wrappers import ResizeObservation
 import numpy as np
 
-from magical.benchmarks.cluster import ClusterColourEnv, ClusterShapeEnv
-from magical.benchmarks.find_dupe import FindDupeEnv
-from magical.benchmarks.fix_colour import FixColourEnv
-from magical.benchmarks.make_line import MakeLineEnv
-from magical.benchmarks.match_regions import MatchRegionsEnv
-from magical.benchmarks.move_to_corner import MoveToCornerEnv
-from magical.benchmarks.move_to_region import MoveToRegionEnv
-
 __all__ = [
     'ALL_REGISTERED_ENVS'
     'DEMO_ENVS_TO_TEST_ENVS_MAP',
-    'MoveToCornerEnv',
-    'MatchRegionsEnv',
-    'ClusterColourEnv',
-    'ClusterShapeEnv',
-    'FindDupeEnv',
-    'MakeLineEnv',
     'register_envs',
     'EnvName',
+    'update_magical_env_name',
 ]
 
 DEFAULT_RES = (384, 384)
@@ -201,8 +189,22 @@ class ChannelsFirst(gym.ObservationWrapper):
         return _gym_tree_map(self._rotate, observation)
 
 
-def lores_stack_entry_point(env_cls, small_res, frames=4):
+def get_cls(cls_or_cls_name):
+    if isinstance(cls_or_cls_name, str):
+        cls = cls_lookup(cls_or_cls_name)
+    else:
+        cls = cls_or_cls_name
+    if not callable(cls):
+        raise TypeError(
+            "The given environment constructor or constructor name, "
+            f"cls_or_cls_name={cls_or_cls_name!r}, resolved to '{cls!r}', "
+            "which is not callable")
+    return cls
+
+
+def lores_stack_entry_point(env_cls_or_name, small_res, frames=4):
     def make_lores_stack(**kwargs):
+        env_cls = get_cls(env_cls_or_name)
         base_env = env_cls(**kwargs)
         resize_env = ResizeDictObservation(base_env, small_res)
         stack_env = EagerDictFrameStack(resize_env, frames)
@@ -211,13 +213,14 @@ def lores_stack_entry_point(env_cls, small_res, frames=4):
     return make_lores_stack
 
 
-def lores_ea_entry_point(env_cls,
+def lores_ea_entry_point(env_cls_or_name,
                          small_res,
                          allo_frames=1,
                          ego_frames=3,
                          channels_first=False):
     """For stacking ego/allo frames together."""
     def make_lores_ea(**kwargs):
+        env_cls = get_cls(env_cls_or_name)
         base_env = env_cls(**kwargs)
         stack_env = FlattenFrameStack(
             base_env,
@@ -276,6 +279,38 @@ ALL_REGISTERED_ENVS = []
 AVAILABLE_PREPROCESSORS = [key for key in DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS]
 
 
+def update_magical_env_name(env_name,
+                            *,
+                            task=None,
+                            variant=None,
+                            preproc=None,
+                            version=None):
+    ename = EnvName(env_name)
+    name_parts = []
+
+    if task is None:
+        task = ename.task
+    name_parts.append(task)
+
+    if variant is None:
+        variant = ename.variant
+    name_parts.append(variant)
+
+    if preproc is None:
+        preproc = ename.preproc
+    if preproc is not None:
+        # sometimes both `preproc` and `ename.preproc` might be None, so we
+        # need this extra check for the `preproc` part
+        name_parts.append(preproc)
+
+    if version is None:
+        version = ename.version
+    name_parts.append(version)
+
+    # strip out all the non-empty parts and join them together
+    return '-'.join(name_parts)
+
+
 class EnvName:
     """Convenience class for parsing environment names. All environment names
     look like this (per _ENV_NAME_RE):
@@ -295,19 +330,62 @@ class EnvName:
         match = _ENV_NAME_RE.match(env_name)
         if match is None:
             raise ValueError(
-                "env name '{env_name}' does not match _ENV_NAME_RE spec")
+                f"env name '{env_name}' does not match _ENV_NAME_RE spec")
         groups = match.groupdict()
-        self.env_name = env_name
+        # split the environment name into fragments
         self.name_prefix = groups['name_prefix']
         self.demo_test_spec = groups['demo_test_spec']
         self.env_name_suffix = groups['env_name_suffix']
         self.version_suffix = groups['version_suffix']
-        self.demo_env_name = self.name_prefix + '-Demo' \
-            + self.env_name_suffix + self.version_suffix
-        self.is_test = self.demo_test_spec.startswith('-Test')
+        # make sure we can reconstruct the original env name from the
+        # fragments we have extracted
+        assert env_name == self.env_name
         if not self.is_test:
             assert self.demo_env_name == self.env_name, \
                 (self.demo_env_name, self.env_name)
+
+    @property
+    def env_name(self):
+        """Reconstruct original environment name from fragments."""
+        return self.name_prefix + self.demo_test_spec + self.env_name_suffix \
+            + self.version_suffix
+
+    @property
+    def is_test(self):
+        """Is this a test variant?"""
+        return self.demo_test_spec.startswith('-Test')
+
+    @property
+    def demo_env_name(self):
+        """Name for equivalent demo environment (including all preprocessors,
+        etc.). e.g. the demo environment for 'MoveToCorner-TestShape-LoRes4A-v0
+        is 'MoveToCorner-Demo-LoRes4A-v0."""
+        return self.name_prefix + '-Demo' + self.env_name_suffix \
+            + self.version_suffix
+
+    @property
+    def task(self):
+        """Task name for this environment, no dashes (e.g. 'ClusterShape')."""
+        return self.name_prefix
+
+    @property
+    def variant(self):
+        """Variant name for this environment, without dashes (e.g. 'Demo',
+        'TestAll', 'TestJitter', etc.)."""
+        return self.demo_test_spec.strip('-')
+
+    @property
+    def preproc(self):
+        """Preprocessor name for this environment, without dashes (e.g.
+        'LoRes4A)."""
+        return self.env_name_suffix.strip('-') \
+            if self.env_name_suffix else None
+
+    @property
+    def version(self):
+        """Version string for this environment, without dashes (e.g. 'v0',
+        'v2', etc.)"""
+        return self.version_suffix.strip('-')
 
 
 def register_envs():
@@ -325,366 +403,404 @@ def register_envs():
     # remember 100 frames is ~12.5s at 8fps
     mtc_ep_len = 80
     move_to_corner_variants = [
-        (MoveToCornerEnv, mtc_ep_len, '-Demo', {
-            'rand_shape_colour': False,
-            'rand_shape_type': False,
-            'rand_poses': False,
-            'rand_dynamics': False,
-        }),
-        (MoveToCornerEnv, mtc_ep_len, '-TestColour', {
-            'rand_shape_colour': True,
-            'rand_shape_type': False,
-            'rand_poses': False,
-            'rand_dynamics': False,
-        }),
-        (MoveToCornerEnv, mtc_ep_len, '-TestShape', {
-            'rand_shape_colour': False,
-            'rand_shape_type': True,
-            'rand_poses': False,
-            'rand_dynamics': False,
-        }),
-        (MoveToCornerEnv, mtc_ep_len, '-TestJitter', {
-            'rand_shape_colour': False,
-            'rand_shape_type': False,
-            'rand_poses': True,
-            'rand_dynamics': False,
-        }),
-        (MoveToCornerEnv, mtc_ep_len, '-TestDynamics', {
-            'rand_shape_colour': False,
-            'rand_shape_type': False,
-            'rand_poses': False,
-            'rand_dynamics': True,
-        }),
-        (MoveToCornerEnv, mtc_ep_len, '-TestAll', {
-            'rand_shape_colour': True,
-            'rand_shape_type': True,
-            'rand_poses': True,
-            'rand_dynamics': True,
-        }),
+        ('magical.benchmarks.move_to_corner.MoveToCornerEnv',
+         'MoveToCorner-Demo-v0', mtc_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_poses': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.move_to_corner:MoveToCornerEnv',
+         'MoveToCorner-TestColour-v0', mtc_ep_len, {
+             'rand_shape_colour': True,
+             'rand_shape_type': False,
+             'rand_poses': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.move_to_corner:MoveToCornerEnv',
+         'MoveToCorner-TestShape-v0', mtc_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': True,
+             'rand_poses': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.move_to_corner:MoveToCornerEnv',
+         'MoveToCorner-TestJitter-v0', mtc_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_poses': True,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.move_to_corner:MoveToCornerEnv',
+         'MoveToCorner-TestDynamics-v0', mtc_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_poses': False,
+             'rand_dynamics': True,
+         }),
+        ('magical.benchmarks.move_to_corner:MoveToCornerEnv',
+         'MoveToCorner-TestAll-v0', mtc_ep_len, {
+             'rand_shape_colour': True,
+             'rand_shape_type': True,
+             'rand_poses': True,
+             'rand_dynamics': True,
+         }),
     ]
 
     mtr_ep_len = 40
     move_to_region_variants = [
-        (MoveToRegionEnv, mtr_ep_len, '-Demo', {
-            'rand_poses_minor': False,
-            'rand_poses_full': False,
-            'rand_goal_colour': False,
-            'rand_dynamics': False,
-        }),
-        (MoveToRegionEnv, mtr_ep_len, '-TestJitter', {
-            'rand_poses_minor': True,
-            'rand_poses_full': False,
-            'rand_goal_colour': False,
-            'rand_dynamics': False,
-        }),
-        (MoveToRegionEnv, mtr_ep_len, '-TestColour', {
-            'rand_poses_minor': False,
-            'rand_poses_full': False,
-            'rand_goal_colour': True,
-            'rand_dynamics': False,
-        }),
-        (MoveToRegionEnv, mtr_ep_len, '-TestLayout', {
-            'rand_poses_minor': False,
-            'rand_poses_full': True,
-            'rand_goal_colour': False,
-            'rand_dynamics': False,
-        }),
-        (MoveToRegionEnv, mtr_ep_len, '-TestDynamics', {
-            'rand_poses_minor': False,
-            'rand_poses_full': False,
-            'rand_goal_colour': False,
-            'rand_dynamics': True,
-        }),
-        (MoveToRegionEnv, mtr_ep_len, '-TestAll', {  # to stop yapf
-            'rand_poses_minor': False,
-            # rand_poses_full subsumes rand_poses_minor
-            'rand_poses_full': True,
-            'rand_goal_colour': True,
-            'rand_dynamics': True,
-        }),
-        # egocentric view shift (probably a bad idea to add this as a test env,
-        # rather than a postprocessor or something)
-        # (MoveToRegionEnv, mtr_ep_len, '-TestEgo', {
-        #     'rand_poses_minor': False,
-        #     'rand_poses_full': False,
-        #     'rand_goal_colour': False,
-        #     'rand_dynamics': False,
-        #     'egocentric': True,
-        # }),
+        ('magical.benchmarks.move_to_region:MoveToRegionEnv',
+         'MoveToRegion-Demo-v0', mtr_ep_len, {
+             'rand_poses_minor': False,
+             'rand_poses_full': False,
+             'rand_goal_colour': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.move_to_region:MoveToRegionEnv',
+         'MoveToRegion-TestJitter-v0', mtr_ep_len, {
+             'rand_poses_minor': True,
+             'rand_poses_full': False,
+             'rand_goal_colour': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.move_to_region:MoveToRegionEnv',
+         'MoveToRegion-TestColour-v0', mtr_ep_len, {
+             'rand_poses_minor': False,
+             'rand_poses_full': False,
+             'rand_goal_colour': True,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.move_to_region:MoveToRegionEnv',
+         'MoveToRegion-TestLayout-v0', mtr_ep_len, {
+             'rand_poses_minor': False,
+             'rand_poses_full': True,
+             'rand_goal_colour': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.move_to_region:MoveToRegionEnv',
+         'MoveToRegion-TestDynamics-v0', mtr_ep_len, {
+             'rand_poses_minor': False,
+             'rand_poses_full': False,
+             'rand_goal_colour': False,
+             'rand_dynamics': True,
+         }),
+        (
+            'magical.benchmarks.move_to_region:MoveToRegionEnv',
+            'MoveToRegion-TestAll-v0',
+            mtr_ep_len,
+            {
+                'rand_poses_minor': False,
+                # rand_poses_full subsumes rand_poses_minor
+                'rand_poses_full': True,
+                'rand_goal_colour': True,
+                'rand_dynamics': True,
+            }),
     ]
 
     mr_ep_len = 120
     match_regions_variants = [
-        (MatchRegionsEnv, mr_ep_len, '-Demo', {
-            'rand_target_colour': False,
-            'rand_shape_type': False,
-            'rand_shape_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (MatchRegionsEnv, mr_ep_len, '-TestJitter', {
-            'rand_target_colour': False,
-            'rand_shape_type': False,
-            'rand_shape_count': False,
-            'rand_layout_minor': True,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (MatchRegionsEnv, mr_ep_len, '-TestColour', {
-            'rand_target_colour': True,
-            'rand_shape_type': False,
-            'rand_shape_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (MatchRegionsEnv, mr_ep_len, '-TestShape', {
-            'rand_target_colour': False,
-            'rand_shape_type': True,
-            'rand_shape_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (MatchRegionsEnv, mr_ep_len, '-TestLayout', {
-            'rand_target_colour': False,
-            'rand_shape_type': False,
-            'rand_shape_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': False,
-        }),
+        ('magical.benchmarks.match_regions:MatchRegionsEnv',
+         'MatchRegions-Demo-v0', mr_ep_len, {
+             'rand_target_colour': False,
+             'rand_shape_type': False,
+             'rand_shape_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.match_regions:MatchRegionsEnv',
+         'MatchRegions-TestJitter-v0', mr_ep_len, {
+             'rand_target_colour': False,
+             'rand_shape_type': False,
+             'rand_shape_count': False,
+             'rand_layout_minor': True,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.match_regions:MatchRegionsEnv',
+         'MatchRegions-TestColour-v0', mr_ep_len, {
+             'rand_target_colour': True,
+             'rand_shape_type': False,
+             'rand_shape_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.match_regions:MatchRegionsEnv',
+         'MatchRegions-TestShape-v0', mr_ep_len, {
+             'rand_target_colour': False,
+             'rand_shape_type': True,
+             'rand_shape_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.match_regions:MatchRegionsEnv',
+         'MatchRegions-TestLayout-v0', mr_ep_len, {
+             'rand_target_colour': False,
+             'rand_shape_type': False,
+             'rand_shape_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': False,
+         }),
         # test everything except dynamics
-        (MatchRegionsEnv, mr_ep_len, '-TestCountPlus', {
-            'rand_target_colour': True,
-            'rand_shape_type': True,
-            'rand_shape_count': True,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': False,
-        }),
-        (MatchRegionsEnv, mr_ep_len, '-TestDynamics', {
-            'rand_target_colour': False,
-            'rand_shape_type': False,
-            'rand_shape_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': True,
-        }),
-        (MatchRegionsEnv, mr_ep_len, '-TestAll', {
-            'rand_target_colour': True,
-            'rand_shape_type': True,
-            'rand_shape_count': True,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': True,
-        }),
+        ('magical.benchmarks.match_regions:MatchRegionsEnv',
+         'MatchRegions-TestCountPlus-v0', mr_ep_len, {
+             'rand_target_colour': True,
+             'rand_shape_type': True,
+             'rand_shape_count': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.match_regions:MatchRegionsEnv',
+         'MatchRegions-TestDynamics-v0', mr_ep_len, {
+             'rand_target_colour': False,
+             'rand_shape_type': False,
+             'rand_shape_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': True,
+         }),
+        ('magical.benchmarks.match_regions:MatchRegionsEnv',
+         'MatchRegions-TestAll-v0', mr_ep_len, {
+             'rand_target_colour': True,
+             'rand_shape_type': True,
+             'rand_shape_count': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': True,
+         }),
     ]
 
     ml_ep_len = 180
     make_line_variants = [
-        (MakeLineEnv, ml_ep_len, '-Demo', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (MakeLineEnv, ml_ep_len, '-TestJitter', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': True,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (MakeLineEnv, ml_ep_len, '-TestColour', {
-            'rand_colours': True,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (MakeLineEnv, ml_ep_len, '-TestShape', {
-            'rand_colours': False,
-            'rand_shapes': True,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (MakeLineEnv, ml_ep_len, '-TestLayout', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': False,
-        }),
+        ('magical.benchmarks.make_line:MakeLineEnv', 'MakeLine-Demo-v0',
+         ml_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.make_line:MakeLineEnv', 'MakeLine-TestJitter-v0',
+         ml_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': True,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.make_line:MakeLineEnv', 'MakeLine-TestColour-v0',
+         ml_ep_len, {
+             'rand_colours': True,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.make_line:MakeLineEnv', 'MakeLine-TestShape-v0',
+         ml_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': True,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.make_line:MakeLineEnv', 'MakeLine-TestLayout-v0',
+         ml_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': False,
+         }),
         # test everything except dynamics
-        (MakeLineEnv, ml_ep_len, '-TestCountPlus', {
-            'rand_colours': True,
-            'rand_shapes': True,
-            'rand_count': True,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': False,
-        }),
-        (MakeLineEnv, ml_ep_len, '-TestDynamics', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': True,
-        }),
-        (MakeLineEnv, ml_ep_len, '-TestAll', {
-            'rand_colours': True,
-            'rand_shapes': True,
-            'rand_count': True,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': True,
-        }),
+        ('magical.benchmarks.make_line:MakeLineEnv',
+         'MakeLine-TestCountPlus-v0', ml_ep_len, {
+             'rand_colours': True,
+             'rand_shapes': True,
+             'rand_count': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.make_line:MakeLineEnv',
+         'MakeLine-TestDynamics-v0', ml_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': True,
+         }),
+        ('magical.benchmarks.make_line:MakeLineEnv', 'MakeLine-TestAll-v0',
+         ml_ep_len, {
+             'rand_colours': True,
+             'rand_shapes': True,
+             'rand_count': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': True,
+         }),
     ]
 
     fd_ep_len = 100
     find_dupe_variants = [
-        (FindDupeEnv, fd_ep_len, '-Demo', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (FindDupeEnv, fd_ep_len, '-TestJitter', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': True,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (FindDupeEnv, fd_ep_len, '-TestColour', {
-            'rand_colours': True,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (FindDupeEnv, fd_ep_len, '-TestShape', {
-            'rand_colours': False,
-            'rand_shapes': True,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (FindDupeEnv, fd_ep_len, '-TestLayout', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': False,
-        }),
-        (FindDupeEnv, fd_ep_len, '-TestCountPlus', {
-            'rand_colours': True,
-            'rand_shapes': True,
-            'rand_count': True,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': False,
-        }),
-        (FindDupeEnv, fd_ep_len, '-TestDynamics', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': True,
-        }),
-        (FindDupeEnv, fd_ep_len, '-TestAll', {
-            'rand_colours': True,
-            'rand_shapes': True,
-            'rand_count': True,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': True,
-        }),
+        ('magical.benchmarks.find_dupe:FindDupeEnv', 'FindDupe-Demo-v0',
+         fd_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.find_dupe:FindDupeEnv', 'FindDupe-TestJitter-v0',
+         fd_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': True,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.find_dupe:FindDupeEnv', 'FindDupe-TestColour-v0',
+         fd_ep_len, {
+             'rand_colours': True,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.find_dupe:FindDupeEnv', 'FindDupe-TestShape-v0',
+         fd_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': True,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.find_dupe:FindDupeEnv', 'FindDupe-TestLayout-v0',
+         fd_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.find_dupe:FindDupeEnv',
+         'FindDupe-TestCountPlus-v0', fd_ep_len, {
+             'rand_colours': True,
+             'rand_shapes': True,
+             'rand_count': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.find_dupe:FindDupeEnv',
+         'FindDupe-TestDynamics-v0', fd_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': True,
+         }),
+        ('magical.benchmarks.find_dupe:FindDupeEnv', 'FindDupe-TestAll-v0',
+         fd_ep_len, {
+             'rand_colours': True,
+             'rand_shapes': True,
+             'rand_count': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': True,
+         }),
     ]
 
     fc_ep_len = 60
     fix_colour_variants = [
-        (FixColourEnv, fc_ep_len, '-Demo', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (FixColourEnv, fc_ep_len, '-TestJitter', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': True,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (FixColourEnv, fc_ep_len, '-TestColour', {
-            'rand_colours': True,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (FixColourEnv, fc_ep_len, '-TestShape', {
-            'rand_colours': False,
-            'rand_shapes': True,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': False,
-        }),
-        (FixColourEnv, fc_ep_len, '-TestLayout', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': False,
-        }),
-        (FixColourEnv, fc_ep_len, '-TestCountPlus', {
-            'rand_colours': True,
-            'rand_shapes': True,
-            'rand_count': True,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': False,
-        }),
-        (FixColourEnv, fc_ep_len, '-TestDynamics', {
-            'rand_colours': False,
-            'rand_shapes': False,
-            'rand_count': False,
-            'rand_layout_minor': False,
-            'rand_layout_full': False,
-            'rand_dynamics': True,
-        }),
-        (FixColourEnv, fc_ep_len, '-TestAll', {
-            'rand_colours': True,
-            'rand_shapes': True,
-            'rand_count': True,
-            'rand_layout_minor': False,
-            'rand_layout_full': True,
-            'rand_dynamics': True,
-        }),
+        ('magical.benchmarks.fix_colour:FixColourEnv', 'FixColour-Demo-v0',
+         fc_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.fix_colour:FixColourEnv',
+         'FixColour-TestJitter-v0', fc_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': True,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.fix_colour:FixColourEnv',
+         'FixColour-TestColour-v0', fc_ep_len, {
+             'rand_colours': True,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.fix_colour:FixColourEnv',
+         'FixColour-TestShape-v0', fc_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': True,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.fix_colour:FixColourEnv',
+         'FixColour-TestLayout-v0', fc_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.fix_colour:FixColourEnv',
+         'FixColour-TestCountPlus-v0', fc_ep_len, {
+             'rand_colours': True,
+             'rand_shapes': True,
+             'rand_count': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.fix_colour:FixColourEnv',
+         'FixColour-TestDynamics-v0', fc_ep_len, {
+             'rand_colours': False,
+             'rand_shapes': False,
+             'rand_count': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_dynamics': True,
+         }),
+        ('magical.benchmarks.fix_colour:FixColourEnv', 'FixColour-TestAll-v0',
+         fc_ep_len, {
+             'rand_colours': True,
+             'rand_shapes': True,
+             'rand_count': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_dynamics': True,
+         }),
     ]
 
     # Long episodes because this is a hard environment. You can have up to 10
@@ -693,76 +809,157 @@ def register_envs():
     # you know what you're doing).
     cluster_ep_len = 240
     cluster_variants = []
-    for cluster_cls in (ClusterColourEnv, ClusterShapeEnv):
-        cluster_variants.extend([
-            (cluster_cls, cluster_ep_len, '-Demo', {
-                'rand_shape_colour': False,
-                'rand_shape_type': False,
-                'rand_layout_minor': False,
-                'rand_layout_full': False,
-                'rand_shape_count': False,
-                'rand_dynamics': False,
-            }),
-            (cluster_cls, cluster_ep_len, '-TestJitter', {
-                'rand_shape_colour': False,
-                'rand_shape_type': False,
-                'rand_layout_minor': True,
-                'rand_layout_full': False,
-                'rand_shape_count': False,
-                'rand_dynamics': False,
-            }),
-            (cluster_cls, cluster_ep_len, '-TestColour', {
-                'rand_shape_colour': True,
-                'rand_shape_type': False,
-                'rand_layout_minor': False,
-                'rand_layout_full': False,
-                'rand_shape_count': False,
-                'rand_dynamics': False,
-            }),
-            (cluster_cls, cluster_ep_len, '-TestShape', {
-                'rand_shape_colour': False,
-                'rand_shape_type': True,
-                'rand_layout_minor': False,
-                'rand_layout_full': False,
-                'rand_shape_count': False,
-                'rand_dynamics': False,
-            }),
-            (cluster_cls, cluster_ep_len, '-TestLayout', {
-                'rand_shape_colour': False,
-                'rand_shape_type': False,
-                'rand_layout_minor': False,
-                'rand_layout_full': True,
-                'rand_shape_count': False,
-                'rand_dynamics': False,
-            }),
-            (cluster_cls, cluster_ep_len, '-TestCountPlus', {
-                'rand_shape_colour': True,
-                'rand_shape_type': True,
-                'rand_layout_minor': False,
-                'rand_layout_full': True,
-                'rand_shape_count': True,
-                'rand_dynamics': False,
-            }),
-            (cluster_cls, cluster_ep_len, '-TestDynamics', {
-                'rand_shape_colour': False,
-                'rand_shape_type': False,
-                'rand_layout_minor': False,
-                'rand_layout_full': False,
-                'rand_shape_count': False,
-                'rand_dynamics': True,
-            }),
-            (cluster_cls, cluster_ep_len, '-TestAll', {
-                'rand_shape_colour': True,
-                'rand_shape_type': True,
-                'rand_layout_minor': False,
-                'rand_layout_full': True,
-                'rand_shape_count': True,
-                'rand_dynamics': True,
-            }),
-        ])
+    cluster_variants.extend([
+        ('magical.benchmarks.cluster:ClusterShapeEnv', 'ClusterShape-Demo-v0',
+         cluster_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_shape_count': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterShapeEnv',
+         'ClusterShape-TestJitter-v0', cluster_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_layout_minor': True,
+             'rand_layout_full': False,
+             'rand_shape_count': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterShapeEnv',
+         'ClusterShape-TestColour-v0', cluster_ep_len, {
+             'rand_shape_colour': True,
+             'rand_shape_type': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_shape_count': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterShapeEnv',
+         'ClusterShape-TestShape-v0', cluster_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_shape_count': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterShapeEnv',
+         'ClusterShape-TestLayout-v0', cluster_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_shape_count': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterShapeEnv',
+         'ClusterShape-TestCountPlus-v0', cluster_ep_len, {
+             'rand_shape_colour': True,
+             'rand_shape_type': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_shape_count': True,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterShapeEnv',
+         'ClusterShape-TestDynamics-v0', cluster_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_shape_count': False,
+             'rand_dynamics': True,
+         }),
+        ('magical.benchmarks.cluster:ClusterShapeEnv',
+         'ClusterShape-TestAll-v0', cluster_ep_len, {
+             'rand_shape_colour': True,
+             'rand_shape_type': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_shape_count': True,
+             'rand_dynamics': True,
+         }),
+    ])
+    cluster_variants.extend([
+        ('magical.benchmarks.cluster:ClusterColourEnv',
+         'ClusterColour-Demo-v0', cluster_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_shape_count': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterColourEnv',
+         'ClusterColour-TestJitter-v0', cluster_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_layout_minor': True,
+             'rand_layout_full': False,
+             'rand_shape_count': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterColourEnv',
+         'ClusterColour-TestColour-v0', cluster_ep_len, {
+             'rand_shape_colour': True,
+             'rand_shape_type': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_shape_count': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterColourEnv',
+         'ClusterColour-TestShape-v0', cluster_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_shape_count': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterColourEnv',
+         'ClusterColour-TestLayout-v0', cluster_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_shape_count': False,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterColourEnv',
+         'ClusterColour-TestCountPlus-v0', cluster_ep_len, {
+             'rand_shape_colour': True,
+             'rand_shape_type': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_shape_count': True,
+             'rand_dynamics': False,
+         }),
+        ('magical.benchmarks.cluster:ClusterColourEnv',
+         'ClusterColour-TestDynamics-v0', cluster_ep_len, {
+             'rand_shape_colour': False,
+             'rand_shape_type': False,
+             'rand_layout_minor': False,
+             'rand_layout_full': False,
+             'rand_shape_count': False,
+             'rand_dynamics': True,
+         }),
+        ('magical.benchmarks.cluster:ClusterColourEnv',
+         'ClusterColour-TestAll-v0', cluster_ep_len, {
+             'rand_shape_colour': True,
+             'rand_shape_type': True,
+             'rand_layout_minor': False,
+             'rand_layout_full': True,
+             'rand_shape_count': True,
+             'rand_dynamics': True,
+         }),
+    ])
 
     # collection of ALL env specifications
-    env_cls_suffix_kwargs = [
+    env_epoint_suffix_kwargs = [
         *cluster_variants,
         *find_dupe_variants,
         *fix_colour_variants,
@@ -773,13 +970,11 @@ def register_envs():
     ]
 
     # register all the envs and record their names
-    # TODO: make registration lazy, so that I can do it automatically without
-    # importing all the benchmark code (including Pyglet code, etc.).
-    for env_class, env_ep_len, env_suffix, env_kwargs in env_cls_suffix_kwargs:
-        base_env_name = env_class.make_name(env_suffix)
-        ALL_REGISTERED_ENVS.append(base_env_name)
-        gym.register(base_env_name,
-                     entry_point=env_class,
+    for (env_epoint, env_name, env_ep_len,
+         env_kwargs) in env_epoint_suffix_kwargs:
+        ALL_REGISTERED_ENVS.append(env_name)
+        gym.register(env_name,
+                     entry_point=env_epoint,
                      max_episode_steps=env_ep_len,
                      kwargs={
                          'max_episode_steps': env_ep_len,
@@ -789,10 +984,10 @@ def register_envs():
 
         for preproc_str, constructor in \
                 DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS.items():
-            new_name = env_class.make_name(env_suffix + f'-{preproc_str}')
+            new_name = update_magical_env_name(env_name, preproc=preproc_str)
             ALL_REGISTERED_ENVS.append(new_name)
             gym.register(new_name,
-                         entry_point=constructor(env_class),
+                         entry_point=constructor(env_epoint),
                          max_episode_steps=env_ep_len,
                          kwargs={
                              'max_episode_steps': env_ep_len,
@@ -832,15 +1027,21 @@ def register_envs():
                                 'rand_robot_pose': False,
                                 **common_kwargs,
                             })
-    debug_mtc_suffix = '-DebugReward'
-    gym.register(MoveToCornerEnv.make_name(debug_mtc_suffix),
-                 entry_point=MoveToCornerEnv,
-                 **debug_mtc_kwargs)
+    debug_mtc_suffix = 'DebugReward'
+    debug_mtc_demo_env_name = f'MoveToCorner-Demo-{debug_mtc_suffix}-v0'
+    gym.register(
+        debug_mtc_demo_env_name,
+        entry_point='magical.benchmarks.move_to_corner:MoveToCornerEnv',
+        **debug_mtc_kwargs)
+    ALL_REGISTERED_ENVS.append(debug_mtc_demo_env_name)
     for preproc_str, constructor in \
             DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS.items():
+        debug_mtc_demo_pp_env_name = \
+            f'MoveToCorner-Demo-{debug_mtc_suffix}-{preproc_str}-v0'
         gym.register(
-            MoveToCornerEnv.make_name(f'{debug_mtc_suffix}-{preproc_str}'),
-            entry_point=constructor(MoveToCornerEnv),
+            debug_mtc_demo_pp_env_name,
+            entry_point='magical.benchmarks.move_to_corner:MoveToCornerEnv',
             **debug_mtc_kwargs)
+        ALL_REGISTERED_ENVS.append(debug_mtc_demo_pp_env_name)
 
     return True

@@ -28,11 +28,6 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
                 "ONLY intended for training RL algorithms during debugging, "
                 "so don't forget to disable it when benchmarking IL")
 
-    @classmethod
-    def make_name(cls, suffix=None):
-        base_name = 'MoveToCorner'
-        return base_name + (suffix or '') + '-v0'
-
     def on_reset(self):
         # make the robot
         robot_pos = np.asarray((0.4, -0.0))

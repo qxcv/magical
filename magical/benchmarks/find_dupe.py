@@ -69,11 +69,6 @@ class FindDupeEnv(BaseEnv, EzPickle):
                 and self.rand_colours, "if shape count is randomised then " \
                 "layout, shapes, and colours must be fully randomised too"
 
-    @classmethod
-    def make_name(cls, suffix=None):
-        base_name = 'FindDupe'
-        return base_name + (suffix or '') + '-v0'
-
     def on_reset(self):
         # make the robot (pose is randomised at end, if necessary)
         robot_pos, robot_angle = DEFAULT_ROBOT_POSE
