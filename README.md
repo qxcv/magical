@@ -143,6 +143,11 @@ following preprocessor names to the env name:
   views concatenated with the most recent allocentric view. Useful for
   maintaining full observability of the workspace while retaining the
   ease-of-learning afforded by an egocentric perspective.
+- `LoResCHW4E`: like `-LoRes4E`, but transposes observations to be
+  channels-first (i.e. the Torch default).
+
+The complete list of preprocessors is defined in
+`magical.benchmarks.DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS`.
 
 ## Using pre-recorded demonstrations
 

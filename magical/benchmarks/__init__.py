@@ -403,7 +403,7 @@ def register_envs():
     # remember 100 frames is ~12.5s at 8fps
     mtc_ep_len = 80
     move_to_corner_variants = [
-        ('magical.benchmarks.move_to_corner.MoveToCornerEnv',
+        ('magical.benchmarks.move_to_corner:MoveToCornerEnv',
          'MoveToCorner-Demo-v0', mtc_ep_len, {
              'rand_shape_colour': False,
              'rand_shape_type': False,
@@ -1023,8 +1023,7 @@ def register_envs():
                                 'max_episode_steps': mtc_ep_len,
                                 'rand_shape_colour': False,
                                 'rand_shape_type': False,
-                                'rand_shape_pose': False,
-                                'rand_robot_pose': False,
+                                'rand_poses': False,
                                 **common_kwargs,
                             })
     debug_mtc_suffix = 'DebugReward'
