@@ -1,6 +1,8 @@
 # Multitask Assessment of Generalisation in Imitative Control Algorithms (MAGICAL)
 
-[![PyPI version](https://badge.fury.io/py/magical-il.svg)](https://badge.fury.io/py/magical-il) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/qxcv/magical/blob/pyglet1.5/demo-notebook.ipynb)
+[![PyPI package](https://badge.fury.io/py/magical-il.svg)](https://badge.fury.io/py/magical-il)
+[![CircleCI pipelines](https://circleci.com/gh/qxcv/magical.svg?style=svg)](https://app.circleci.com/pipelines/github/qxcv/magical)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/qxcv/magical/blob/pyglet1.5/demo-notebook.ipynb)
 
 ## A Benchmark Suite for Robust imitation Learning
 
