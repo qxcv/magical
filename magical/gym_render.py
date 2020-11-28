@@ -23,10 +23,12 @@ SOFTWARE.
 """
 
 from __future__ import division
+
 import os
-import six
-import warnings
 import sys
+import warnings
+
+import six
 
 if "Apple" in sys.version:
     if 'DYLD_FALLBACK_LIBRARY_PATH' in os.environ:
@@ -55,10 +57,11 @@ except ImportError:
     ''')
 
 import math  # noqa: E402
+
 import numpy as np  # noqa: E402
 
-from magical.pyglet_backport.image import Framebuffer, \
-    Renderbuffer, Texture  # noqa: E402
+from magical.pyglet_backport.image import Framebuffer  # noqa: E402
+from magical.pyglet_backport.image import Renderbuffer, Texture
 
 RAD2DEG = 57.29577951308232
 
@@ -107,7 +110,7 @@ def get_offscreen_fbo(width, height, msaa_samples=4):
                             fbo._depth_rb)
     assert fbo.is_complete, \
         "FramebufferObject not complete after attaching all buffers (bug?); " \
-        f"status {{fbo.get_status()}}"
+        f"status {fbo.get_status()}"
     return fbo
 
 

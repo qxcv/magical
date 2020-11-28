@@ -33,7 +33,6 @@ class EvaluationProtocol(abc.ABC):
         even just a name like "Multi-task GAIL". This identifier will be
         available in a `run_id` column of the DataFrame returned by
         `do_eval`."""
-        pass
 
     @abc.abstractmethod
     def obtain_scores(self, env_name):
@@ -41,7 +40,6 @@ class EvaluationProtocol(abc.ABC):
         environment named `env_name`, then return the `eval_score`s from each
         rollout. Should never return _fewer_ than `self.n_rollouts` scores; if
         it produces more scores, then the later ones will be ignored."""
-        pass
 
     def do_eval(self, verbose=False):
         if not self._called_init:

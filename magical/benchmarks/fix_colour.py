@@ -64,11 +64,6 @@ class FixColourEnv(BaseEnv, EzPickle):
                 and self.rand_colours, "if shape count is randomised then " \
                 "layout, shapes, and colours must be fully randomised too"
 
-    @classmethod
-    def make_name(cls, suffix=None):
-        base_name = 'FixColour'
-        return base_name + (suffix or '') + '-v0'
-
     def on_reset(self):
         robot_pos, robot_angle = DEFAULT_ROBOT_POSE
         robot = self._make_robot(robot_pos, robot_angle)

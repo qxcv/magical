@@ -1,6 +1,8 @@
 # Multitask Assessment of Generalisation in Imitative Control Algorithms (MAGICAL)
 
-[![PyPI version](https://badge.fury.io/py/magical-il.svg)](https://badge.fury.io/py/magical-il) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/qxcv/magical/blob/pyglet1.5/demo-notebook.ipynb)
+[![PyPI package](https://badge.fury.io/py/magical-il.svg)](https://badge.fury.io/py/magical-il)
+[![CircleCI pipelines](https://circleci.com/gh/qxcv/magical.svg?style=svg)](https://app.circleci.com/pipelines/github/qxcv/magical)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/qxcv/magical/blob/pyglet1.5/demo-notebook.ipynb)
 
 ## A Benchmark Suite for Robust imitation Learning
 
@@ -141,6 +143,11 @@ following preprocessor names to the env name:
   views concatenated with the most recent allocentric view. Useful for
   maintaining full observability of the workspace while retaining the
   ease-of-learning afforded by an egocentric perspective.
+- `LoResCHW4E`: like `-LoRes4E`, but transposes observations to be
+  channels-first (i.e. the Torch default).
+
+The complete list of preprocessors is defined in
+`magical.benchmarks.DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS`.
 
 ## Using pre-recorded demonstrations
 

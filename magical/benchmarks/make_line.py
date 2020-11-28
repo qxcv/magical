@@ -90,11 +90,6 @@ class MakeLineEnv(BaseEnv, EzPickle):
         self.inlier_dist = self.SHAPE_RAD * INLIER_RAD_MULT
         self.max_sep = self.SHAPE_RAD * MAX_SEP_RADS
 
-    @classmethod
-    def make_name(cls, suffix=None):
-        base_name = "MakeLine"
-        return base_name + (suffix or '') + '-v0'
-
     def on_reset(self):
         robot_pos, robot_angle = DEFAULT_ROBOT_POSE
         robot = self._make_robot(robot_pos, robot_angle)

@@ -7,14 +7,20 @@ jobs:
     steps:
       - checkout
       - run:
-          command: pip install -e .
+          command: pip install -e '.[dev]'
           name: Install dependencies and MAGICAL package
       - run:
           command: |
             mkdir -p test-results
-            xvfb-run -a pytest --junitxml=test-results/junit.xml tests/
+            xvfb-run -a -s "-maxclients 1024 -screen 0 1024x1024x16" \
+                pytest -n auto --junitxml=test-results/junit.xml
           name: Run Tests
       - store_test_results:
           path: test-results
       - store_artifacts:
           path: test-results
+
+workflows:
+  build_and_test:
+    jobs:
+      - build-and-test

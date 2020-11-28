@@ -27,11 +27,6 @@ class MoveToRegionEnv(BaseEnv, EzPickle):
         self.rand_poses_full = rand_poses_full
         self.rand_goal_colour = rand_goal_colour
 
-    @classmethod
-    def make_name(cls, suffix=None):
-        base_name = 'MoveToRegion'
-        return base_name + (suffix or '') + '-v0'
-
     def on_reset(self):
         goal_xyhw = DEFAULT_GOAL_XYHW
         if self.rand_poses_minor or self.rand_poses_full:

@@ -111,7 +111,6 @@ def rect_verts(w, h):
 class PlacementError(Exception):
     """Raised when `pm_randomise_pose` cannot find an appropriate
     (non-colliding) pose for the given object."""
-    pass
 
 
 def pm_randomise_pose(space,
@@ -166,11 +165,6 @@ def pm_randomise_pose(space,
     saved_angles = [float(body.angle) for body in bodies]
     orig_main_angle = float(main_body.angle)
     orig_main_pos = Vec2d(main_body.position)
-    # local_pos_offsets = [
-    #     (body.position - orig_main_pos).rotated(-orig_main_angle)
-    #     for body in bodies
-    # ]
-    # local_angle_deltas = [body.angle - orig_main_angle for body in bodies]
 
     shape_set = set()
     for body in bodies:

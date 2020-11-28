@@ -13,9 +13,9 @@ import pymunk.autogeometry as autogeom
 
 import magical.geom as gtools
 import magical.gym_render as r
-from magical.style import (COLOURS_RGB, GOAL_LINE_THICKNESS,
-                           ROBOT_LINE_THICKNESS, SHAPE_LINE_THICKNESS,
-                           darken_rgb, lighten_rgb)
+from magical.style import (
+    COLOURS_RGB, GOAL_LINE_THICKNESS, ROBOT_LINE_THICKNESS,
+    SHAPE_LINE_THICKNESS, darken_rgb, lighten_rgb)
 
 # #############################################################################
 # Entity ABC
@@ -38,9 +38,11 @@ class Entity(abc.ABC):
     def update(self, dt):
         """Do an logic/physics update at some (most likely fixed) time
         interval."""
+
     def pre_draw(self):
         """Do a graphics state update to, e.g., update state of internal
         `Geom`s. This doesn't have to be done at every physics time step."""
+
     def reconstruct_signature(self):
         """Produce signature necessary to reconstruct this entity in its
         current pose. This is useful for creating new scenarios out of existing
