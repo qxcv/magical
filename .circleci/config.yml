@@ -12,7 +12,8 @@ jobs:
       - run:
           command: |
             mkdir -p test-results
-            xvfb-run -a pytest -n auto --junitxml=test-results/junit.xml tests/
+            xvfb-run -a -s "-maxclients 1024 -screen 0 1024x1024x16" \
+                pytest -n auto --junitxml=test-results/junit.xml tests/
           name: Run Tests
       - store_test_results:
           path: test-results

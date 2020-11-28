@@ -19,15 +19,18 @@ def test_rollouts(env_name):
     """Simple smoke test to make sure environments can roll out trajectories of
     the right length."""
     env = gym.make(env_name)
-    env.seed(7)
-    env.action_space.seed(42)
-    env.reset()
-    for _ in range(N_ROLLOUTS):
-        done = False
-        traj_len = 0
-        while not done:
-            action = env.action_space.sample()
-            obs, rew, done, info = env.step(action)
-            traj_len += 1
-        assert traj_len == env.max_episode_steps
+    try:
+        env.seed(7)
+        env.action_space.seed(42)
         env.reset()
+        for _ in range(N_ROLLOUTS):
+            done = False
+            traj_len = 0
+            while not done:
+                action = env.action_space.sample()
+                obs, rew, done, info = env.step(action)
+                traj_len += 1
+            assert traj_len == env.max_episode_steps
+            env.reset()
+    finally:
+        env.close()
