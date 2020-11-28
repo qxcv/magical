@@ -11,7 +11,7 @@ See `base_env.py` for actual values of the real physics variables used in the
 MAGICAL environments.
 
 (in hindsight this is wayyyyy more complicated than it will to be for the
-foreseeable future, but I had fun making it :D)"""
+foreseeable future; can probably replace with dict or something)"""
 
 import collections
 
@@ -54,6 +54,8 @@ class _PhysicsVariablesMeta(type):
 class PhysicsVariablesBase(metaclass=_PhysicsVariablesMeta, _pbm_skip=True):
     """Base class for physics variables with convenience methods for sampling
     random variables, instantiating from defaults, etc."""
+    variables: collections.OrderedDict
+
     def __init__(self, *, _var_values):
         """Constructor for classes holding physics variable values. This should
         NOT be called directly. Instead, call the sample() or defaults()

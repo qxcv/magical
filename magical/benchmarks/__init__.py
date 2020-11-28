@@ -19,6 +19,7 @@ from magical.benchmarks.move_to_corner import MoveToCornerEnv
 from magical.benchmarks.move_to_region import MoveToRegionEnv
 
 __all__ = [
+    'ALL_REGISTERED_ENVS'
     'DEMO_ENVS_TO_TEST_ENVS_MAP',
     'MoveToCornerEnv',
     'MatchRegionsEnv',
@@ -271,6 +272,7 @@ _ENV_NAME_RE = re.compile(
 _REGISTERED = False
 # this will be filled in later
 DEMO_ENVS_TO_TEST_ENVS_MAP = collections.OrderedDict()
+ALL_REGISTERED_ENVS = []
 AVAILABLE_PREPROCESSORS = [key for key in DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS]
 
 
@@ -310,7 +312,7 @@ class EnvName:
 
 def register_envs():
     """Register all default environments for this benchmark suite."""
-    global _REGISTERED, DEMO_ENVS_TO_TEST_ENVS_MAP
+    global _REGISTERED
     if _REGISTERED:
         return False
     _REGISTERED = True
@@ -773,10 +775,9 @@ def register_envs():
     # register all the envs and record their names
     # TODO: make registration lazy, so that I can do it automatically without
     # importing all the benchmark code (including Pyglet code, etc.).
-    registered_env_names = []
     for env_class, env_ep_len, env_suffix, env_kwargs in env_cls_suffix_kwargs:
         base_env_name = env_class.make_name(env_suffix)
-        registered_env_names.append(base_env_name)
+        ALL_REGISTERED_ENVS.append(base_env_name)
         gym.register(base_env_name,
                      entry_point=env_class,
                      max_episode_steps=env_ep_len,
@@ -789,7 +790,7 @@ def register_envs():
         for preproc_str, constructor in \
                 DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS.items():
             new_name = env_class.make_name(env_suffix + f'-{preproc_str}')
-            registered_env_names.append(new_name)
+            ALL_REGISTERED_ENVS.append(new_name)
             gym.register(new_name,
                          entry_point=constructor(env_class),
                          max_episode_steps=env_ep_len,
@@ -801,7 +802,7 @@ def register_envs():
 
     train_to_test_map = {}
     observed_demo_envs = set()
-    for name in registered_env_names:
+    for name in ALL_REGISTERED_ENVS:
         parsed = EnvName(name)
         if parsed.is_test:
             test_l = train_to_test_map.setdefault(parsed.demo_env_name, [])
