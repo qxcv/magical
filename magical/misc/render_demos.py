@@ -9,7 +9,7 @@ import click
 import numpy as np
 import skvideo.io as vidio
 
-from magical.baselines.saved_trajectories import load_demos
+from magical.saved_trajectories import load_demos
 
 
 def get_frames(demo):

@@ -3,6 +3,7 @@
 import collections
 import functools
 import re
+from typing import Optional
 
 import cv2
 import gym
@@ -87,7 +88,7 @@ class FlattenFrameStack(gym.Wrapper):
             for k, k_depth in depth_by_key.items()
         ])
 
-        orig_space = None
+        orig_space: Optional[gym.spaces.Box] = None
 
         def box_map(box):
             nonlocal orig_space
@@ -102,6 +103,8 @@ class FlattenFrameStack(gym.Wrapper):
         # figure out what the space is inside the dict
         assert isinstance(env.observation_space, Dict)
         _gym_tree_map(box_map, env.observation_space)
+        assert orig_space is not None
+        assert isinstance(orig_space, gym.spaces.Box)
         self.depth_sum = sum(self.depth_by_key.values())
         new_low = np.repeat(orig_space.low, self.depth_sum, axis=-1)
         new_high = np.repeat(orig_space.high, self.depth_sum, axis=-1)
