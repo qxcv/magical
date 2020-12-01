@@ -57,7 +57,7 @@ def splice_in_preproc_name(base_env_name, preproc_name):
     assert preproc_name in DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS, \
         f"no preprocessor named '{preproc_name}', options are " \
         f"{', '.join(DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS)}"
-    return update_magical_env_name(base_env_name, preproc_name)
+    return update_magical_env_name(base_env_name, preproc=preproc_name)
 
 
 class _MockDemoEnv(gym.Wrapper):
