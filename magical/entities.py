@@ -12,7 +12,7 @@ import pymunk as pm
 import pymunk.autogeometry as autogeom
 
 import magical.geom as gtools
-import magical.gym_render as r
+import magical.render as r
 from magical.style import (
     COLOURS_RGB, GOAL_LINE_THICKNESS, ROBOT_LINE_THICKNESS,
     SHAPE_LINE_THICKNESS, darken_rgb, lighten_rgb)
@@ -330,15 +330,12 @@ class Robot(Entity):
             self.add_to_space(finger_body)
             self.finger_bodies.append(finger_body)
 
-            # pin joint to keep it in place (it will rotate around this point)
-            finger_pin = pm.PinJoint(
-                body,
-                finger_body,
-                finger_rel_pos,
-                (0, 0),
-            )
-            finger_pin.error_bias = 0.0
-            self.add_to_space(finger_pin)
+            # pivot joint to keep it in place (it will rotate around this
+            # point)
+            finger_piv = pm.PivotJoint(body, finger_body, finger_body.position)
+            finger_piv.error_bias = 0.0
+            self.add_to_space(finger_piv)
+
             # rotary limit joint to stop it from getting too far out of line
             finger_limit = pm.RotaryLimitJoint(body, finger_body,
                                                lower_rot_lim, upper_rot_lim)
@@ -374,18 +371,19 @@ class Robot(Entity):
             self.add_to_space(*finger_subshapes)
             finger_shapes.append(finger_subshapes)
 
-        # graphics setup
-        # draw a circular body
-        circ_body_in = r.make_circle(radius=self.radius - ROBOT_LINE_THICKNESS,
-                                     res=100)
-        circ_body_out = r.make_circle(radius=self.radius, res=100)
+        # ======================================== #
+        # Graphics setup
+        # ======================================== #
+
+        # Main robot body.
+        circ_body = r.make_circle(self.radius, 100, True)
         robot_colour = COLOURS_RGB['grey']
         dark_robot_colour = darken_rgb(robot_colour)
         light_robot_colour = lighten_rgb(robot_colour, 4)
-        circ_body_in.set_color(*robot_colour)
-        circ_body_out.set_color(*dark_robot_colour)
+        circ_body.color = robot_colour
+        circ_body.outline_color = dark_robot_colour
 
-        # draw the two fingers
+        # Fingers.
         self.finger_xforms = []
         finger_outer_geoms = []
         finger_inner_geoms = []
@@ -395,45 +393,43 @@ class Robot(Entity):
             self.finger_xforms.append(finger_xform)
             for finger_subshape in finger_outer_subshapes:
                 vertices = [(v.x, v.y) for v in finger_subshape.get_vertices()]
-                finger_outer_geom = r.make_polygon(vertices)
-                finger_outer_geom.set_color(*robot_colour)
-                finger_outer_geom.add_attr(finger_xform)
+                finger_outer_geom = r.Poly(vertices, False)
+                finger_outer_geom.color = robot_colour
+                finger_outer_geom.add_transform(finger_xform)
                 finger_outer_geoms.append(finger_outer_geom)
-
             for vertices in finger_inner_verts:
-                finger_inner_geom = r.make_polygon(vertices)
-                finger_inner_geom.set_color(*light_robot_colour)
-                finger_inner_geom.add_attr(finger_xform)
+                finger_inner_geom = r.Poly(vertices, False)
+                finger_inner_geom.color = light_robot_colour
+                finger_inner_geom.add_transform(finger_xform)
                 finger_inner_geoms.append(finger_inner_geom)
-
         for geom in finger_outer_geoms:
             self.viewer.add_geom(geom)
         for geom in finger_inner_geoms:
             self.viewer.add_geom(geom)
 
-        # draw some cute eyes
+        # Eyes.
         eye_shapes = []
         self.pupil_transforms = []
         for x_sign in [-1, 1]:
-            eye = r.make_circle(radius=0.2 * self.radius, res=20)
-            eye.set_color(1.0, 1.0, 1.0)
-            eye_base_transform = r.Transform().set_translation(
-                x_sign * 0.4 * self.radius, 0.3 * self.radius)
-            eye.add_attr(eye_base_transform)
-            pupil = r.make_circle(radius=0.12 * self.radius, res=10)
-            pupil.set_color(0.1, 0.1, 0.1)
-            # The pupils point forward slightly
+            eye = r.make_circle(0.2 * self.radius, 100, outline=False)
+            eye.color = (1.0, 1.0, 1.0)  # white color
+            eye_base_transform = r.Transform(
+                translation=(x_sign * 0.4 * self.radius, 0.3 * self.radius),
+            )
+            eye.add_transform(eye_base_transform)
+            pupil = r.make_circle(0.12 * self.radius, 100, outline=False)
+            pupil.color = (0.1, 0.1, 0.1)
             pupil_transform = r.Transform()
-            pupil.add_attr(r.Transform().set_translation(
-                0, self.radius * 0.07))
-            pupil.add_attr(pupil_transform)
-            pupil.add_attr(eye_base_transform)
+            pupil.add_transform(
+                r.Transform(translation=(0, self.radius * 0.07)))
+            pupil.add_transform(pupil_transform)
+            pupil.add_transform(eye_base_transform)
             self.pupil_transforms.append(pupil_transform)
             eye_shapes.extend([eye, pupil])
-        # join them together
+
         self.robot_xform = r.Transform()
-        robot_compound = r.Compound([circ_body_out, circ_body_in, *eye_shapes])
-        robot_compound.add_attr(self.robot_xform)
+        robot_compound = r.Compound([circ_body, *eye_shapes])
+        robot_compound.add_transform(self.robot_xform)
         self.viewer.add_geom(robot_compound)
 
     def set_action(self, move_action):
@@ -465,6 +461,7 @@ class Robot(Entity):
         vel_vector = self.robot_body.rotation_vector.cpvrotate(x_vel_vector)
         self.control_body.velocity = vel_vector
 
+        ## close fingers
         # target finger positions, relative to body
         for finger_body, finger_motor, finger_side in zip(
                 self.finger_bodies, self.finger_motors, [-1, 1]):
@@ -479,15 +476,23 @@ class Robot(Entity):
             finger_motor.rate = target_rate
 
     def pre_draw(self):
-        self.robot_xform.set_translation(*self.robot_body.position)
-        self.robot_xform.set_rotation(self.robot_body.angle)
+        self.robot_xform.reset(
+            translation=self.robot_body.position,
+            rotation=self.robot_body.angle)
+
         for finger_xform, finger_body in zip(self.finger_xforms,
                                              self.finger_bodies):
-            finger_xform.set_translation(*finger_body.position)
-            finger_xform.set_rotation(finger_body.angle)
-        for pupil_xform, pupil_body in zip(self.pupil_transforms,
-                                           self.pupil_bodies):
-            pupil_xform.set_rotation(pupil_body.angle - self.robot_body.angle)
+            finger_xform.reset(
+                translation=finger_body.position,
+                rotation=finger_body.angle)
+
+        for pupil_xform, pupil_body in zip(
+            self.pupil_transforms, self.pupil_bodies):
+            pupil_xform.reset(rotation=pupil_body.angle - self.robot_body.angle)
+
+# #############################################################################
+# Arena boundary
+# #############################################################################
 
 
 class ArenaBoundaries(Entity):
@@ -518,23 +523,14 @@ class ArenaBoundaries(Entity):
 
         width = self.right - self.left
         height = self.top - self.bottom
-        arena_square = r.make_rect(width=width, height=height, filled=True)
-        arena_bounds = r.make_rect(width=width, height=height, filled=False)
-        # we don't really need this at the moment (2020-05-17) because the
-        # middle of the arena is at (0,0) anyway; it will become useful if we
-        # move the arena or something like that.
-        # centre_xform = r.Transform(self.left + width / 2,
-        #                            self.bottom + height / 2)
-        # centre_xform.set_translation(self.left, self.top)
-        # arena_square.add_attr(centre_xform)
-        # arena_bounds.add_attr(centre_xform)
-        # arena is white, bounds are dark grey
-        arena_square.set_color(1, 1, 1)
-        arena_bounds.set_color(*COLOURS_RGB['grey'])
-        # also the bounds have same thickness as goals
-        arena_bounds.add_attr(r.LineWidth(GOAL_LINE_THICKNESS))
+        arena_square = r.make_rect(width, height, True)
+        arena_square.color = (1, 1, 1)
+        arena_square.outline_color = COLOURS_RGB['grey']
+        txty = (self.left + width / 2, self.bottom + height / 2)
+        centre_xform = r.Transform(translation=txty)
+        arena_square.add_transform(centre_xform)
+
         self.viewer.add_geom(arena_square)
-        self.viewer.add_geom(arena_bounds)
 
 
 # #############################################################################
@@ -642,7 +638,8 @@ class Shape(Entity):
             self.add_to_space(body)
             shape = pm.Circle(body, self.shape_size, (0, 0))
             shapes = [shape]
-            del shape
+            self.shape = shape
+            # del shape
         elif self.shape_type == ShapeType.STAR:
             star_npoints = 5
             star_out_rad = 1.3 * self.shape_size
@@ -711,54 +708,50 @@ class Shape(Entity):
         self.add_to_space(rot_joint)
 
         # Drawing
+        geoms_outer = []
         if self.shape_type == ShapeType.SQUARE:
-            geoms_inner = [r.make_square(side_len - 2 * SHAPE_LINE_THICKNESS)]
-            geoms_outer = [r.make_square(side_len)]
+            geoms = [r.make_square(side_len, outline=True)]
         elif self.shape_type == ShapeType.CIRCLE:
-            geoms_inner = [
-                r.make_circle(radius=self.shape_size - SHAPE_LINE_THICKNESS,
-                              res=100),
-            ]
-            geoms_outer = [r.make_circle(radius=self.shape_size, res=100)]
+            geoms = [r.make_circle(self.shape_size, 100, True)]
         elif self.shape_type == ShapeType.STAR:
             star_short_verts = gtools.compute_star_verts(
                 star_npoints, star_out_rad - SHAPE_LINE_THICKNESS,
                 star_in_rad - SHAPE_LINE_THICKNESS)
             short_convex_parts = autogeom.convex_decomposition(
                 star_short_verts + star_short_verts[:1], 0)
-            geoms_inner = []
+            geoms = []
             for part in short_convex_parts:
-                geoms_inner.append(r.make_polygon(part))
+                geoms.append(r.Poly(part, outline=False))
             geoms_outer = []
             for part in convex_parts:
-                geoms_outer.append(r.make_polygon(part))
+                geoms_outer.append(r.Poly(part, outline=False))
         elif self.shape_type == ShapeType.OCTAGON \
                 or self.shape_type == ShapeType.HEXAGON \
                 or self.shape_type == ShapeType.PENTAGON \
                 or self.shape_type == ShapeType.TRIANGLE:
-            apothem = gtools.regular_poly_side_length_to_apothem(
-                num_sides, side_len)
-            short_side_len = gtools.regular_poly_apothem_to_side_legnth(
-                num_sides, apothem - SHAPE_LINE_THICKNESS)
-            short_verts = gtools.compute_regular_poly_verts(
-                num_sides, short_side_len)
-            geoms_inner = [r.make_polygon(short_verts)]
-            geoms_outer = [r.make_polygon(poly_verts)]
+            geoms = [r.Poly(poly_verts, outline=True)]
         else:
             raise NotImplementedError("haven't implemented", self.shape_type)
 
-        for g in geoms_inner:
-            g.set_color(*self.colour)
-        for g in geoms_outer:
-            g.set_color(*darken_rgb(self.colour))
+        if self.shape_type == ShapeType.STAR:
+            for g in geoms_outer:
+                g.color = darken_rgb(self.colour)
+            for g in geoms:
+                g.color = self.colour
+        else:
+            for g in geoms:
+                g.color = self.colour
+                g.outline_color = darken_rgb(self.colour)
+
         self.shape_xform = r.Transform()
-        shape_compound = r.Compound(geoms_outer + geoms_inner)
-        shape_compound.add_attr(self.shape_xform)
+        shape_compound = r.Compound(geoms_outer + geoms)
+        shape_compound.add_transform(self.shape_xform)
         self.viewer.add_geom(shape_compound)
 
     def pre_draw(self):
-        self.shape_xform.set_translation(*self.shape_body.position)
-        self.shape_xform.set_rotation(self.shape_body.angle)
+        self.shape_xform.reset(
+            translation=self.shape_body.position,
+            rotation=self.shape_body.angle)
 
 
 # #############################################################################
@@ -797,26 +790,15 @@ class GoalRegion(Entity):
         self.goal_body.position = (self.x + self.w / 2, self.y - self.h / 2)
         self.add_to_space(self.goal_body, self.goal_shape)
 
-        # Making visual display: region should consist of very lightly shaded
-        # rectangle, surrounded by darker stippled border. Ideally corners on
-        # the rectangle should be rounded.
-        self.rect_xform = r.Transform()
-        self.rect_xform.set_translation(*self.goal_body.position)
-        self.rect_xform.set_rotation(self.goal_body.angle)
-
-        inner_colour = lighten_rgb(self.base_colour, times=2)
-        inner_rect = r.make_rect(width=self.w, height=self.h, filled=True)
-        inner_rect.set_color(*inner_colour)
-        inner_rect.add_attr(self.rect_xform)
-        self.viewer.add_geom(inner_rect)
-
+        # Graphics.
         outer_colour = self.base_colour
-        outer_rect = r.make_rect(width=self.w, height=self.h, filled=False)
-        outer_rect.set_color(*outer_colour)
-        outer_rect.add_attr(r.LineStyle(0x00FF))
-        outer_rect.set_linewidth(250 * GOAL_LINE_THICKNESS)
-        outer_rect.add_attr(self.rect_xform)
-        self.viewer.add_geom(outer_rect)
+        inner_colour = lighten_rgb(self.base_colour, times=2)
+        inner_rect = r.make_rect(self.w, self.h, True, dashed=True)
+        inner_rect.color = inner_colour
+        inner_rect.outline_color = outer_colour
+        self.goal_xform = r.Transform()
+        inner_rect.add_transform(self.goal_xform)
+        self.viewer.add_geom(inner_rect)
 
     def get_overlapping_ents(self,
                              ent_index,
@@ -881,6 +863,6 @@ class GoalRegion(Entity):
         return relevant_ents
 
     def pre_draw(self):
-        # just so we can see if the thing accidentally moves :-)
-        self.rect_xform.set_translation(*self.goal_body.position)
-        self.rect_xform.set_rotation(self.goal_body.angle)
+        self.goal_xform.reset(
+            translation=self.goal_body.position,
+            rotation=self.goal_body.angle)
