@@ -330,15 +330,11 @@ class Robot(Entity):
             self.add_to_space(finger_body)
             self.finger_bodies.append(finger_body)
 
-            # pin joint to keep it in place (it will rotate around this point)
-            finger_pin = pm.PinJoint(
-                body,
-                finger_body,
-                finger_rel_pos,
-                (0, 0),
-            )
-            finger_pin.error_bias = 0.0
-            self.add_to_space(finger_pin)
+            # pivot joint to keep it in place (it will rotate around this
+            # point)
+            finger_piv = pm.PivotJoint(body, finger_body, finger_body.position)
+            finger_piv.error_bias = 0.0
+            self.add_to_space(finger_piv)
             # rotary limit joint to stop it from getting too far out of line
             finger_limit = pm.RotaryLimitJoint(body, finger_body,
                                                lower_rot_lim, upper_rot_lim)
