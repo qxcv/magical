@@ -205,10 +205,7 @@ class Poly(Geom):
     def __init__(self, pts: ArrayLike, outline: bool):
         super().__init__()
 
-        self.radius = 0
-        if outline:
-            self.radius = 1
-
+        self.outline = outline
         self.initial_pts = np.array(pts)
         self.dashed = False
 
@@ -217,7 +214,7 @@ class Poly(Geom):
         ps += [ps[0]]
 
         pygame.draw.polygon(surface, self._color, ps)
-        if self.radius > 0:
+        if self.outline:
             for i in range(len(self.geom)):
                 a = self.geom[i]
                 b = self.geom[(i + 1) % len(self.geom)]
