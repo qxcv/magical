@@ -12,7 +12,7 @@ import numpy as np
 import pymunk as pm
 
 import magical.entities as en
-import magical.gym_render as r
+import magical.render as r
 from magical.phys_vars import PhysicsVariablesBase, PhysVar
 from magical.style import ARENA_ZOOM_OUT, COLOURS_RGB, lighten_rgb
 
@@ -116,6 +116,7 @@ class BaseEnv(gym.Env, abc.ABC):
         self._phys_vars = None
         # this is for background rendering
         self.viewer = None
+        self.renderer = None
         # common randomisation option for all envs
         self.rand_dynamics = rand_dynamics
 
@@ -172,7 +173,7 @@ class BaseEnv(gym.Env, abc.ABC):
             if isinstance(entity, en.Robot):
                 self._robot = entity
             self._entities.append(entity)
-            entity.setup(self.viewer, self._space, self._phys_vars)
+            entity.setup(self.renderer, self._space, self._phys_vars)
 
     def reset(self):
         self._episode_steps = 0
@@ -181,16 +182,15 @@ class BaseEnv(gym.Env, abc.ABC):
         self._space = None
         self._robot = None
         self._phys_vars = None
-        if self.viewer is None:
+        if self.renderer is None:
             res_h, res_w = self.res_hw
             background_colour = lighten_rgb(COLOURS_RGB['grey'], times=4)
-            self.viewer = r.Viewer(res_w,
-                                   res_h,
-                                   visible=False,
-                                   background_rgb=background_colour)
+            self.renderer = r.Viewer(res_w,
+                                     res_h,
+                                     background_rgb=background_colour)
         else:
             # these will get added back later
-            self.viewer.reset_geoms()
+            self.renderer.reset_geoms()
         self._space = pm.Space()
         self._space.collision_slop = 0.01
         self._space.iterations = self.phys_iter
@@ -292,7 +292,7 @@ class BaseEnv(gym.Env, abc.ABC):
         return obs_dict_u8, reward, done, info
 
     def _use_ego_cam(self):
-        self.viewer.set_cam_follow(
+        self.renderer.set_cam_follow(
             source_xy_world=(self._robot.robot_body.position.x,
                              self._robot.robot_body.position.y),
             target_xy_01=(0.5, 0.15),
@@ -301,7 +301,7 @@ class BaseEnv(gym.Env, abc.ABC):
             rotation=self._robot.robot_body.angle)
 
     def _use_allo_cam(self):
-        self.viewer.set_bounds(left=self._arena.left * ARENA_ZOOM_OUT,
+        self.renderer.set_bounds(left=self._arena.left * ARENA_ZOOM_OUT,
                                right=self._arena.right * ARENA_ZOOM_OUT,
                                bottom=self._arena.bottom * ARENA_ZOOM_OUT,
                                top=self._arena.top * ARENA_ZOOM_OUT)
@@ -310,32 +310,30 @@ class BaseEnv(gym.Env, abc.ABC):
         # FIXME: would be simpler for this to special-case to mode='human',
         # mode='ego', and mode='allo', then handle the logic for combining ego
         # + allo in .step().
-        if self.viewer is None:
+        if self.renderer is None:
             return None
 
         for ent in self._entities:
             ent.pre_draw()
 
-        if mode == 'human':
-            self.viewer.window.set_visible(True)
-        else:
-            assert mode == 'rgb_array'
-
         view_dict = collections.OrderedDict()
-        is_human = mode == 'human'
         if self.allo_view:
             self._use_allo_cam()
-            view_dict['allo'] = self.viewer.render(return_rgb_array=True,
-                                                   update_foreground=is_human)
+            view_dict['allo'] = self.renderer.render()
         if self.ego_view:
             self._use_ego_cam()
-            # allo view is the default foreground view; we only show ego view
-            # in foreground if it's the only thing available
-            view_dict['ego'] = self.viewer.render(return_rgb_array=True,
-                                                  update_foreground=is_human
-                                                  and not self.allo_view)
+            view_dict['ego'] = self.renderer.render()
 
-        return view_dict
+        if mode == "rgb_array":
+            return view_dict
+        elif mode == "human":
+            from gym.envs.classic_control import rendering
+
+            if self.viewer is None:
+                self.viewer = rendering.SimpleImageViewer()
+            self.viewer.imshow(view_dict['allo'])
+        else:
+            super().render(mode=mode)
 
     def close(self):
         if self.viewer:

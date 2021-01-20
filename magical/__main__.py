@@ -78,7 +78,7 @@ def main(record, env_name, print_spec):
         else:
             started = True
 
-        # first render to open window
+        # Instantiate and open window.
         env.render(mode='human')
 
         # keys that are depressed will end up in key_map
