@@ -56,7 +56,10 @@ class Accumulator:
 @click.option("--print-spec/--no-print-spec",
               default=False,
               help="print env spec?")
-def main(record, env_name, print_spec):
+@click.option("--auto-reset/--no-auto-reset",
+              default=False,
+              help="auto-reset on end of trajectory")
+def main(record, env_name, print_spec, auto_reset):
     if record:
         record_dir = os.path.abspath(record)
         print(f"Will record demos to '{record_dir}'")
@@ -87,8 +90,9 @@ def main(record, env_name, print_spec):
 
         # render loop
         spf = 1.0 / env.fps
+        done = False
         while env.viewer.isopen:
-            if key_map[key.R]:
+            if key_map[key.R] or (done and auto_reset):
                 # drop traj and don't save
                 obs = env.reset()
                 if print_spec:
@@ -101,6 +105,7 @@ def main(record, env_name, print_spec):
                 else:
                     started = True
                 was_done_on_prev_step = False
+                done = False
 
             # for limiting FPS
             frame_start = time.time()
