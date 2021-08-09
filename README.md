@@ -3,6 +3,7 @@
 [![PyPI package](https://badge.fury.io/py/magical-il.svg)](https://badge.fury.io/py/magical-il)
 [![CircleCI pipelines](https://circleci.com/gh/qxcv/magical.svg?style=svg)](https://app.circleci.com/pipelines/github/qxcv/magical)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/qxcv/magical/blob/pyglet1.5/demo-notebook.ipynb)
+[![arXiv](https://img.shields.io/badge/arXiv-2011.00401-b31b1b.svg)](https://arxiv.org/abs/2011.00401)
 
 ## A Benchmark Suite for Robust imitation Learning
 
@@ -25,6 +26,20 @@ reasoning, and so on. This makes it possible, in principle, to use multi-task
 and meta-IL algorithms that allow for transfer of skills between tasks, and
 (hopefully) extrapolation of demonstrator intent across the different variants
 for each task.
+
+MAGICAL was originally published [at NeurIPS 2020](https://proceedings.neurips.cc//paper_files/paper/2020/hash/d464b5ac99e74462f321c06ccacc4bff-Abstract.html):
+
+```bibtex
+@inproceedings{toyer2020magical,
+  author    = {Sam Toyer and Rohin Shah and Andrew Critch and Stuart Russell},
+  title     = {The {MAGICAL} Benchmark for Robust Imitation},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2020}
+}
+```
+
+We'd appreciate a citation if you benchmark on MAGICAL or otherwise find it
+useful for your work!
 
 ## Installing and using MAGICAL
 
