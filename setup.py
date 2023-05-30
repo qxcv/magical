@@ -32,7 +32,7 @@ setup(name='magical-il',
       install_requires=[
           'pymunk~=5.6.0',
           'pyglet==1.5.*',
-          'gym==0.17.*',
+          'gym==0.21.*',
           'Click>=7.0',
           'numpy>=1.17.4',
           'cloudpickle>=1.2.2',
