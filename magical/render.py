@@ -10,7 +10,7 @@ CoordType = Union[Tuple[float, float], List[float], np.ndarray]
 ArrayLike = Union[List[CoordType], Tuple[CoordType]]
 
 
-def make_rect(width: float, height: float, outline: bool, dashed: bool = False):
+def make_rect(width: float, height: float, outline: bool, dashed: bool = False, label: str = None):
     rad_h = height / 2
     rad_w = width / 2
     points = [
@@ -21,19 +21,24 @@ def make_rect(width: float, height: float, outline: bool, dashed: bool = False):
     poly = Poly(points, outline)
     if dashed:
         poly.dashed = True
+    if label:
+        poly.label = label
     return poly
 
 
-def make_circle(radius, res, outline):
+def make_circle(radius, res, outline, label: str = None):
     points = []
     for i in range(res):
         ang = 2 * math.pi * i / res
         points.append((math.cos(ang) * radius, math.sin(ang) * radius))
-    return Poly(points, outline)
+    poly = Poly(points, outline)
+    if label:
+        poly.label = label
+    return poly
 
 
-def make_square(side_length, outline):
-    return make_rect(side_length, side_length, outline)
+def make_square(side_length, outline, label: str = None):
+    return make_rect(side_length, side_length, outline, label = label)
 
 
 @dataclasses.dataclass
@@ -202,32 +207,54 @@ class Compound(Geom):
 class Poly(Geom):
     """A polygon defined by a list of vertices."""
 
-    def __init__(self, pts: ArrayLike, outline: bool):
+    def __init__(self, pts: ArrayLike, outline: bool, label = None):
         super().__init__()
 
         self.outline = outline
         self.initial_pts = np.array(pts)
         self.dashed = False
+        self.label = label
 
     def _render(self, surface: pygame.Surface):
         ps = self.geom.tolist()
         ps += [ps[0]]
 
+        label_midpoint = None
         pygame.draw.polygon(surface, self._color, ps)
         if self.outline:
             for i in range(len(self.geom)):
                 a = self.geom[i]
                 b = self.geom[(i + 1) % len(self.geom)]
+                
+                # Store the midpoint for the label after all outlines are drawn
+                if i == 0:
+                    x1, y1 = a
+                    x2, y2 = b
+                    label_midpoint = ((x1 + x2) // 2, (y1 + y2) // 2)
+                    
                 self.draw_outline(
                     surface,
                     a,
                     b,
                     1,
                     self._outline_color,
-                    self.dashed)
+                    self.dashed
+                )
+        # if self.label and label_midpoint:
+        #     self.draw_label(surface, label_midpoint, self.label)
 
     @staticmethod
-    def draw_outline(surface, a, b, radius, fill_color, dashed):
+    def draw_label(surface, mid_point, label, font_size=15):
+        pygame.init()
+        pygame.font.init()
+        font = pygame.font.SysFont(None, font_size)
+        label = label + " (" + str(int(mid_point[0] // 40)) + " " + str(int(mid_point[1] // 40)) + ")"
+        text_surface = font.render(label, True, (0, 0, 0))  # Black color for the label
+        text_rect = text_surface.get_rect(center=mid_point)
+        surface.blit(text_surface, text_rect.topleft)
+
+    @staticmethod
+    def draw_outline(surface, a, b, radius, fill_color, dashed, label=None, font_size=15):
         """Modified from https://codereview.stackexchange.com/q/70143"""
         if dashed:
             x1, y1 = a

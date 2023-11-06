@@ -237,7 +237,7 @@ class Robot(Entity):
 
     def setup(self, *args, **kwargs):
         super().setup(*args, **kwargs)
-
+        
         # physics setup, starting with main body
         # signature: moment_for_circle(mass, inner_rad, outer_rad, offset)
         inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0, 0))
@@ -710,9 +710,9 @@ class Shape(Entity):
         # Drawing
         geoms_outer = []
         if self.shape_type == ShapeType.SQUARE:
-            geoms = [r.make_square(side_len, outline=True)]
+            geoms = [r.make_square(side_len, outline=True, label="square")]
         elif self.shape_type == ShapeType.CIRCLE:
-            geoms = [r.make_circle(self.shape_size, 100, True)]
+            geoms = [r.make_circle(self.shape_size, 100, True, label="circle")]
         elif self.shape_type == ShapeType.STAR:
             star_short_verts = gtools.compute_star_verts(
                 star_npoints, star_out_rad - SHAPE_LINE_THICKNESS,
@@ -729,7 +729,7 @@ class Shape(Entity):
                 or self.shape_type == ShapeType.HEXAGON \
                 or self.shape_type == ShapeType.PENTAGON \
                 or self.shape_type == ShapeType.TRIANGLE:
-            geoms = [r.Poly(poly_verts, outline=True)]
+            geoms = [r.Poly(poly_verts, outline=True, label=self.shape_type)]
         else:
             raise NotImplementedError("haven't implemented", self.shape_type)
 
