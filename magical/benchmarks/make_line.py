@@ -27,7 +27,12 @@ DEFAULT_BLOCK_SHAPES = [
 DEFAULT_BLOCK_POSES = [((0.790, -0.820), -0.721), ((-0.177, 0.383), -1.733),
                        ((-0.051, -0.128), 2.696), ((-0.292, -0.745), -0.159)]
 
-
+EASY_BLOCK_SHAPES = [
+    en.ShapeType.STAR,
+    en.ShapeType.CIRCLE,
+    en.ShapeType.STAR,
+    en.ShapeType.SQUARE,
+    ]
 def longest_line(points, inlier_dist, max_separation):
     """Identifies lines of blocks by performing RANSAC-style robust regression,
     but with two differences:
@@ -76,13 +81,14 @@ class MakeLineEnv(BaseEnv, EzPickle):
     line, arranged at any angle."""
     @ez_init()
     def __init__(self, rand_colours, rand_shapes, rand_count,
-                 rand_layout_minor, rand_layout_full, **kwargs):
+                 rand_layout_minor, rand_layout_full, easy_visuals=False, **kwargs):
         super().__init__(**kwargs)
         self.rand_colours = rand_colours
         self.rand_shapes = rand_shapes
         self.rand_count = rand_count
         self.rand_layout_minor = rand_layout_minor
         self.rand_layout_full = rand_layout_full
+        self.easy_visuals = easy_visuals
         if self.rand_count:
             assert self.rand_layout_full and self.rand_shapes \
                 and self.rand_colours, "if shape count is randomised then " \
@@ -93,8 +99,11 @@ class MakeLineEnv(BaseEnv, EzPickle):
     def on_reset(self):
         robot_pos, robot_angle = DEFAULT_ROBOT_POSE
         robot = self._make_robot(robot_pos, robot_angle)
+        if self.easy_visuals:
+            block_shapes = EASY_BLOCK_SHAPES
 
-        block_shapes = DEFAULT_BLOCK_SHAPES
+        else:
+            block_shapes = DEFAULT_BLOCK_SHAPES
         block_colours = DEFAULT_BLOCK_COLOURS
         block_poses = DEFAULT_BLOCK_POSES
         if self.rand_count:
@@ -106,7 +115,11 @@ class MakeLineEnv(BaseEnv, EzPickle):
             block_colours = self.rng.choice(en.SHAPE_COLOURS,
                                             size=n_blocks).tolist()
         if self.rand_shapes:
-            block_shapes = self.rng.choice(en.SHAPE_TYPES,
+            if self.easy_visuals:
+                possible_shapes = np.delete(en.SHAPE_TYPES, np.where(en.SHAPE_TYPES == 'pentagon'))
+            else:
+                possible_shapes = en.SHAPE_TYPES
+            block_shapes = self.rng.choice(possible_shapes,
                                            size=n_blocks).tolist()
 
         self._blocks = []
@@ -115,7 +128,8 @@ class MakeLineEnv(BaseEnv, EzPickle):
             new_block = self._make_shape(shape_type=bshape,
                                          colour_name=bcol,
                                          init_pos=bpos,
-                                         init_angle=bangle)
+                                         init_angle=bangle,
+                                         easy_visuals=self.easy_visuals)
             self._blocks.append(new_block)
 
         self.add_entities(self._blocks)

@@ -270,7 +270,7 @@ class Robot(Entity):
             eye_inertia = pm.moment_for_circle(eye_mass, 0, eye_radius, (0, 0))
             eye_body = pm.Body(eye_mass, eye_inertia)
             eye_body.angle = self.init_angle
-            eye_joint = pm.DampedRotarySpring(body, eye_body, 0, 0.1, 3e-3)
+            eye_joint = pm.DampedRotarySpring(body, eye_body, 0, 0.01, 0)
             eye_joint.max_bias = 3.0
             eye_joint.max_force = 0.001
             self.pupil_bodies.append(eye_body)
@@ -585,7 +585,8 @@ class Shape(Entity):
                  shape_size,
                  init_pos,
                  init_angle,
-                 mass=0.5):
+                 mass=0.5,
+                 easy_visuals=False):
         self.shape_type = shape_type
         # this "size" can be interpreted in different ways depending on the
         # shape type, but area of shape should increase quadratically in this
@@ -596,6 +597,7 @@ class Shape(Entity):
         self.init_pos = init_pos
         self.init_angle = init_angle
         self.mass = mass
+        self.easy_visuals = easy_visuals
 
     def reconstruct_signature(self):
         cls = type(self)
@@ -735,13 +737,19 @@ class Shape(Entity):
 
         if self.shape_type == ShapeType.STAR:
             for g in geoms_outer:
-                g.color = darken_rgb(self.colour)
+                if self.easy_visuals:
+                    g.color = (0, 0, 0)
+                else:
+                    g.color = darken_rgb(self.colour)
             for g in geoms:
                 g.color = self.colour
         else:
             for g in geoms:
                 g.color = self.colour
-                g.outline_color = darken_rgb(self.colour)
+                if self.easy_visuals:
+                    g.outline_color = (0, 0, 0)
+                else:
+                    g.outline_color = darken_rgb(self.colour)
 
         self.shape_xform = r.Transform()
         shape_compound = r.Compound(geoms_outer + geoms)

@@ -312,11 +312,13 @@ class Viewer:
             width: int,
             height: int,
             background_rgb: Tuple[float, ...] = (1, 1, 1),
+            easy_visuals=False,
     ):
         self.width = width
         self.height = height
         self.background_rgb = Geom.convert_color(*background_rgb)
         self.geoms = []
+        self.easy_visuals = easy_visuals
 
         # Replicating OpenGL's rigid transform stack.
         self.stack = Stack()
@@ -335,6 +337,37 @@ class Viewer:
     def _clear(self):
         """Clears the screen by filling it with the background color."""
         self.screen.fill(self.background_rgb)
+
+    def draw_grid(self):
+        """ Draws a grid on the screen. """
+        grid_size = self.width // 3
+
+        # Draw vertical lines
+        for i in range(1, 3):
+            pygame.draw.line(self.screen, (0,0,0), (i * grid_size, 0), (i * grid_size, self.height))
+
+        # Draw horizontal lines
+        for i in range(1, 3):
+            pygame.draw.line(self.screen, (0,0,0), (0, i * grid_size), (self.width, i * grid_size))
+
+        row_labels = ['1', '2', '3']
+        col_labels = ['A', 'B', 'C']
+        pygame.font.init()
+        font = pygame.font.SysFont(None, 35)
+        for index, label in enumerate(row_labels):
+            text = font.render(label, True, (0,0,0))
+            # This positions the labels to the right of each row.
+            position = (self.width - text.get_width(), index * grid_size + grid_size // 2 - text.get_height() // 2)
+            self.screen.blit(text, position)
+
+        # Draw column labels (bottom)
+        for index, label in enumerate(col_labels):
+            text = font.render(label, True, (0,0,0))
+            # This should position the labels at the bottom of each column.
+            # Adjust the vertical position if necessary to ensure visibility.
+            position = (index * grid_size + grid_size // 2 - text.get_width() // 2, self.height - text.get_height()+3)
+            self.screen.blit(text, position)
+
 
     def set_bounds(self, left, right, bottom, top):
         assert right > left and top > bottom
@@ -384,8 +417,14 @@ class Viewer:
 
     def render(self):
         self._clear()
+        # Render the arena
+        self.geoms[0].render(self.screen, self.stack)
+        # Render the grid
+        if self.easy_visuals:
+            self.draw_grid()
         self.stack.push(self.transform)
-        for geom in self.geoms:
+        # Render the rest of the entities
+        for geom in self.geoms[1:]:
             geom.render(self.screen, self.stack)
         self.stack.pop()
         # array3d returns an array that is indexed by the x-axis first,

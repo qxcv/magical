@@ -22,6 +22,7 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
             rand_shape_count=False,
             rand_layout_minor=False,
             rand_layout_full=False,
+            easy_visuals=False,
             **kwargs):
         super().__init__(**kwargs)
         self.rand_target_colour = rand_target_colour
@@ -30,6 +31,7 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
         self.rand_shape_count = rand_shape_count
         self.rand_layout_minor = rand_layout_minor
         self.rand_layout_full = rand_layout_full
+        self.easy_visuals = easy_visuals
         if self.rand_shape_count:
             assert self.rand_layout_full, \
                 "if shape count is randomised then layout must also be " \
@@ -49,12 +51,18 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
         robot = self._make_robot(robot_pos, robot_angle)
 
         # set up target colour/region/pose
+        if self.easy_visuals:
+            possible_colour = np.delete(en.SHAPE_COLOURS, np.where(en.SHAPE_COLOURS == 'yellow'))
+            possible_shape = np.delete(en.SHAPE_TYPES, np.where(en.SHAPE_TYPES == 'pentagon'))
+        else:
+            possible_colour = en.SHAPE_COLOURS
+            possible_shape = en.SHAPE_TYPES
         if self.rand_target_colour:
-            target_colour = self.rng.choice(en.SHAPE_COLOURS)
+            target_colour = self.rng.choice(possible_colour)
         else:
             target_colour = en.ShapeColour.GREEN
         distractor_colours = [
-            c for c in en.SHAPE_COLOURS if c != target_colour
+            c for c in possible_colour if c != target_colour
         ]
         target_h = 0.7
         target_w = 0.6
@@ -77,17 +85,31 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
         self.__sensor_ref = sensor
 
         # set up spec for remaining blocks
+        # green
         default_target_types = [
             en.ShapeType.STAR,
             en.ShapeType.SQUARE,
         ]
+        easy_target_types = [
+            en.ShapeType.STAR,
+            en.ShapeType.SQUARE,
+        ]
+        # red, blue, yellow
         default_distractor_types = [
             [],
             [en.ShapeType.PENTAGON],
             [en.ShapeType.CIRCLE, en.ShapeType.PENTAGON],
         ]
+        easy_distractor_types = [
+            [en.ShapeType.CIRCLE],
+            [en.ShapeType.SQUARE],
+        ]
         default_target_poses = [
             # (x, y, theta)
+            (0.8, -0.7, 2.37),
+            (-0.68, 0.72, 1.28),
+        ]
+        easy_target_poses = [
             (0.8, -0.7, 2.37),
             (-0.68, 0.72, 1.28),
         ]
@@ -97,6 +119,15 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
             [(-0.05, -0.2, -1.09)],
             [(-0.75, -0.55, 2.78), (0.3, -0.82, -1.15)],
         ]
+        easy_distractor_poses = [
+            [(-0.05, -0.2, -1.09)],
+            [(-0.75, -0.55, 2.78)],
+        ]
+        if self.easy_visuals:
+            default_target_types = easy_target_types
+            default_distractor_types = easy_distractor_types
+            default_target_poses = easy_target_poses
+            default_distractor_poses = easy_distractor_poses
 
         if self.rand_shape_count:
             target_count = self.rng.randint(1, 2 + 1)
@@ -108,7 +139,7 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
             distractor_counts = [len(lst) for lst in default_distractor_types]
 
         if self.rand_shape_type:
-            shape_types_np = np.asarray(en.SHAPE_TYPES, dtype='object')
+            shape_types_np = np.asarray(possible_shape, dtype='object')
             target_types = [
                 self.rng.choice(shape_types_np) for _ in range(target_count)
             ]
@@ -144,7 +175,8 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
             self._make_shape(shape_type=shape_type,
                              colour_name=target_colour,
                              init_pos=(shape_x, shape_y),
-                             init_angle=shape_angle)
+                             init_angle=shape_angle,
+                             easy_visuals=self.easy_visuals)
             for shape_type, (shape_x, shape_y,
                              shape_angle) in zip(target_types, target_poses)
         ]
@@ -156,7 +188,8 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
                 dist_shape = self._make_shape(shape_type=shape_type,
                                               colour_name=dist_colour,
                                               init_pos=(shape_x, shape_y),
-                                              init_angle=shape_angle)
+                                              init_angle=shape_angle,
+                                              easy_visuals=self.easy_visuals)
                 self.__distractor_shapes.append(dist_shape)
         shape_ents = self.__target_shapes + self.__distractor_shapes
         self.add_entities(shape_ents)

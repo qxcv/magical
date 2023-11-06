@@ -16,12 +16,14 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
                  rand_shape_type=False,
                  rand_poses=False,
                  debug_reward=False,
+                 easy_visuals=False,
                  **kwargs):
         super().__init__(**kwargs)
         self.rand_shape_colour = rand_shape_colour
         self.rand_shape_type = rand_shape_type
         self.rand_poses = rand_poses
         self.debug_reward = debug_reward
+        self.easy_visuals = easy_visuals
         if self.debug_reward:
             warnings.warn(
                 "DEBUG REWARD ENABLED IN MOVE-TO-CORNER ENV! This reward is "
@@ -49,7 +51,8 @@ class MoveToCornerEnv(BaseEnv, EzPickle):
         shape = self._make_shape(shape_type=shape_type,
                                  colour_name=shape_colour,
                                  init_pos=shape_pos,
-                                 init_angle=shape_angle)
+                                 init_angle=shape_angle,
+                                 easy_visuals=self.easy_visuals)
         self.add_entities([shape])
         self.__shape_ref = shape
 
