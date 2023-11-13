@@ -233,8 +233,9 @@ class BaseEnv(gym.Env, abc.ABC):
         # forward_frames = int(math.ceil(forward_time * self.fps))
         # for _ in range(forward_frames):
         #     self._phys_steps_on_frame()
-
-        return self.render(mode='rgb_array')
+        obs_dict = self.render(mode='rgb_array')
+        obs_dict['geoms'] = self.renderer.geoms
+        return obs_dict
 
     def _phys_steps_on_frame(self):
         phys_steps = 10
@@ -289,8 +290,9 @@ class BaseEnv(gym.Env, abc.ABC):
         # RL framework (rlpyt) refuses to recognise keys that aren't present at
         # the first time step.
         info.update(eval_score=eval_score)
-
         obs_dict_u8 = self.render(mode='rgb_array')
+        obs_dict_u8['geoms'] = self.renderer.geoms
+
 
         return obs_dict_u8, reward, done, info
 

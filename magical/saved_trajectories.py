@@ -1,12 +1,15 @@
 """Tools for saving and loading trajectories without requiring the `imitation`
 or `tensorflow` packages to be installed."""
+import datetime
 import gzip
+import os
 from pickle import Unpickler
 from typing import List, NamedTuple, Optional
+import cv2
 
 import gym
 import numpy as np
-
+from magical.benchmarks import register_envs
 from magical.benchmarks import (  # comment to stop yapf touching import
     DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS, update_magical_env_name)
 
@@ -147,3 +150,90 @@ def preprocess_demos_with_wrapper(trajectories,
         new_traj = type(traj)(**stack_values)
         rv_trajectories.append(new_traj)
     return rv_trajectories
+
+
+def rerender_from_geoms(demos):
+    """
+    Re-render pixels of trajectories from their geoms. This is useful if to re-render if you have edited the rendering code and want to see the new rendering.
+    If the trajectory was saved with geoms, then this will change th pixel values in ego and allocentric frames to the new rendering.
+    Returns: list[MagicalTrajectory]
+    """
+    register_envs()
+    for demo in demos:
+        env_name = demo['env_name']
+        traj = demo['trajectory']
+        if 'geoms' not in traj.obs[0]:
+            print("Trajectory does not have geoms, skipping")
+            continue
+        env  = gym.make(env_name)
+        env.reset()
+        for i in range(len(traj.obs)):
+            env.renderer.geoms = traj.obs[i]['geoms']
+            obs_dict = env.render('rgb_array')
+            traj.obs[i]['ego'] = obs_dict['ego']
+            traj.obs[i]['allo'] = obs_dict['allo']
+    return demos
+
+
+
+def save_frame(frame: np.ndarray, filename: str):
+    """Save a single frame as a PNG using OpenCV."""
+    bgr_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    cv2.imwrite(filename, bgr_frame)    
+
+def write_video(observations: List[np.ndarray], filename: str, fps: int = 15):
+    """Save a sequence of numpy arrays as a video using OpenCV."""
+    height, width, layers = observations[0].shape
+    size = (width, height)
+    out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
+    for obs in observations:
+        bgr_frame = cv2.cvtColor(obs, cv2.COLOR_RGB2BGR)
+        out.write(bgr_frame)
+    out.release()    
+
+def frames_from_rendered_pixels(demos, output_directory, traj_base_names = None, name_prefix=None):
+    '''
+    Process trajectories to get videos and first/last frames from rendered pixels.
+    trajectories: list of MAGICALTrajectory objects
+    output_directory: directory to save videos and frames
+    traj_base_names: list of base names for trajectories (optional)
+    name_prefix: prefix to add to filenames, will be used if traj_base_names is None.
+    '''
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+    if traj_base_names:
+        assert len(demos) == len(traj_base_names)
+
+    def save_first_last_frames(observations: List[np.ndarray], prefix: str):
+        first_frame_filename = os.path.join(output_directory, f'frame-{prefix}-{base_filename}-first.png')
+        last_frame_filename = os.path.join(output_directory, f'frame-{prefix}-{base_filename}-last.png')
+        save_frame(observations[0], first_frame_filename)
+        save_frame(observations[-1], last_frame_filename)
+    
+    for idx, demo in enumerate(demos):
+        env_name = demo['env_name']
+        traj = demo['trajectory']
+        obs_sequence= traj.obs
+        egocentric_views = [obs['ego'] for obs in obs_sequence]
+        allocentric_views = [obs['allo'] for obs in obs_sequence]
+        # Concatenate egocentric and allocentric views side by side
+        concat_views = [np.concatenate((allo, ego), axis=1) for allo, ego in zip(allocentric_views, egocentric_views)]
+
+        if traj_base_names:
+            base_filename = traj_base_names[idx]
+        # Extract base filename without path and extension
+        elif name_prefix:
+            base_filename = name_prefix + str(idx)
+        else:
+            now = datetime.datetime.now()
+            time_str = now.strftime('%FT%H:%M:%S')
+            base_filename = f"{env_name}-{time_str}-{idx}"
+        # Save first and last frames for each view
+        save_first_last_frames(egocentric_views, "ego")
+        save_first_last_frames(allocentric_views, "allo")
+        save_first_last_frames(concat_views, "concat")
+    
+        # Write the videos
+        write_video(egocentric_views, os.path.join(output_directory, f'video-ego-{base_filename}.mp4'))
+        write_video(allocentric_views, os.path.join(output_directory, f'video-allo-{base_filename}.mp4'))
+        write_video(concat_views, os.path.join(output_directory, f'video-concat-{base_filename}.mp4'))

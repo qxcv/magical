@@ -420,8 +420,7 @@ class Viewer:
         # Render the arena
         self.geoms[0].render(self.screen, self.stack)
         # Render the grid
-        if self.easy_visuals:
-            self.draw_grid()
+        self.draw_grid()
         self.stack.push(self.transform)
         # Render the rest of the entities
         for geom in self.geoms[1:]:
