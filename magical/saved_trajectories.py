@@ -1,5 +1,6 @@
 """Tools for saving and loading trajectories without requiring the `imitation`
 or `tensorflow` packages to be installed."""
+import copy
 import datetime
 import gzip
 import os
@@ -12,7 +13,7 @@ import numpy as np
 from magical.benchmarks import register_envs
 from magical.benchmarks import (  # comment to stop yapf touching import
     DEFAULT_PREPROC_ENTRY_POINT_WRAPPERS, update_magical_env_name)
-
+from magical.render import Compound
 
 class MAGICALTrajectory(NamedTuple):
     """Trajectory representation compatible with imitation's trajectory data
@@ -152,7 +153,7 @@ def preprocess_demos_with_wrapper(trajectories,
     return rv_trajectories
 
 
-def rerender_from_geoms(demos):
+def rerender_from_geoms(demos, easy=True):
     """
     Re-render pixels of trajectories from their geoms. This is useful if to re-render if you have edited the rendering code and want to see the new rendering.
     If the trajectory was saved with geoms, then this will change th pixel values in ego and allocentric frames to the new rendering.
@@ -165,10 +166,23 @@ def rerender_from_geoms(demos):
         if 'geoms' not in traj.obs[0]:
             print("Trajectory does not have geoms, skipping")
             continue
-        env  = gym.make(env_name)
+        if easy:
+            env  = gym.make(env_name, easy_visuals=True)
+        else:
+            env  = gym.make(env_name, easy_visuals=False)
         env.reset()
         for i in range(len(traj.obs)):
-            env.renderer.geoms = traj.obs[i]['geoms']
+            env.renderer.geoms = copy.deepcopy(traj.obs[i]['geoms'])
+            if not easy:
+                for geom in env.renderer.geoms:
+                    # blocks and robots
+                    if type(geom) == Compound:
+                        for subgeom in geom.gs:
+                            subgeom.label = None
+                    # goal regions
+                    else:
+                        geom.label = None
+                    
             obs_dict = env.render('rgb_array')
             traj.obs[i]['ego'] = obs_dict['ego']
             traj.obs[i]['allo'] = obs_dict['allo']

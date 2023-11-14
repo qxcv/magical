@@ -153,7 +153,7 @@ class BaseEnv(gym.Env, abc.ABC):
                         init_pos=init_pos,
                         init_angle=init_angle,
                         mass=self.ROBOT_MASS,
-                        label=label)
+                        easy_visuals=self.easy_visuals,)
 
     def _make_shape(self, **kwargs):
         return en.Shape(shape_size=self.SHAPE_RAD, **kwargs)
@@ -184,13 +184,15 @@ class BaseEnv(gym.Env, abc.ABC):
         for entity in entities:
             self._entities.append(entity)
             if isinstance(entity, en.Robot):
+                entity.setup(self.renderer, self._space, self._phys_vars, label = "R")
                 self._robot = entity
+                continue
+
             if isinstance(entity, en.Shape):
                 entity.setup(self.renderer, self._space, self._phys_vars, label = "B"+str(block_count))
                 block_count += 1
                 continue
             if isinstance(entity, en.GoalRegion):
-                print(goal_region_count)
                 entity.setup(self.renderer, self._space, self._phys_vars, label = "SA"+str(goal_region_count))
                 goal_region_count += 1
                 continue

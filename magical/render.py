@@ -210,7 +210,6 @@ class Poly(Geom):
 
     def __init__(self, pts: ArrayLike, outline: bool, label = None, label_pos = None):
         super().__init__()
-
         self.outline = outline
         self.initial_pts = np.array(pts)
         self.dashed = False

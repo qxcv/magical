@@ -217,7 +217,7 @@ def make_finger_vertices(upper_arm_len, forearm_len, thickness, side_sign):
 
 class Robot(Entity):
     """Robot body controlled by the agent."""
-    def __init__(self, radius, init_pos, init_angle, mass=1.0, label = None):
+    def __init__(self, radius, init_pos, init_angle, mass=1.0, easy_visuals= False):
         self.radius = radius
         self.init_pos = init_pos
         self.init_angle = init_angle
@@ -227,7 +227,7 @@ class Robot(Entity):
         # max angle from vertical on inner side and outer
         self.finger_rot_limit_outer = math.pi / 8
         self.finger_rot_limit_inner = 0.0
-        self.label = label
+        self.easy_visuals = easy_visuals
 
     def reconstruct_signature(self):
         cls = type(self)
@@ -237,8 +237,8 @@ class Robot(Entity):
                       mass=self.mass)
         return cls, kwargs
 
-    def setup(self, *args, **kwargs):
-        super().setup(*args, **kwargs, label=self.label)
+    def setup(self, *args, label=None, **kwargs):
+        super().setup(*args, **kwargs, )
         # physics setup, starting with main body
         # signature: moment_for_circle(mass, inner_rad, outer_rad, offset)
         inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0, 0))
@@ -246,6 +246,7 @@ class Robot(Entity):
         body.position = self.init_pos
         body.angle = self.init_angle
         self.add_to_space(body)
+        self.label = label
 
         # For control. The rough joint setup was taken form tank.py in the
         # pymunk examples.
@@ -377,7 +378,10 @@ class Robot(Entity):
         # ======================================== #
 
         # Main robot body.
-        circ_body = r.make_circle(self.radius, 100, True, label=self.label)
+        if self.easy_visuals:
+            circ_body = r.make_circle(self.radius, 100, True, label=self.label)
+        else:
+            circ_body = r.make_circle(self.radius, 100, True, )
         robot_colour = COLOURS_RGB['grey']
         dark_robot_colour = darken_rgb(robot_colour)
         light_robot_colour = lighten_rgb(robot_colour, 4)
@@ -619,11 +623,12 @@ class Shape(Entity):
                       mass=self.mass)
         return cls, kwargs
 
-    def setup(self, *args, **kwargs):
+    def setup(self, *args,label=None, **kwargs):
         super().setup(*args, **kwargs)
 
         # Physics. This joint setup was taken form tank.py in the pymunk
         # examples.
+        self.label=label
 
         if self.shape_type == ShapeType.SQUARE:
             self.shape_body = body = pm.Body()
