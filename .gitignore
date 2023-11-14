@@ -16,3 +16,6 @@ film/
 /dist
 .ipynb_checkpoints
 .pytype
+magical-data
+*venv
+videos
