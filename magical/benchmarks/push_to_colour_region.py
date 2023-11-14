@@ -59,16 +59,18 @@ class PushToColourRegionEnv(BaseEnv, EzPickle):
         assert len(possible_colour) == len(region_positions), f"{possible_colour=} {region_positions=}"
         assert len(possible_colour) >= 1, f"{possible_colour=}"
 
+        sensors = []
         for region_colour, (reg_x, reg_y, reg_h, reg_w) in zip(possible_colour, region_positions):
             eps = 0.045
             reg_x += self.rng.uniform(-eps, eps)
             reg_y += self.rng.uniform(-eps, eps)
             reg_h += self.rng.uniform(-eps, eps)
             reg_w += self.rng.uniform(-eps, eps)
-            sensor = en.GoalRegion(reg_x, reg_y, reg_h, reg_w, region_colour)
-            self.add_entities([sensor])
+            sensor = en.GoalRegion(reg_x, reg_y, reg_h, reg_w, region_colour, easy_visuals=self.easy_visuals)
+            sensors.append(sensor)
             if region_colour == target_colour:
                 self.__sensor_ref = sensor
+        self.add_entities(sensors)
 
         # make 2-5 blocks of random shape and colour
         block_count = self.rng.randint(2, 6)

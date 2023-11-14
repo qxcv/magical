@@ -190,6 +190,7 @@ class BaseEnv(gym.Env, abc.ABC):
                 block_count += 1
                 continue
             if isinstance(entity, en.GoalRegion):
+                print(goal_region_count)
                 entity.setup(self.renderer, self._space, self._phys_vars, label = "SA"+str(goal_region_count))
                 goal_region_count += 1
                 continue
