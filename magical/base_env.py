@@ -84,7 +84,8 @@ class BaseEnv(gym.Env, abc.ABC):
                  max_episode_steps=None,
                  rand_dynamics=False,
                  ego_view=True,
-                 allo_view=True):
+                 allo_view=True,
+                 easy_visuals=False):
         self.phys_iter = phys_iter
         self.phys_steps = phys_steps
         self.fps = fps
@@ -92,6 +93,7 @@ class BaseEnv(gym.Env, abc.ABC):
         self.max_episode_steps = max_episode_steps
         self.ego_view = ego_view
         self.allo_view = allo_view
+        self.easy_visuals = easy_visuals
         assert self.ego_view or self.allo_view, \
             "must use egocentric view or allocentric view (or both)"
         make_image_space = functools.partial(spaces.Box,
@@ -169,10 +171,17 @@ class BaseEnv(gym.Env, abc.ABC):
 
         Args:
             entities (en.Entity): the entity to add."""
+        count = 0
+        np.random.shuffle(entities) # shuffle so that the query objct will not always be 0 labeled in Find Dupe task
         for entity in entities:
+            self._entities.append(entity)
             if isinstance(entity, en.Robot):
                 self._robot = entity
-            self._entities.append(entity)
+            if isinstance(entity, en.Shape):
+            # if isinstance(entity, en.Shape) and self.easy_visuals:
+                entity.setup(self.renderer, self._space, self._phys_vars, label = str(count))
+                count += 1
+                continue
             entity.setup(self.renderer, self._space, self._phys_vars)
 
     def reset(self):
@@ -187,7 +196,8 @@ class BaseEnv(gym.Env, abc.ABC):
             background_colour = lighten_rgb(COLOURS_RGB['grey'], times=4)
             self.renderer = r.Viewer(res_w,
                                      res_h,
-                                     background_rgb=background_colour)
+                                     background_rgb=background_colour,
+                                     easy_visuals=self.easy_visuals)
         else:
             # these will get added back later
             self.renderer.reset_geoms()

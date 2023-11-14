@@ -26,7 +26,7 @@ class Entity(abc.ABC):
     """Basic class for logical 'things' that can be displayed on screen and/or
     interact via physics."""
     @abc.abstractmethod
-    def setup(self, viewer, space, phys_vars):
+    def setup(self, viewer, space, phys_vars, label = None):
         """Set up entity graphics/physics usig a gym_render.Viewer and a
         pm.Space. Only gets called once."""
         self.shapes = []
@@ -34,6 +34,7 @@ class Entity(abc.ABC):
         self.viewer = weakref.proxy(viewer)
         self.space = weakref.proxy(space)
         self.phys_vars = weakref.proxy(phys_vars)
+        self.label = label
 
     def update(self, dt):
         """Do an logic/physics update at some (most likely fixed) time
@@ -568,6 +569,15 @@ SHAPE_TYPES = np.asarray([
     ShapeType.CIRCLE,
 ],
                          dtype='object')
+
+# update the shape type for easier shapes
+SHAPE_TYPES = np.asarray([
+    ShapeType.SQUARE,
+    ShapeType.TRIANGLE,
+    ShapeType.CIRCLE,
+],
+                         dtype='object')
+
 SHAPE_COLOURS = np.asarray([
     ShapeColour.RED,
     ShapeColour.GREEN,
@@ -585,7 +595,8 @@ class Shape(Entity):
                  shape_size,
                  init_pos,
                  init_angle,
-                 mass=0.5):
+                 mass=0.5,
+                 easy_visuals=False):
         self.shape_type = shape_type
         # this "size" can be interpreted in different ways depending on the
         # shape type, but area of shape should increase quadratically in this
@@ -596,6 +607,7 @@ class Shape(Entity):
         self.init_pos = init_pos
         self.init_angle = init_angle
         self.mass = mass
+        self.easy_visuals = easy_visuals
 
     def reconstruct_signature(self):
         cls = type(self)
@@ -710,9 +722,15 @@ class Shape(Entity):
         # Drawing
         geoms_outer = []
         if self.shape_type == ShapeType.SQUARE:
-            geoms = [r.make_square(side_len, outline=True, label="square")]
+            if self.easy_visuals:
+               geoms = [r.make_square(side_len, outline=True, label=self.label)]
+            else:
+                geoms = [r.make_square(side_len, outline=True)]
         elif self.shape_type == ShapeType.CIRCLE:
-            geoms = [r.make_circle(self.shape_size, 100, True, label="circle")]
+            if self.easy_visuals:
+                geoms = [r.make_circle(self.shape_size, 100, True, label=self.label)]
+            else:
+                geoms = [r.make_circle(self.shape_size, 100, True)]
         elif self.shape_type == ShapeType.STAR:
             star_short_verts = gtools.compute_star_verts(
                 star_npoints, star_out_rad - SHAPE_LINE_THICKNESS,
@@ -720,8 +738,14 @@ class Shape(Entity):
             short_convex_parts = autogeom.convex_decomposition(
                 star_short_verts + star_short_verts[:1], 0)
             geoms = []
+            coord = np.array([0.0, 0.0])
             for part in short_convex_parts:
+                coord += np.mean(np.array(part), axis=0)
                 geoms.append(r.Poly(part, outline=False))
+            coord = coord / 6
+            # create the label of star
+            if self.easy_visuals:
+                geoms.append(r.Poly(coord, outline=False, label=self.label))
             geoms_outer = []
             for part in convex_parts:
                 geoms_outer.append(r.Poly(part, outline=False))
@@ -729,18 +753,27 @@ class Shape(Entity):
                 or self.shape_type == ShapeType.HEXAGON \
                 or self.shape_type == ShapeType.PENTAGON \
                 or self.shape_type == ShapeType.TRIANGLE:
-            geoms = [r.Poly(poly_verts, outline=True, label=self.shape_type)]
+                if self.easy_visuals:
+                    geoms = [r.Poly(poly_verts, outline=True, label=self.label)]
+                else:
+                    geoms = [r.Poly(poly_verts, outline=True)]
         else:
             raise NotImplementedError("haven't implemented", self.shape_type)
 
         if self.shape_type == ShapeType.STAR:
             for g in geoms_outer:
+                if self.easy_visuals:
+                    # set a black boundary line around the shape
+                    g.color = (0, 0, 0)
                 g.color = darken_rgb(self.colour)
             for g in geoms:
                 g.color = self.colour
         else:
             for g in geoms:
                 g.color = self.colour
+                if self.easy_visuals:
+                     # set a black boundary line around the shape
+                    g.outline_color = (0, 0, 0)
                 g.outline_color = darken_rgb(self.colour)
 
         self.shape_xform = r.Transform()

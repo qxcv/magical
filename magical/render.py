@@ -153,7 +153,7 @@ class Geom(abc.ABC):
         rgb = np.asarray([r, g, b]) * 255
         return tuple(np.round(rgb)) + (1,)
 
-    def render(self, surface: pygame.Surface, stack: Stack):
+    def render(self, surface: pygame.Surface, stack: Stack, number=None):
         for transform in reversed(self.transforms):
             stack.push(transform)
         self.geom = stack.apply_current_matrix(
@@ -216,22 +216,21 @@ class Poly(Geom):
         self.label = label
 
     def _render(self, surface: pygame.Surface):
-        ps = self.geom.tolist()
+        if isinstance(self.geom, tuple):
+            ps = list(self.geom)
+            self.draw_number(surface, ps, self.label)
+            return
+        else:
+            ps = self.geom.tolist()
         ps += [ps[0]]
 
-        label_midpoint = None
         pygame.draw.polygon(surface, self._color, ps)
         if self.outline:
             for i in range(len(self.geom)):
                 a = self.geom[i]
                 b = self.geom[(i + 1) % len(self.geom)]
                 
-                # Store the midpoint for the label after all outlines are drawn
-                if i == 0:
-                    x1, y1 = a
-                    x2, y2 = b
-                    label_midpoint = ((x1 + x2) // 2, (y1 + y2) // 2)
-                    
+                # Store the midpoint for the label after all outlines are drawn               
                 self.draw_outline(
                     surface,
                     a,
@@ -240,18 +239,46 @@ class Poly(Geom):
                     self._outline_color,
                     self.dashed
                 )
-        # if self.label and label_midpoint:
-        #     self.draw_label(surface, label_midpoint, self.label)
+
+        coord = np.mean(self.geom.tolist(), axis = 0)
+        if self.label:
+            self.draw_number(surface, coord, self.label)
+
+    @staticmethod
+    def draw_number(surface, mid_point, label, font_size=20):
+        pygame.init()
+        pygame.font.init()
+        font = pygame.font.SysFont(None, font_size)
+        
+        full_label = label
+
+        # Create the text surface with the full label
+        text_surface = font.render(full_label, True, (0, 0, 0))  # Black color for the label
+
+        # Get the size of the text surface and create a white background surface of the same size
+        text_rect = text_surface.get_rect(center=mid_point)
+        background_surface = pygame.Surface((text_rect.width, text_rect.height))
+        background_surface.fill((255, 255, 255))  # White color for the background
+
+        # Position the background rectangle so that the text is centered on it
+        background_rect = background_surface.get_rect(center=mid_point)
+
+        # Blit the white background onto the surface first
+        surface.blit(background_surface, background_rect.topleft)
+
+        # Then blit the text surface onto the white background
+        surface.blit(text_surface, text_rect.topleft)
 
     @staticmethod
     def draw_label(surface, mid_point, label, font_size=15):
         pygame.init()
         pygame.font.init()
         font = pygame.font.SysFont(None, font_size)
-        label = label + " (" + str(int(mid_point[0] // 40)) + " " + str(int(mid_point[1] // 40)) + ")"
+        label = label + " (" + str(int(mid_point[0] // 133)) + " " + str(int(mid_point[1] // 133)) + ")"
         text_surface = font.render(label, True, (0, 0, 0))  # Black color for the label
         text_rect = text_surface.get_rect(center=mid_point)
         surface.blit(text_surface, text_rect.topleft)
+    
 
     @staticmethod
     def draw_outline(surface, a, b, radius, fill_color, dashed, label=None, font_size=15):
@@ -339,11 +366,13 @@ class Viewer:
             width: int,
             height: int,
             background_rgb: Tuple[float, ...] = (1, 1, 1),
+            easy_visuals=False,
     ):
         self.width = width
         self.height = height
         self.background_rgb = Geom.convert_color(*background_rgb)
         self.geoms = []
+        self.easy_visuals = easy_visuals
 
         # Replicating OpenGL's rigid transform stack.
         self.stack = Stack()
@@ -362,6 +391,36 @@ class Viewer:
     def _clear(self):
         """Clears the screen by filling it with the background color."""
         self.screen.fill(self.background_rgb)
+
+    def draw_grid(self):
+        """ Draws a grid on the screen. """
+        grid_size = self.width // 3
+
+        # Draw vertical lines
+        for i in range(1, 3):
+            pygame.draw.line(self.screen, (0,0,0), (i * grid_size, 0), (i * grid_size, self.height))
+
+        # Draw horizontal lines
+        for i in range(1, 3):
+            pygame.draw.line(self.screen, (0,0,0), (0, i * grid_size), (self.width, i * grid_size))
+
+        row_labels = ['0', '1', '2']
+        col_labels = ['0', '1', '2']
+        pygame.font.init()
+        font = pygame.font.SysFont(None, 35)
+        for index, label in enumerate(row_labels):
+            text = font.render(label, True, (0,0,0))
+            # This positions the labels to the right of each row.
+            position = (self.width - text.get_width(), index * grid_size + grid_size // 2 - text.get_height() // 2)
+            self.screen.blit(text, position)
+
+        # Draw column labels (bottom)
+        for index, label in enumerate(col_labels):
+            text = font.render(label, True, (0,0,0))
+            # This should position the labels at the bottom of each column.
+            # Adjust the vertical position if necessary to ensure visibility.
+            position = (index * grid_size + grid_size // 2 - text.get_width() // 2, self.height - text.get_height()+3)
+            self.screen.blit(text, position)
 
     def set_bounds(self, left, right, bottom, top):
         assert right > left and top > bottom
@@ -412,8 +471,12 @@ class Viewer:
     def render(self):
         self._clear()
         self.stack.push(self.transform)
-        for geom in self.geoms:
+    
+        for i in range(len(self.geoms)):
+            geom = self.geoms[i]
             geom.render(self.screen, self.stack)
+        if self.easy_visuals:
+            self.draw_grid()
         self.stack.pop()
         # array3d returns an array that is indexed by the x-axis first,
         # followed by the y-axis. Thus, we swap the axes before returning the

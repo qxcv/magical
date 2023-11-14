@@ -3,6 +3,8 @@ from gym.utils import EzPickle
 from magical.base_env import BaseEnv, ez_init
 import magical.entities as en
 import magical.geom as geom
+import numpy as np
+import pygame
 
 DEFAULT_QUERY_COLOUR = en.ShapeColour.YELLOW
 DEFAULT_QUERY_SHAPE = en.ShapeType.PENTAGON
@@ -88,13 +90,21 @@ class FindDupeEnv(BaseEnv, EzPickle):
         n_distractors = n_out_blocks - 1
 
         if self.rand_colours:
-            query_colour = self.rng.choice(en.SHAPE_COLOURS)
-            out_block_colours = self.rng.choice(en.SHAPE_COLOURS,
+            if self.easy_visuals:
+                possible_colour = np.delete(en.SHAPE_COLOURS, np.where(en.SHAPE_COLOURS == 'yellow'))
+            else:
+                possible_colour = en.SHAPE_COLOURS
+            query_colour = self.rng.choice(possible_colour)
+            out_block_colours = self.rng.choice(possible_colour,
                                                 size=n_distractors).tolist()
             # last block always matches the query
             out_block_colours.append(query_colour)
         if self.rand_shapes:
-            query_shape = self.rng.choice(en.SHAPE_TYPES)
+            if self.easy_visuals:
+                possible_shapes = np.delete(en.SHAPE_TYPES, np.where(en.SHAPE_TYPES == 'pentagon'))
+            else:
+                possible_shapes = en.SHAPE_TYPES
+            query_shape = self.rng.choice(possible_shapes)
             out_block_shapes = self.rng.choice(en.SHAPE_TYPES,
                                                size=n_distractors).tolist()
             out_block_shapes.append(query_shape)
@@ -135,19 +145,23 @@ class FindDupeEnv(BaseEnv, EzPickle):
             new_block = self._make_shape(shape_type=bshape,
                                          colour_name=bcol,
                                          init_pos=bpos,
-                                         init_angle=bangle)
+                                         init_angle=bangle,
+                                         easy_visuals=self.easy_visuals)
             outside_blocks.append(new_block)
             if bcol == query_colour and bshape == query_shape:
                 self.__target_set.add(new_block)
-        self.add_entities(outside_blocks)
+        # self.add_entities(outside_blocks)-> prevent adding blocks twice
         # now add the query block
         assert len(query_block_pose) == 2
         query_block = self._make_shape(shape_type=query_shape,
                                        colour_name=query_colour,
                                        init_pos=query_block_pose[0],
-                                       init_angle=query_block_pose[1])
+                                       init_angle=query_block_pose[1],
+                                       easy_visuals=self.easy_visuals)
         self.__target_set.add(query_block)
-        self.add_entities([query_block])
+        self.add_entities([query_block, *outside_blocks])
+        # original self.add_entities([query_block])
+        
         # these are shapes that shouldn't end up in the goal region
         self.__distractor_set = set(outside_blocks) - self.__target_set
 

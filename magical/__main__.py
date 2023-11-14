@@ -56,7 +56,12 @@ class Accumulator:
 @click.option("--print-spec/--no-print-spec",
               default=False,
               help="print env spec?")
-def main(record, env_name, print_spec):
+@click.option("--easy",
+                default=False,
+                is_flag=True,
+                help="easier visuals for VLMs: fewer blocks, no pentagons, no yellow blocks, black outline and grid")
+
+def main(record, env_name, print_spec, easy):
     if record:
         record_dir = os.path.abspath(record)
         print(f"Will record demos to '{record_dir}'")
@@ -64,7 +69,7 @@ def main(record, env_name, print_spec):
         traj_accum = Accumulator()
 
     register_envs()
-    env = gym.make(env_name)
+    env = gym.make(env_name,easy_visuals=easy)
     try:
         obs = env.reset()
         if print_spec:

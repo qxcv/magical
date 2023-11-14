@@ -52,6 +52,7 @@ class FixColourEnv(BaseEnv, EzPickle):
                  rand_count=False,
                  rand_layout_minor=False,
                  rand_layout_full=False,
+                 easy_visuals = False,
                  **kwargs):
         super().__init__(**kwargs)
         self.rand_colours = rand_colours
@@ -59,6 +60,8 @@ class FixColourEnv(BaseEnv, EzPickle):
         self.rand_count = rand_count
         self.rand_layout_minor = rand_layout_minor
         self.rand_layout_full = rand_layout_full
+        self.easy_visuals = easy_visuals
+
         if self.rand_count:
             assert self.rand_layout_full and self.rand_shapes \
                 and self.rand_colours, "if shape count is randomised then " \
@@ -68,6 +71,14 @@ class FixColourEnv(BaseEnv, EzPickle):
         robot_pos, robot_angle = DEFAULT_ROBOT_POSE
         robot = self._make_robot(robot_pos, robot_angle)
 
+        if self.easy_visuals:
+            block_shapes = EASY_BLOCK_SHAPES
+            possible_colours = np.delete(en.SHAPE_COLOURS, np.where(en.SHAPE_COLOURS == 'yellow'))
+            possible_shapes = np.delete(en.SHAPE_TYPES, np.where(en.SHAPE_TYPES == 'pentagon'))
+        else:
+            block_shapes = DEFAULT_BLOCK_SHAPES
+            possible_colours = en.SHAPE_COLOURS
+            possible_shapes = en.SHAPE_TYPES
         block_colours = DEFAULT_BLOCK_COLOURS
         region_colours = DEFAULT_REGION_COLOURS
         block_shapes = DEFAULT_BLOCK_SHAPES
@@ -83,19 +94,19 @@ class FixColourEnv(BaseEnv, EzPickle):
 
         # randomise colours
         if self.rand_colours:
-            region_colours = self.rng.choice(en.SHAPE_COLOURS,
+            region_colours = self.rng.choice(possible_colours,
                                              size=n_regions).tolist()
             block_colours = list(region_colours)
             # randomly choose one block to be the odd one out
             odd_idx = self.rng.randint(len(block_colours))
-            new_col_idx = self.rng.randint(len(en.SHAPE_COLOURS) - 1)
-            if en.SHAPE_COLOURS[new_col_idx] == block_colours[odd_idx]:
+            new_col_idx = self.rng.randint(len(possible_colours) - 1)
+            if possible_colours[new_col_idx] == block_colours[odd_idx]:
                 new_col_idx += 1
-            block_colours[odd_idx] = en.SHAPE_COLOURS[new_col_idx]
+            block_colours[odd_idx] = possible_colours[new_col_idx]
 
         # randomise shapes
         if self.rand_shapes:
-            block_shapes = self.rng.choice(en.SHAPE_TYPES,
+            block_shapes = self.rng.choice(possible_shapes,
                                            size=n_regions).tolist()
 
         # create all regions, randomising their height/width first if necessary
@@ -127,7 +138,8 @@ class FixColourEnv(BaseEnv, EzPickle):
             new_block = self._make_shape(shape_type=bshape,
                                          colour_name=bcol,
                                          init_pos=bpos,
-                                         init_angle=bangle)
+                                         init_angle=bangle,
+                                         easy_visuals=self.easy_visuals)
             blocks.append(new_block)
             if bcol != tcol:
                 # we don't want this region to contain any blocks
