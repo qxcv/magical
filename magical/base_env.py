@@ -144,10 +144,16 @@ class BaseEnv(gym.Env, abc.ABC):
         return [seed]
 
     def _make_robot(self, init_pos, init_angle):
+
+        if self.easy_visuals:
+            label = "R"
+        else:
+            label = None
         return en.Robot(radius=self.ROBOT_RAD,
                         init_pos=init_pos,
                         init_angle=init_angle,
-                        mass=self.ROBOT_MASS)
+                        mass=self.ROBOT_MASS,
+                        label=label)
 
     def _make_shape(self, **kwargs):
         return en.Shape(shape_size=self.SHAPE_RAD, **kwargs)
@@ -172,10 +178,22 @@ class BaseEnv(gym.Env, abc.ABC):
 
         Args:
             entities (en.Entity): the entity to add."""
+        block_count = 1
+        goal_region_count = 1
+        np.random.shuffle(entities) # shuffle so that the query objct will not always be 0 labeled in Find Dupe task
         for entity in entities:
+            self._entities.append(entity)
             if isinstance(entity, en.Robot):
                 self._robot = entity
-            self._entities.append(entity)
+            if isinstance(entity, en.Shape):
+                entity.setup(self.renderer, self._space, self._phys_vars, label = "B"+str(block_count))
+                block_count += 1
+                continue
+            if isinstance(entity, en.GoalRegion):
+                entity.setup(self.renderer, self._space, self._phys_vars, label = "SA"+str(goal_region_count))
+                goal_region_count += 1
+                continue
+            
             entity.setup(self.renderer, self._space, self._phys_vars)
 
     def reset(self):

@@ -101,7 +101,6 @@ class MakeLineEnv(BaseEnv, EzPickle):
         robot = self._make_robot(robot_pos, robot_angle)
         if self.easy_visuals:
             block_shapes = EASY_BLOCK_SHAPES
-
         else:
             block_shapes = DEFAULT_BLOCK_SHAPES
         block_colours = DEFAULT_BLOCK_COLOURS

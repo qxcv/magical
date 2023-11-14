@@ -4,6 +4,10 @@ from magical.base_env import BaseEnv, ez_init
 import magical.entities as en
 import magical.geom as geom
 import numpy as np
+<<<<<<< HEAD
+=======
+import pygame
+>>>>>>> value-rl
 
 DEFAULT_QUERY_COLOUR = en.ShapeColour.YELLOW
 DEFAULT_QUERY_SHAPE = en.ShapeType.PENTAGON
@@ -158,7 +162,7 @@ class FindDupeEnv(BaseEnv, EzPickle):
                                           current_hw=target_region_xyhw[2:],
                                           linf_bound=hw_bound)
             target_region_xyhw = (*target_region_xyhw[:2], *target_hw)
-        sensor = en.GoalRegion(*target_region_xyhw, query_colour)
+        sensor = en.GoalRegion(*target_region_xyhw, query_colour, easy_visuals=self.easy_visuals)
         self.add_entities([sensor])
         self.__sensor_ref = sensor
 
@@ -189,7 +193,7 @@ class FindDupeEnv(BaseEnv, EzPickle):
             outside_blocks.append(new_block)
             if bcol == query_colour and bshape == query_shape:
                 self.__target_set.add(new_block)
-        self.add_entities(outside_blocks)
+        # self.add_entities(outside_blocks)-> prevent adding blocks twice
         # now add the query block
         assert len(query_block_pose) == 2
         query_block = self._make_shape(shape_type=query_shape,
@@ -198,7 +202,9 @@ class FindDupeEnv(BaseEnv, EzPickle):
                                        init_angle=query_block_pose[1],
                                        easy_visuals=self.easy_visuals)
         self.__target_set.add(query_block)
-        self.add_entities([query_block])
+        self.add_entities([query_block, *outside_blocks])
+        # original self.add_entities([query_block])
+        
         # these are shapes that shouldn't end up in the goal region
         self.__distractor_set = set(outside_blocks) - self.__target_set
 

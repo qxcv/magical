@@ -10,7 +10,7 @@ CoordType = Union[Tuple[float, float], List[float], np.ndarray]
 ArrayLike = Union[List[CoordType], Tuple[CoordType]]
 
 
-def make_rect(width: float, height: float, outline: bool, dashed: bool = False):
+def make_rect(width: float, height: float, outline: bool, dashed: bool = False, label: str = None, label_pos = None):
     rad_h = height / 2
     rad_w = width / 2
     points = [
@@ -21,19 +21,25 @@ def make_rect(width: float, height: float, outline: bool, dashed: bool = False):
     poly = Poly(points, outline)
     if dashed:
         poly.dashed = True
+    if label:
+        poly.label = label
+        poly.label_pos = label_pos
     return poly
 
 
-def make_circle(radius, res, outline):
+def make_circle(radius, res, outline, label: str = None):
     points = []
     for i in range(res):
         ang = 2 * math.pi * i / res
         points.append((math.cos(ang) * radius, math.sin(ang) * radius))
-    return Poly(points, outline)
+    poly = Poly(points, outline)
+    if label:
+        poly.label = label
+    return poly
 
 
-def make_square(side_length, outline):
-    return make_rect(side_length, side_length, outline)
+def make_square(side_length, outline, label: str = None):
+    return make_rect(side_length, side_length, outline, label = label)
 
 
 @dataclasses.dataclass
@@ -148,7 +154,7 @@ class Geom(abc.ABC):
         rgb = np.asarray([r, g, b]) * 255
         return tuple(np.round(rgb)) + (1,)
 
-    def render(self, surface: pygame.Surface, stack: Stack):
+    def render(self, surface: pygame.Surface, stack: Stack, number=None):
         for transform in reversed(self.transforms):
             stack.push(transform)
         self.geom = stack.apply_current_matrix(
@@ -202,15 +208,22 @@ class Compound(Geom):
 class Poly(Geom):
     """A polygon defined by a list of vertices."""
 
-    def __init__(self, pts: ArrayLike, outline: bool):
+    def __init__(self, pts: ArrayLike, outline: bool, label = None, label_pos = None):
         super().__init__()
 
         self.outline = outline
         self.initial_pts = np.array(pts)
         self.dashed = False
+        self.label = label
+        self.label_pos = label_pos
 
     def _render(self, surface: pygame.Surface):
-        ps = self.geom.tolist()
+        if isinstance(self.geom, tuple):
+            ps = list(self.geom)
+            self.draw_number(surface, ps, self.label)
+            return
+        else:
+            ps = self.geom.tolist()
         ps += [ps[0]]
 
         pygame.draw.polygon(surface, self._color, ps)
@@ -218,16 +231,61 @@ class Poly(Geom):
             for i in range(len(self.geom)):
                 a = self.geom[i]
                 b = self.geom[(i + 1) % len(self.geom)]
+                
+                # Store the midpoint for the label after all outlines are drawn               
                 self.draw_outline(
                     surface,
                     a,
                     b,
                     1,
                     self._outline_color,
-                    self.dashed)
+                    self.dashed
+                )
+        if self.label_pos == "corner":
+            coord = [self.geom[0][0]+20, self.geom[0][1]+10]
+        else:
+            coord = np.mean(self.geom.tolist(), axis = 0)
+        if self.label:
+            self.draw_number(surface, coord, self.label)
 
     @staticmethod
-    def draw_outline(surface, a, b, radius, fill_color, dashed):
+    def draw_number(surface, mid_point, label, font_size=20):
+        pygame.init()
+        pygame.font.init()
+        font = pygame.font.SysFont(None, font_size)
+        
+        full_label = label
+
+        # Create the text surface with the full label
+        text_surface = font.render(full_label, True, (0, 0, 0))  # Black color for the label
+
+        # Get the size of the text surface and create a white background surface of the same size
+        text_rect = text_surface.get_rect(center=mid_point)
+        # background_surface = pygame.Surface((text_rect.width, text_rect.height))
+        # background_surface.fill((255, 255, 255))  # White color for the background
+
+        # Position the background rectangle so that the text is centered on it
+        # background_rect = background_surface.get_rect(center=mid_point)
+
+        # # Blit the white background onto the surface first
+        # surface.blit(background_surface, background_rect.topleft)
+
+        # Then blit the text surface onto the white background
+        surface.blit(text_surface, text_rect.topleft)
+
+    @staticmethod
+    def draw_label(surface, mid_point, label, font_size=15):
+        pygame.init()
+        pygame.font.init()
+        font = pygame.font.SysFont(None, font_size)
+        label = label + " (" + str(int(mid_point[0] // 133)) + " " + str(int(mid_point[1] // 133)) + ")"
+        text_surface = font.render(label, True, (0, 0, 0))  # Black color for the label
+        text_rect = text_surface.get_rect(center=mid_point)
+        surface.blit(text_surface, text_rect.topleft)
+    
+
+    @staticmethod
+    def draw_outline(surface, a, b, radius, fill_color, dashed, label=None, font_size=15):
         """Modified from https://codereview.stackexchange.com/q/70143"""
         if dashed:
             x1, y1 = a
@@ -368,7 +426,6 @@ class Viewer:
             position = (index * grid_size + grid_size // 2 - text.get_width() // 2, self.height - text.get_height()+3)
             self.screen.blit(text, position)
 
-
     def set_bounds(self, left, right, bottom, top):
         assert right > left and top > bottom
         scale_x = self.width / (right - left)
@@ -425,6 +482,8 @@ class Viewer:
         # Render the rest of the entities
         for geom in self.geoms[1:]:
             geom.render(self.screen, self.stack)
+        if self.easy_visuals:
+            self.draw_grid()
         self.stack.pop()
         # array3d returns an array that is indexed by the x-axis first,
         # followed by the y-axis. Thus, we swap the axes before returning the

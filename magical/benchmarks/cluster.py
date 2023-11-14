@@ -91,7 +91,7 @@ class BaseClusterEnv(BaseEnv, abc.ABC):
             # number of random shapes when rand_shape_count=True
             rand_shape_num_low, rand_shape_num_high = 7,10
         default_n_shapes = len(default_colours)
-
+        
         if self.rand_shape_count:
             n_shapes = self.rng.randint(rand_shape_num_low, rand_shape_num_high + 1)
             # rand_shape_count=True implies rand_layout=True, so these MUST be
@@ -293,7 +293,6 @@ class ClusterColourEnv(BaseClusterEnv, EzPickle):
         ((-0.16761, 0.64303), -2.3255),
     ]
 
-
     @ez_init()
     def __init__(self, *args, **kwargs):
         super().__init__(*args,
@@ -335,25 +334,25 @@ class ClusterShapeEnv(BaseClusterEnv, EzPickle):
         ((0.758, -0.708), -2.140),
     ]
     EASY_BLOCK_COLOURS = [
-        en.ShapeColour.YELLOW,
         en.ShapeColour.BLUE,
-        en.ShapeColour.RED,
-        en.ShapeColour.RED,
+        en.ShapeColour.BLUE,
         en.ShapeColour.GREEN,
+        en.ShapeColour.GREEN,
+        en.ShapeColour.YELLOW,
     ]
     EASY_BLOCK_SHAPES = [
-        en.ShapeType.STAR,
         en.ShapeType.CIRCLE,
+        en.ShapeType.STAR,
         en.ShapeType.SQUARE,
         en.ShapeType.STAR,
         en.ShapeType.SQUARE,
     ]
     EASY_BLOCK_POSES = [
-        ((0.068, 0.705), 2.184),
-        ((0.821, 0.220), 0.650),
-        ((0.867, -0.149), -2.215),
-        ((-0.785, -0.140), -0.405),
-        ((0.758, -0.708), -2.140),
+        ((-0.5147, 0.14149), -0.38871),
+        ((-0.1347, -0.71414), 1.0533),
+        ((0.51978, 0.1853), -1.1762),
+        ((-0.54039, 0.48292), 0.072818),
+        ((-0.16761, 0.64303), -2.3255),
     ]
 
     @ez_init()

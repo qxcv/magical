@@ -50,6 +50,13 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
         # if necessary, robot pose is randomised below
         robot = self._make_robot(robot_pos, robot_angle)
 
+        if self.easy_visuals:
+            possible_colour = np.delete(en.SHAPE_COLOURS, np.where(en.SHAPE_COLOURS == 'yellow'))
+            possible_shape = np.delete(en.SHAPE_TYPES, np.where(en.SHAPE_TYPES == 'pentagon'))
+        else:
+            possible_colour = en.SHAPE_COLOURS
+            possible_shape = en.SHAPE_TYPES
+
         # set up target colour/region/pose
         if self.easy_visuals:
             possible_colour = np.delete(en.SHAPE_COLOURS, np.where(en.SHAPE_COLOURS == 'yellow'))
@@ -80,7 +87,7 @@ class MatchRegionsEnv(BaseEnv, EzPickle):
                                                                target_w),
                                                    linf_bound=hw_bound)
         sensor = en.GoalRegion(target_x, target_y, target_h, target_w,
-                               target_colour)
+                               target_colour, easy_visuals=self.easy_visuals)
         self.add_entities([sensor])
         self.__sensor_ref = sensor
 

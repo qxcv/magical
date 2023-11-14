@@ -26,7 +26,7 @@ class Entity(abc.ABC):
     """Basic class for logical 'things' that can be displayed on screen and/or
     interact via physics."""
     @abc.abstractmethod
-    def setup(self, viewer, space, phys_vars):
+    def setup(self, viewer, space, phys_vars, label = None):
         """Set up entity graphics/physics usig a gym_render.Viewer and a
         pm.Space. Only gets called once."""
         self.shapes = []
@@ -34,6 +34,7 @@ class Entity(abc.ABC):
         self.viewer = weakref.proxy(viewer)
         self.space = weakref.proxy(space)
         self.phys_vars = weakref.proxy(phys_vars)
+        self.label = label
 
     def update(self, dt):
         """Do an logic/physics update at some (most likely fixed) time
@@ -216,7 +217,7 @@ def make_finger_vertices(upper_arm_len, forearm_len, thickness, side_sign):
 
 class Robot(Entity):
     """Robot body controlled by the agent."""
-    def __init__(self, radius, init_pos, init_angle, mass=1.0):
+    def __init__(self, radius, init_pos, init_angle, mass=1.0, label = None):
         self.radius = radius
         self.init_pos = init_pos
         self.init_angle = init_angle
@@ -226,6 +227,7 @@ class Robot(Entity):
         # max angle from vertical on inner side and outer
         self.finger_rot_limit_outer = math.pi / 8
         self.finger_rot_limit_inner = 0.0
+        self.label = label
 
     def reconstruct_signature(self):
         cls = type(self)
@@ -236,8 +238,7 @@ class Robot(Entity):
         return cls, kwargs
 
     def setup(self, *args, **kwargs):
-        super().setup(*args, **kwargs)
-
+        super().setup(*args, **kwargs, label=self.label)
         # physics setup, starting with main body
         # signature: moment_for_circle(mass, inner_rad, outer_rad, offset)
         inertia = pm.moment_for_circle(self.mass, 0, self.radius, (0, 0))
@@ -376,7 +377,7 @@ class Robot(Entity):
         # ======================================== #
 
         # Main robot body.
-        circ_body = r.make_circle(self.radius, 100, True)
+        circ_body = r.make_circle(self.radius, 100, True, label=self.label)
         robot_colour = COLOURS_RGB['grey']
         dark_robot_colour = darken_rgb(robot_colour)
         light_robot_colour = lighten_rgb(robot_colour, 4)
@@ -568,6 +569,15 @@ SHAPE_TYPES = np.asarray([
     ShapeType.CIRCLE,
 ],
                          dtype='object')
+
+# update the shape type for easier shapes
+SHAPE_TYPES = np.asarray([
+    ShapeType.SQUARE,
+    ShapeType.TRIANGLE,
+    ShapeType.CIRCLE,
+],
+                         dtype='object')
+
 SHAPE_COLOURS = np.asarray([
     ShapeColour.RED,
     ShapeColour.GREEN,
@@ -712,9 +722,15 @@ class Shape(Entity):
         # Drawing
         geoms_outer = []
         if self.shape_type == ShapeType.SQUARE:
-            geoms = [r.make_square(side_len, outline=True)]
+            if self.easy_visuals:
+               geoms = [r.make_square(side_len, outline=True, label=self.label)]
+            else:
+                geoms = [r.make_square(side_len, outline=True)]
         elif self.shape_type == ShapeType.CIRCLE:
-            geoms = [r.make_circle(self.shape_size, 100, True)]
+            if self.easy_visuals:
+                geoms = [r.make_circle(self.shape_size, 100, True, label=self.label)]
+            else:
+                geoms = [r.make_circle(self.shape_size, 100, True)]
         elif self.shape_type == ShapeType.STAR:
             star_short_verts = gtools.compute_star_verts(
                 star_npoints, star_out_rad - SHAPE_LINE_THICKNESS,
@@ -722,8 +738,14 @@ class Shape(Entity):
             short_convex_parts = autogeom.convex_decomposition(
                 star_short_verts + star_short_verts[:1], 0)
             geoms = []
+            coord = np.array([0.0, 0.0])
             for part in short_convex_parts:
+                coord += np.mean(np.array(part), axis=0)
                 geoms.append(r.Poly(part, outline=False))
+            coord = coord / 6
+            # create the label of star
+            if self.easy_visuals:
+                geoms.append(r.Poly(coord, outline=False, label=self.label))
             geoms_outer = []
             for part in convex_parts:
                 geoms_outer.append(r.Poly(part, outline=False))
@@ -731,7 +753,10 @@ class Shape(Entity):
                 or self.shape_type == ShapeType.HEXAGON \
                 or self.shape_type == ShapeType.PENTAGON \
                 or self.shape_type == ShapeType.TRIANGLE:
-            geoms = [r.Poly(poly_verts, outline=True)]
+                if self.easy_visuals:
+                    geoms = [r.Poly(poly_verts, outline=True, label=self.label)]
+                else:
+                    geoms = [r.Poly(poly_verts, outline=True)]
         else:
             raise NotImplementedError("haven't implemented", self.shape_type)
 
@@ -771,7 +796,7 @@ class GoalRegion(Entity):
     """A goal region that the robot should push certain shapes into. It's up to
     the caller to figure out exactly which shapes & call methods for collision
     checking/scoring."""
-    def __init__(self, x, y, h, w, colour_name):
+    def __init__(self, x, y, h, w, colour_name, easy_visuals=False):
         self.x = x
         self.y = y
         assert h > 0, w > 0
@@ -779,6 +804,7 @@ class GoalRegion(Entity):
         self.w = w
         self.colour_name = colour_name
         self.base_colour = COLOURS_RGB[colour_name]
+        self.easy_visuals = easy_visuals
 
     def reconstruct_signature(self):
         kwargs = dict(x=self.goal_body.position[0] - self.w / 2,
@@ -788,8 +814,8 @@ class GoalRegion(Entity):
                       colour_name=self.colour_name)
         return type(self), kwargs
 
-    def setup(self, *args, **kwargs):
-        super().setup(*args, **kwargs)
+    def setup(self, *args, label=None, **kwargs):
+        super().setup(*args, **kwargs,)
 
         # the space only needs a sensor body
         self.goal_body = pm.Body(body_type=pm.Body.STATIC)
@@ -797,11 +823,15 @@ class GoalRegion(Entity):
         self.goal_shape.sensor = True
         self.goal_body.position = (self.x + self.w / 2, self.y - self.h / 2)
         self.add_to_space(self.goal_body, self.goal_shape)
+        self.label = label
 
         # Graphics.
         outer_colour = self.base_colour
         inner_colour = lighten_rgb(self.base_colour, times=2)
-        inner_rect = r.make_rect(self.w, self.h, True, dashed=True)
+        if self.easy_visuals:
+            inner_rect = r.make_rect(self.w, self.h, True, dashed=True, label=self.label, label_pos='corner')
+        else:
+            inner_rect = r.make_rect(self.w, self.h, True, dashed=True)
         inner_rect.color = inner_colour
         inner_rect.outline_color = outer_colour
         self.goal_xform = r.Transform()

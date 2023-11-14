@@ -128,7 +128,7 @@ class FixColourEnv(BaseEnv, EzPickle):
             region_xyhws = [(x, y, *rand_hw(current_hw=hw))
                             for x, y, *hw in region_xyhws]
         sensors = [
-            en.GoalRegion(*xyhw, colour)
+            en.GoalRegion(*xyhw, colour, easy_visuals=self.easy_visuals)
             for colour, xyhw in zip(region_colours, region_xyhws)
         ]
         self.add_entities(sensors)
