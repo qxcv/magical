@@ -134,6 +134,7 @@ def main(record, env_name, print_spec, easy):
 
                 if done and not was_done_on_prev_step:
                     print(f"Done, score {info['eval_score']:.4g}/1.0")
+                    final_score = round(info['eval_score'], 2)
 
                 if record:
                     traj_accum.add_step({
@@ -145,7 +146,7 @@ def main(record, env_name, print_spec, easy):
                     if done and not was_done_on_prev_step:
                         traj = traj_accum.finish_trajectory()
                         new_path = os.path.join(record_dir,
-                                                get_unique_fn(env_name))
+                                                f'score-{final_score}-{get_unique_fn(env_name)}')
                         pickle_data = {
                             'env_name': env_name,
                             'trajectory': traj,

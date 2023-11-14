@@ -4,10 +4,6 @@ from magical.base_env import BaseEnv, ez_init
 import magical.entities as en
 import magical.geom as geom
 import numpy as np
-<<<<<<< HEAD
-=======
-import pygame
->>>>>>> value-rl
 
 DEFAULT_QUERY_COLOUR = en.ShapeColour.YELLOW
 DEFAULT_QUERY_SHAPE = en.ShapeType.PENTAGON
