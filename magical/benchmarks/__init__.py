@@ -12,6 +12,8 @@ from gym.spaces import Box, Dict
 from gym.wrappers import ResizeObservation
 import numpy as np
 
+from magical.entities import ShapeColour
+
 __all__ = [
     'ALL_REGISTERED_ENVS'
     'DEMO_ENVS_TO_TEST_ENVS_MAP',
@@ -961,6 +963,25 @@ def register_envs():
          }),
     ])
 
+    ptc_ep_len = 180
+    ptc_variants = []
+    for ptc_colour in [ShapeColour.BLUE, ShapeColour.GREEN, ShapeColour.RED]:
+        # use push_to_color_region.PushToColourRegion
+        colour_name = ptc_colour.name.title()
+        ptc_variants.extend([
+            ('magical.benchmarks.push_to_colour_region:PushToColourRegionEnv',
+             f'PushTo{colour_name}Region-Demo-v0', ptc_ep_len, {
+                'rand_dynamics': True,
+                'target_colour': ptc_colour,
+            }),
+            # identical test variant
+            ('magical.benchmarks.push_to_colour_region:PushToColourRegionEnv',
+             f"PushTo{colour_name}Region-TestAll-v0", ptc_ep_len, {
+                'rand_dynamics': True,
+                'target_colour': ptc_colour,
+            }),
+        ])
+
     # collection of ALL env specifications
     env_epoint_suffix_kwargs = [
         *cluster_variants,
@@ -970,6 +991,7 @@ def register_envs():
         *match_regions_variants,
         *move_to_corner_variants,
         *move_to_region_variants,
+        *ptc_variants,
     ]
 
     # register all the envs and record their names
