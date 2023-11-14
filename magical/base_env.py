@@ -4,6 +4,7 @@ import abc
 import collections
 import functools
 import inspect
+import copy
 
 import gym
 from gym import spaces
@@ -234,7 +235,7 @@ class BaseEnv(gym.Env, abc.ABC):
         # for _ in range(forward_frames):
         #     self._phys_steps_on_frame()
         obs_dict = self.render(mode='rgb_array')
-        obs_dict['geoms'] = self.renderer.geoms
+        obs_dict['geoms'] =copy.deepcopy(self.renderer.geoms)
         return obs_dict
 
     def _phys_steps_on_frame(self):
@@ -291,7 +292,7 @@ class BaseEnv(gym.Env, abc.ABC):
         # the first time step.
         info.update(eval_score=eval_score)
         obs_dict_u8 = self.render(mode='rgb_array')
-        obs_dict_u8['geoms'] = self.renderer.geoms
+        obs_dict_u8['geoms'] = copy.deepcopy(self.renderer.geoms)
 
 
         return obs_dict_u8, reward, done, info
