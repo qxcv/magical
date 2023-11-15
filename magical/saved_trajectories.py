@@ -173,6 +173,26 @@ def rerender_from_geoms(demos, easy=True):
         env.reset()
         for i in range(len(traj.obs)):
             env.renderer.geoms = copy.deepcopy(traj.obs[i]['geoms'])
+            
+            # for geom in env.renderer.geoms:
+                # if type(geom) == Compound and 'R' == geom.gs[0].label:
+                #     body = geom.gs[0].geom.tolist()
+                #     print(body)
+                #     eye1 = geom.gs[1].geom.tolist()
+                #     eye2 = geom.gs[3].geom.tolist()
+                #     print("found")
+                #     # print(geom.gs[0].initial_pts) # body
+                #     body_middle = np.mean(body, axis=0)
+                #     eye1_middle = np.mean(eye1, axis=0)
+                #     eye2_middle = np.mean(eye2, axis=0)
+                #     between_eyes = np.mean([eye1_middle, eye2_middle], axis=0)
+                #     # now calculate how much the robot is rotated
+                #     # it is not rotated if the between_eyes and the body are on the same y coordinate
+                #     # angel increases counter clockwise
+                #     angle = np.arctan2(between_eyes[1] - body_middle[1], between_eyes[0] - body_middle[0])
+                #     print("orig",traj.obs[i]['robot'] )
+                #     print('calc',body_middle, angle)
+
             if not easy:
                 for geom in env.renderer.geoms:
                     # blocks and robots
@@ -182,7 +202,9 @@ def rerender_from_geoms(demos, easy=True):
                     # goal regions
                     else:
                         geom.label = None
-                    
+
+            if "robot" in traj.obs[i].keys():
+                env.set_robot_for_ego_rerender(*traj.obs[i]['robot'])
             obs_dict = env.render('rgb_array')
             traj.obs[i]['ego'] = obs_dict['ego']
             traj.obs[i]['allo'] = obs_dict['allo']

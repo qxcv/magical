@@ -125,6 +125,10 @@ class BaseEnv(gym.Env, abc.ABC):
 
         self.seed()
 
+    def set_robot_for_ego_rerender(self, x,y,angle):
+        self._robot.robot_body._set_position((x,y))
+        self._robot.robot_body.angle = angle
+
     def action_to_flags(self, int_action):
         """Parse a 'flat' integer action into a combination of flags."""
         return en.ACTION_ID_TO_FLAGS[int(int_action)]
@@ -257,6 +261,7 @@ class BaseEnv(gym.Env, abc.ABC):
         #     self._phys_steps_on_frame()
         obs_dict = self.render(mode='rgb_array')
         obs_dict['geoms'] =copy.deepcopy(self.renderer.geoms)
+        # obs_dict['robot'] = copy.deepcopy([self._robot.robot_body.position.x, self._robot.robot_body.position.y, self._robot.robot_body.angle])
         return obs_dict
 
     def _phys_steps_on_frame(self):
@@ -318,7 +323,13 @@ class BaseEnv(gym.Env, abc.ABC):
 
         return obs_dict_u8, reward, done, info
 
+
     def _use_ego_cam(self):
+        # print("ego cam")
+        # print(self._robot.robot_body.position.x,
+        # self._robot.robot_body.position.y,
+        # self._robot.robot_body.angle,)
+
         self.renderer.set_cam_follow(
             source_xy_world=(self._robot.robot_body.position.x,
                              self._robot.robot_body.position.y),
@@ -348,8 +359,27 @@ class BaseEnv(gym.Env, abc.ABC):
             self._use_allo_cam()
             view_dict['allo'] = self.renderer.render()
         if self.ego_view:
+            robot_pos= copy.deepcopy([self._robot.robot_body.position.x, self._robot.robot_body.position.y, self._robot.robot_body.angle])
+            # print('before setting:')
+            # print(self._robot.robot_body.position.x,
+            # self._robot.robot_body.position.y,
+            # self._robot.robot_body.angle,)
+
+            # if temp_coords:
+            #     self._robot.robot_body._set_position((temp_coords[0], temp_coords[1]))
+            #     self._robot.robot_body.angle = temp_coords[2]
+                # self._robot.robot_body.position.x = temp_coords[0]
+                # self._robot.robot_body.position.y = temp_coords[1]
+                # self._robot.robot_body.angle = temp_coords[2]
+            # print("trying to set:")
+            # print(temp_coords)
+            # print('after setting:')
+            # print(self._robot.robot_body.position.x,
+            # self._robot.robot_body.position.y,
+            # self._robot.robot_body.angle,)
             self._use_ego_cam()
             view_dict['ego'] = self.renderer.render()
+            view_dict['robot'] = robot_pos
 
         if mode == "rgb_array":
             return view_dict

@@ -447,6 +447,7 @@ class Viewer:
         by `rotation` around the point `source_xy_world` before doing anything
         else.
         """
+        # print("Setting camera to follow", source_xy_world, rotation)
         world_h, world_w = viewport_hw_world
         scale_x = self.width / world_w
         scale_y = self.height / world_h
@@ -473,12 +474,10 @@ class Viewer:
 
     def render(self):
         self._clear()
-        # Render the arena
-        self.geoms[0].render(self.screen, self.stack)
         # Render the grid
         self.stack.push(self.transform)
         # Render the rest of the entities
-        for geom in self.geoms[1:]:
+        for geom in self.geoms:
             geom.render(self.screen, self.stack)
         if self.easy_visuals:
             self.draw_grid()
