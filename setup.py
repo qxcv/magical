@@ -39,6 +39,7 @@ setup(name='magical-il',
           'statsmodels>=0.10.2',
           'requests>=2.20.0,==2.*',
           'opencv-python-headless==4.*',
+          'pygame==1.9.6',
       ],
       extras_require={
           'dev': [

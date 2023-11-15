@@ -3,9 +3,12 @@ from gym.utils import EzPickle
 from magical.base_env import BaseEnv, ez_init
 import magical.entities as en
 import magical.geom as geom
+import numpy as np
 
 DEFAULT_QUERY_COLOUR = en.ShapeColour.YELLOW
 DEFAULT_QUERY_SHAPE = en.ShapeType.PENTAGON
+EASY_QUERY_COLOUR = en.ShapeColour.BLUE
+EASY_QUERY_SHAPE = en.ShapeType.STAR
 DEFAULT_OUT_BLOCK_SHAPES = [
     en.ShapeType.PENTAGON,
     en.ShapeType.CIRCLE,
@@ -15,6 +18,14 @@ DEFAULT_OUT_BLOCK_SHAPES = [
     # last one is the target shape
     DEFAULT_QUERY_SHAPE,
 ]
+EASY_OUT_BLOCK_SHAPES = [
+    en.ShapeType.STAR,
+    en.ShapeType.SQUARE,
+    en.ShapeType.CIRCLE,
+    # last one is the target shape
+    EASY_QUERY_SHAPE,
+]
+
 DEFAULT_OUT_BLOCK_COLOURS = [
     en.ShapeColour.GREEN,
     en.ShapeColour.RED,
@@ -24,12 +35,26 @@ DEFAULT_OUT_BLOCK_COLOURS = [
     # last one is the target shape
     DEFAULT_QUERY_COLOUR,
 ]
+EASY_OUT_BLOCK_COLOURS = [
+    en.ShapeColour.RED,
+    en.ShapeColour.GREEN,
+    en.ShapeColour.BLUE,
+    # last one is the target shape
+    EASY_QUERY_COLOUR,
+]
 DEFAULT_OUT_BLOCK_POSES = [
     ((-0.066751, 0.7552), -2.9266),
     ((-0.05195, 0.31468), 1.5418),
     ((0.57528, -0.46865), -2.2141),
     ((0.40594, -0.74977), 0.24582),
     ((0.45254, 0.3681), -1.0834),
+    # last one is the target shape
+    ((0.76849, -0.10652), 0.10028),
+]
+EASY_OUT_BLOCK_POSES = [
+    ((-0.066751, 0.7552), -2.9266),
+    ((-0.05195, 0.31468), 1.5418),
+    ((0.57528, -0.46865), -2.2141),
     # last one is the target shape
     ((0.76849, -0.10652), 0.10028),
 ]
@@ -57,6 +82,7 @@ class FindDupeEnv(BaseEnv, EzPickle):
                  rand_count=False,
                  rand_layout_minor=False,
                  rand_layout_full=False,
+                 easy_visuals=False,
                  **kwargs):
         super().__init__(**kwargs)
         self.rand_colours = rand_colours
@@ -64,6 +90,7 @@ class FindDupeEnv(BaseEnv, EzPickle):
         self.rand_count = rand_count
         self.rand_layout_minor = rand_layout_minor
         self.rand_layout_full = rand_layout_full
+        self.easy_visuals = easy_visuals
         if self.rand_count:
             assert self.rand_layout_full and self.rand_shapes \
                 and self.rand_colours, "if shape count is randomised then " \
@@ -76,26 +103,45 @@ class FindDupeEnv(BaseEnv, EzPickle):
 
         # sort out shapes and colours of blocks, including the target
         # shape/colour
-        query_colour = DEFAULT_QUERY_COLOUR
-        query_shape = DEFAULT_QUERY_SHAPE
-        out_block_colours = DEFAULT_OUT_BLOCK_COLOURS
-        out_block_shapes = DEFAULT_OUT_BLOCK_SHAPES
-        n_out_blocks = len(DEFAULT_OUT_BLOCK_COLOURS)
+        if self.easy_visuals:
+            query_colour = EASY_QUERY_COLOUR
+            query_shape = EASY_QUERY_SHAPE
+            out_block_colours = EASY_OUT_BLOCK_COLOURS
+            out_block_shapes = EASY_OUT_BLOCK_SHAPES
+            n_out_blocks = len(EASY_OUT_BLOCK_COLOURS)
+            rand_shape_num_low, rand_shape_num_high = 2,3
+        else:
+
+            query_colour = DEFAULT_QUERY_COLOUR
+            query_shape = DEFAULT_QUERY_SHAPE
+            out_block_colours = DEFAULT_OUT_BLOCK_COLOURS
+            out_block_shapes = DEFAULT_OUT_BLOCK_SHAPES
+            n_out_blocks = len(DEFAULT_OUT_BLOCK_COLOURS)
+            rand_shape_num_low, rand_shape_num_high = 1, 5
         if self.rand_count:
             # have between 1 and 5 randomly generated blocks, plus one outside
             # block that always matches the query block
-            n_out_blocks = self.rng.randint(1, 5 + 1) + 1
+            n_out_blocks = self.rng.randint(rand_shape_num_low,rand_shape_num_high+1) + 1
         n_distractors = n_out_blocks - 1
 
         if self.rand_colours:
-            query_colour = self.rng.choice(en.SHAPE_COLOURS)
-            out_block_colours = self.rng.choice(en.SHAPE_COLOURS,
+            if self.easy_visuals:
+                possible_colour = np.delete(en.SHAPE_COLOURS, np.where(en.SHAPE_COLOURS == 'yellow'))
+            else:
+                possible_colour = en.SHAPE_COLOURS
+            # make sure we have at least one of each colour
+            query_colour = self.rng.choice(possible_colour)
+            out_block_colours = self.rng.choice(possible_colour,
                                                 size=n_distractors).tolist()
             # last block always matches the query
             out_block_colours.append(query_colour)
         if self.rand_shapes:
-            query_shape = self.rng.choice(en.SHAPE_TYPES)
-            out_block_shapes = self.rng.choice(en.SHAPE_TYPES,
+            if self.easy_visuals:
+                possible_shapes = np.delete(en.SHAPE_TYPES, np.where(en.SHAPE_TYPES == 'pentagon'))
+            else:
+                possible_shapes = en.SHAPE_TYPES
+            query_shape = self.rng.choice(possible_shapes)
+            out_block_shapes = self.rng.choice(possible_shapes,
                                                size=n_distractors).tolist()
             out_block_shapes.append(query_shape)
 
@@ -112,13 +158,16 @@ class FindDupeEnv(BaseEnv, EzPickle):
                                           current_hw=target_region_xyhw[2:],
                                           linf_bound=hw_bound)
             target_region_xyhw = (*target_region_xyhw[:2], *target_hw)
-        sensor = en.GoalRegion(*target_region_xyhw, query_colour)
+        sensor = en.GoalRegion(*target_region_xyhw, query_colour, easy_visuals=self.easy_visuals)
         self.add_entities([sensor])
         self.__sensor_ref = sensor
 
         # set up poses, as necessary
+        if self.easy_visuals:
+            out_block_poses = EASY_OUT_BLOCK_POSES
+        else:
+            out_block_poses = DEFAULT_OUT_BLOCK_POSES
         query_block_pose = DEFAULT_QUERY_BLOCK_POSE
-        out_block_poses = DEFAULT_OUT_BLOCK_POSES
         if self.rand_count:
             # this will be filled out when randomising the layout
             out_block_poses = [((0, 0), 0)] * n_out_blocks
@@ -135,19 +184,23 @@ class FindDupeEnv(BaseEnv, EzPickle):
             new_block = self._make_shape(shape_type=bshape,
                                          colour_name=bcol,
                                          init_pos=bpos,
-                                         init_angle=bangle)
+                                         init_angle=bangle,
+                                         easy_visuals=self.easy_visuals)
             outside_blocks.append(new_block)
             if bcol == query_colour and bshape == query_shape:
                 self.__target_set.add(new_block)
-        self.add_entities(outside_blocks)
+        # self.add_entities(outside_blocks)-> prevent adding blocks twice
         # now add the query block
         assert len(query_block_pose) == 2
         query_block = self._make_shape(shape_type=query_shape,
                                        colour_name=query_colour,
                                        init_pos=query_block_pose[0],
-                                       init_angle=query_block_pose[1])
+                                       init_angle=query_block_pose[1],
+                                       easy_visuals=self.easy_visuals)
         self.__target_set.add(query_block)
-        self.add_entities([query_block])
+        self.add_entities([query_block, *outside_blocks])
+        # original self.add_entities([query_block])
+        
         # these are shapes that shouldn't end up in the goal region
         self.__distractor_set = set(outside_blocks) - self.__target_set
 

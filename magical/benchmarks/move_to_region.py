@@ -53,7 +53,7 @@ class MoveToRegionEnv(BaseEnv, EzPickle):
 
         # place the goal region
         assert len(goal_xyhw) == 4, goal_xyhw
-        goal = en.GoalRegion(*goal_xyhw, goal_colour)
+        goal = en.GoalRegion(*goal_xyhw, goal_colour, easy_visuals=self.easy_visuals)
         self.add_entities([goal])
         self.__goal_ref = goal
 

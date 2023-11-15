@@ -56,10 +56,11 @@ class Accumulator:
 @click.option("--print-spec/--no-print-spec",
               default=False,
               help="print env spec?")
-@click.option("--auto-reset/--no-auto-reset",
-              default=False,
-              help="auto-reset on end of trajectory")
-def main(record, env_name, print_spec, auto_reset):
+@click.option("--easy",
+                default=False,
+                is_flag=True,
+                help="easier visuals for VLMs: fewer blocks, no pentagons, no yellow blocks, black outline and grid")
+def main(record, env_name, print_spec, easy):
     if record:
         record_dir = os.path.abspath(record)
         print(f"Will record demos to '{record_dir}'")
@@ -67,7 +68,7 @@ def main(record, env_name, print_spec, auto_reset):
         traj_accum = Accumulator()
 
     register_envs()
-    env = gym.make(env_name)
+    env = gym.make(env_name,easy_visuals=easy)
     try:
         obs = env.reset()
         if print_spec:
@@ -81,7 +82,7 @@ def main(record, env_name, print_spec, auto_reset):
         else:
             started = True
 
-        # first render to open window
+        # Instantiate and open window.
         env.render(mode='human')
 
         # keys that are depressed will end up in key_map
@@ -135,6 +136,7 @@ def main(record, env_name, print_spec, auto_reset):
 
                 if done and not was_done_on_prev_step:
                     print(f"Done, score {info['eval_score']:.4g}/1.0")
+                    final_score = round(info['eval_score'], 2)
 
                 if record:
                     traj_accum.add_step({
@@ -146,7 +148,7 @@ def main(record, env_name, print_spec, auto_reset):
                     if done and not was_done_on_prev_step:
                         traj = traj_accum.finish_trajectory()
                         new_path = os.path.join(record_dir,
-                                                get_unique_fn(env_name))
+                                                f'score-{final_score}-{get_unique_fn(env_name)}')
                         pickle_data = {
                             'env_name': env_name,
                             'trajectory': traj,
