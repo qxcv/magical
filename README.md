@@ -216,3 +216,28 @@ To load these files, you can use `magical.load_demos`:
 import magical, glob
 demo_trajs = list(magical.load_demos(glob.glob("demos/move-to-corner/demo-*.pkl.gz")))
 ```
+
+## Calling the VLM
+
+Install the openai package, if it's not already installed.
+```
+pip install openai
+```
+
+To call the VLM, you need to specify a few things:
+- `--prompt_template` - this is a template of interleaved text and images, specified with `--prompt_template=TEMPLATE_NAME`. Available templates are in the `PROMPT_TEMPLATES` variable in the script.
+- `--resolution` - this is `high` by default but can be set to `low` for cost savings
+- `--output_folder` - folder where analyses will be saved.
+- `--traj_folder` - folder containing images from a trajectory.
+- `--all_traj_folder` - folder containing many subfolders, each of which contains a directory. The subfolders must be in the same format as specified for `traj_folder`. `traj_folder` and `all_traj_folder` can't be provided at the same time
+- `--start_frame` - filename of the start frame
+- `--end_frame` - filename of the end frame
+- `--num_files` - if `all_traj_folder` is provided, this is the number of files within the folder to process. (Defaults to using them all.)
+
+
+Example command:
+```
+python call_vlm.py --traj_folder renders --output_folder temp_output --prompt_template images_at_end --resolution low
+```
+
+The script is designed to run on outputs of the form output by Alex's re-rendering notebook.

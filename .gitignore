@@ -16,3 +16,5 @@ film/
 /dist
 .ipynb_checkpoints
 .pytype
+*.json
+.DS_Store

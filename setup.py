@@ -50,5 +50,7 @@ setup(name='magical-il',
               'autoflake~=1.4',
               'pytest-flake8~=1.0.6',
               'pytest-isort~=1.2.0',
+              'openai~=1.2.4',
+              'tenacity~=8.2.3',
           ],
       })
