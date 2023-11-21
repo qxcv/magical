@@ -241,3 +241,12 @@ python call_vlm.py --traj_folder renders --output_folder temp_output --prompt_te
 ```
 
 The script is designed to run on outputs of the form output by Alex's re-rendering notebook.
+
+## Calling an LLM to summarize.
+
+Example command:
+
+```
+python summarize_predictions.py --all_traj_files temp_input_folder --output_folder temp_summary_folder
+```
+temp_input_folder should be a folder containing outputs from the call_vlm.py script.
