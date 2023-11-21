@@ -225,9 +225,9 @@ def write_video(observations: List[np.ndarray], filename: str, fps: int = 15):
     for obs in observations:
         bgr_frame = cv2.cvtColor(obs, cv2.COLOR_RGB2BGR)
         out.write(bgr_frame)
-    out.release()    
+    out.release()
 
-def frames_from_rendered_pixels(demos, output_directory, traj_base_names = None, name_prefix=None):
+def frames_from_rendered_pixels(demos, output_directory, traj_base_names = None, traj_env_names = None, name_prefix=None):
     '''
     Process trajectories to get videos and first/last frames from rendered pixels.
     trajectories: list of MAGICALTrajectory objects
@@ -264,6 +264,33 @@ def frames_from_rendered_pixels(demos, output_directory, traj_base_names = None,
             frame_filename = os.path.join(traj_output_dir, f'frame-{prefix}{img_filename}-{len(observations)-1}.png')
             save_frame(observations[-1], frame_filename)
 
+    def save_first_last_frames(observations: List[np.ndarray], prefix: str):
+        first_frame_filename = os.path.join(output_directory, f'frame-{prefix}-{base_filename}-first.png')
+        last_frame_filename = os.path.join(output_directory, f'frame-{prefix}-{base_filename}-last.png')
+        save_frame(observations[0], first_frame_filename)
+        save_frame(observations[-1], last_frame_filename)
+
+    def save_frames(observations: List[np.ndarray], prefix: str, env_name, base_filename, output_directory, second: int,index: int, fps: int = 15):
+        l = len(observations)
+        frame_len = fps * second
+        if frame_len >= l:
+            return 
+        starting = np.random.randint(0, l - frame_len)
+        indices = np.arange(l)[starting:starting+frame_len]
+        if env_name:
+            frames_directory = f"{output_directory}/{env_name}_{base_filename}_{second}s_horizon_{index}th_pair"
+        else:
+            frames_directory = f"{output_directory}/{base_filename}_{second}s_horizon_{index}th_pair"
+        if not os.path.exists(frames_directory):
+            os.makedirs(frames_directory)
+        for i in range(len(indices)):
+            frame_filename = os.path.join(frames_directory, f'frame-{prefix}-{base_filename}-{i}th_frame.png')
+            save_frame(observations[indices[i]], frame_filename)
+        # write video below
+        observations = observations[indices[0]:indices[-1]+1]
+        video_filename = f"{frames_directory}/{env_name}-{prefix}-{second}s_horizon_video.mp4"
+        write_video(observations, video_filename)
+    
     for idx, demo in enumerate(demos):
         env_name = demo['env_name']
         traj = demo['trajectory']
@@ -282,12 +309,29 @@ def frames_from_rendered_pixels(demos, output_directory, traj_base_names = None,
             now = datetime.datetime.now()
             time_str = now.strftime('%FT%H:%M:%S')
             base_filename = f"{env_name}-{time_str}-{idx}"
+            env_name = None
+            
+        if traj_env_names:
+            env_name = traj_env_names[idx]
+
+        # save demo in different ganularity
+        hortizon_length = [1, 3, 5]
+        for second in hortizon_length:
+            directory = f"{output_directory}/{env_name}_{second}s_horizon"
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            save_frames(allocentric_views, "allo", env_name, base_filename, directory, second, idx)
+
+
         # Save first and last frames for each view
         # save_first_last_frames(egocentric_views, "ego")
         save_every_nth_frame(allocentric_views, None, 1)
+        # save_first_last_frames(allocentric_views, "allo")
         # save_first_last_frames(concat_views, "concat")
     
         # Write the videos
         # write_video(egocentric_views, os.path.join(output_directory, f'video-ego-{base_filename}.mp4'))
         write_video(allocentric_views, os.path.join(output_directory, f'video-allo-{base_filename}.mp4'))
+        # write_video(concat_views, os.path.join(output_directory, f'video-concat-{base_filename}.mp4'))
+        # write_video(allocentric_views, os.path.join(output_directory, f'video-allo-{base_filename}.mp4'))
         # write_video(concat_views, os.path.join(output_directory, f'video-concat-{base_filename}.mp4'))

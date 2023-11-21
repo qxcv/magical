@@ -1,0 +1,36 @@
+For each task, we provide:
+1. selected frame pairs n frames apart, n ={10, 20, .. len(traj)/2, len(traj)}
+2. 10 whole trajectories with every frame. This is useful for prompting that uses multiple pairs of frames to produce subsequent
+subgoals at the same time, or trying to determine the high-level goal based on subsequent subgoals.
+
+The frames are selected semi-randomly from the trajectories: the end of the trajectories is often just idling, so we avoid including frames 
+where there is no significant movement between frames
+
+In each folder, there is a <evaluator_name>.txt file describing what a human might say the subgoals/sequence of subgoals are.
+
+Task1: MoveToCorner - 80 frames long
+
+10 frame pairs:
+    - 10 frames apart
+    - 20 frames apart
+    - 40 frames apart
+    - 80 frames apart
+
+Task2: FindDupe - 100 frames long
+
+10 frame pairs:
+    - 10 frames apart (I think this is too little most of the time)
+    - 20 frames apart
+    - 50 frames apart
+    - 100 frames apart
+
+Task3: PushToRed - 180 frames long
+10 frame pairs:
+    - 10 frames apart (I think this is too little most of the time)
+    - 20 frames apart
+    - 40 frames apart
+    - 60 frames apart
+    - 180 frames apart
+
+
+

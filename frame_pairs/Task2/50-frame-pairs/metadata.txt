@@ -1,0 +1,22 @@
+Demo1: FindDupeTestAllv020231114T10_53_37
+Demo2: FindDupeTestAllv020231114T10_53_53
+Demo3: FindDupeTestAllv020231114T10_54_10
+Demo4: FindDupeTestAllv020231114T10_54_26
+Demo5: FindDupeTestAllv020231114T10_54_43
+Demo6: FindDupeTestAllv020231114T10_54_58
+Demo7: FindDupeTestAllv020231114T10_55_13
+Demo8: FindDupeTestAllv020231114T10_55_35
+Demo9: FindDupeTestAllv020231114T10_55_55
+Demo10: FindDupeTestAllv020231114T10_56_11
+
+
+Pair1: [25,75]
+Pair2: [38,88]
+Pair3: [0,50]
+Pair4: [10,60]
+Pair5: [20,70]
+Pair6: [34,85]
+Pair7: [30,80]
+Pair8: [13,63]
+Pair9: [10,60]
+Pair10: [30,80]
