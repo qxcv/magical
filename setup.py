@@ -40,6 +40,8 @@ setup(name='magical-il',
           'requests>=2.20.0,==2.*',
           'opencv-python-headless==4.*',
           'pygame==1.9.6',
+          'guidance>=0.1.2,<0.2.0',
+          'torch>=2.1.1,<2.2',
       ],
       extras_require={
           'dev': [
