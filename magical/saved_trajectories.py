@@ -240,12 +240,30 @@ def frames_from_rendered_pixels(demos, output_directory, traj_base_names = None,
     if traj_base_names:
         assert len(demos) == len(traj_base_names)
 
-    def save_first_last_frames(observations: List[np.ndarray], prefix: str):
-        first_frame_filename = os.path.join(output_directory, f'frame-{prefix}-{base_filename}-first.png')
-        last_frame_filename = os.path.join(output_directory, f'frame-{prefix}-{base_filename}-last.png')
-        save_frame(observations[0], first_frame_filename)
-        save_frame(observations[-1], last_frame_filename)
-    
+
+    def save_every_nth_frame(observations: List[np.ndarray], prefix: str, n: int):
+        if prefix:
+            prefix = f"{prefix}-"
+        else:
+            prefix = ""
+        for i in range(0, len(observations), n):
+            img_filename = base_filename.split('-')[0]
+            task_name = base_filename.split('v0')[0]
+            task_dir = os.path.join(output_directory, task_name)
+            if not os.path.exists(task_dir):
+                os.makedirs(task_dir)
+                print("task dir", task_dir)
+            traj_name = base_filename.split('.')[0]
+            traj_output_dir = os.path.join(task_dir, f'{prefix}{traj_name}')
+            if not os.path.exists(traj_output_dir):
+                os.makedirs(traj_output_dir)
+                print("trajectory output dir", traj_output_dir)
+            frame_filename = os.path.join(traj_output_dir, f'frame-{prefix}{img_filename}-{i}.png')
+            save_frame(observations[i], frame_filename)
+        if len(observations) % n != 0:
+            frame_filename = os.path.join(traj_output_dir, f'frame-{prefix}{img_filename}-{len(observations)-1}.png')
+            save_frame(observations[-1], frame_filename)
+
     for idx, demo in enumerate(demos):
         env_name = demo['env_name']
         traj = demo['trajectory']
@@ -265,11 +283,11 @@ def frames_from_rendered_pixels(demos, output_directory, traj_base_names = None,
             time_str = now.strftime('%FT%H:%M:%S')
             base_filename = f"{env_name}-{time_str}-{idx}"
         # Save first and last frames for each view
-        save_first_last_frames(egocentric_views, "ego")
-        save_first_last_frames(allocentric_views, "allo")
-        save_first_last_frames(concat_views, "concat")
+        # save_first_last_frames(egocentric_views, "ego")
+        save_every_nth_frame(allocentric_views, None, 1)
+        # save_first_last_frames(concat_views, "concat")
     
         # Write the videos
-        write_video(egocentric_views, os.path.join(output_directory, f'video-ego-{base_filename}.mp4'))
+        # write_video(egocentric_views, os.path.join(output_directory, f'video-ego-{base_filename}.mp4'))
         write_video(allocentric_views, os.path.join(output_directory, f'video-allo-{base_filename}.mp4'))
-        write_video(concat_views, os.path.join(output_directory, f'video-concat-{base_filename}.mp4'))
+        # write_video(concat_views, os.path.join(output_directory, f'video-concat-{base_filename}.mp4'))
