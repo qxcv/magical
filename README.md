@@ -3,6 +3,7 @@
 [![PyPI package](https://badge.fury.io/py/magical-il.svg)](https://badge.fury.io/py/magical-il)
 [![CircleCI pipelines](https://circleci.com/gh/qxcv/magical.svg?style=svg)](https://app.circleci.com/pipelines/github/qxcv/magical)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/qxcv/magical/blob/pyglet1.5/demo-notebook.ipynb)
+[![arXiv](https://img.shields.io/badge/arXiv-2011.00401-b31b1b.svg)](https://arxiv.org/abs/2011.00401)
 
 ## A Benchmark Suite for Robust imitation Learning
 
@@ -25,6 +26,20 @@ reasoning, and so on. This makes it possible, in principle, to use multi-task
 and meta-IL algorithms that allow for transfer of skills between tasks, and
 (hopefully) extrapolation of demonstrator intent across the different variants
 for each task.
+
+MAGICAL was originally published [at NeurIPS 2020](https://proceedings.neurips.cc//paper_files/paper/2020/hash/d464b5ac99e74462f321c06ccacc4bff-Abstract.html):
+
+```bibtex
+@inproceedings{toyer2020magical,
+  author    = {Sam Toyer and Rohin Shah and Andrew Critch and Stuart Russell},
+  title     = {The {MAGICAL} Benchmark for Robust Imitation},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2020}
+}
+```
+
+We'd appreciate a citation if you benchmark on MAGICAL or otherwise find it
+useful for your work!
 
 ## Installing and using MAGICAL
 
@@ -201,3 +216,37 @@ To load these files, you can use `magical.load_demos`:
 import magical, glob
 demo_trajs = list(magical.load_demos(glob.glob("demos/move-to-corner/demo-*.pkl.gz")))
 ```
+
+## Calling the VLM
+
+Install the openai package, if it's not already installed.
+```
+pip install openai
+```
+
+To call the VLM, you need to specify a few things:
+- `--prompt_template` - this is a template of interleaved text and images, specified with `--prompt_template=TEMPLATE_NAME`. Available templates are in the `PROMPT_TEMPLATES` variable in the script.
+- `--resolution` - this is `high` by default but can be set to `low` for cost savings
+- `--output_folder` - folder where analyses will be saved.
+- `--traj_folder` - folder containing images from a trajectory.
+- `--all_traj_folder` - folder containing many subfolders, each of which contains a directory. The subfolders must be in the same format as specified for `traj_folder`. `traj_folder` and `all_traj_folder` can't be provided at the same time
+- `--start_frame` - filename of the start frame
+- `--end_frame` - filename of the end frame
+- `--num_files` - if `all_traj_folder` is provided, this is the number of files within the folder to process. (Defaults to using them all.)
+
+
+Example command:
+```
+python call_vlm.py --traj_folder renders --output_folder temp_output --prompt_template images_at_end --resolution low
+```
+
+The script is designed to run on outputs of the form output by Alex's re-rendering notebook.
+
+## Calling an LLM to summarize.
+
+Example command:
+
+```
+python summarize_predictions.py --all_traj_files temp_input_folder --output_folder temp_summary_folder
+```
+temp_input_folder should be a folder containing outputs from the call_vlm.py script.
