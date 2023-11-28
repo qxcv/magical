@@ -74,11 +74,18 @@ PROMPT_TEMPLATES = {
 
 
 @retry(retry=retry_if_exception_type(openai.RateLimitError), stop=stop_after_attempt(5))
+<<<<<<< HEAD
 def call_vlm(message_content, temperature, max_tokens, cache):
     client = openai.OpenAI(api_key="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")
     vlm_args = {
         "model": "gpt-4-vision-preview",
         # "model":"gpt-3.5-turbo",
+=======
+def call_vlm(message_content, temperature, max_tokens, cache, model_name="gpt-4-vision-preview"):
+    client = openai.OpenAI()
+    vlm_args = {
+        "model": model_name,
+>>>>>>> 6523cd481594e4ebd988f0d909443e448473580d
         "messages":[
             {
                 "role": "user",
