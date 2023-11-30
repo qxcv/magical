@@ -1,0 +1,12 @@
+{
+  "1": "Move towards special area SA1 with block B4 and place it in the special area",
+  "10": "Move to special area SA1 with block B5 and place it into special area",
+  "2": "Move left and pick up block B1 and move to special area SA1 with block B1 and place it in the special area",
+  "3": "Move to special area SA1 with block B3 and place it in the special area",
+  "4": "Move to special area SA1 with block B2 and place it in the special area SA1",
+  "5": "Move to top left and pick up block B1 and place it in the special area",
+  "6": "Move to special area SA1 with block B3 and place it into special area",
+  "7": "Move to special area SA1 with block B1 and place it into special area and move to bottom right",
+  "8": "Move to special area SA1 with block B3 and place it into special area",
+  "9": "Move to special area SA1 with block B4 and place it into special area"
+}

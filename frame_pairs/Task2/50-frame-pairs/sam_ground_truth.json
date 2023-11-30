@@ -1,0 +1,12 @@
+{
+  "1": "Grab B3 and push it into SA1",
+  "10": "Push B4 into SA1 then move back to almost grasp B4",
+  "2": "Push B3 to the bottom of the environment, then push B2 into SA1",
+  "3": "Grab B3 and put it into SA1, while nudging the two purple triangles up and to the left",
+  "4": "Push B2 into SA1, then go back and grab B1 and spin around to face SA1 again",
+  "5": "Push B1 a little to the right so that it's in SA1, then move backwards to the left edge of the environment",
+  "6": "Push B3 into SA1, then move back to the left edge of the arena",
+  "7": "Push B1 and B4 into SA1",
+  "8": "Push B4 into SA1, and B2 down and to the right",
+  "9": "Push B4 into SA1 then move the robot back to towards the center"
+}

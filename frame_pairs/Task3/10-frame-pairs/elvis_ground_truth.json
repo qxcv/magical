@@ -1,0 +1,12 @@
+{
+  "1": "Pick up block B2 and push block B1 into the special area SA3",
+  "10": "Move to bottom and turn toward the block B1",
+  "2": "Pick up block B2 and turn toward bottom right",
+  "3": "Move to special area SA1 with block B1 and push block B2 into the special area SA1 and place block B1 into the special area SA1",
+  "4": "Move to bottom and pick up block B1",
+  "5": "Move to special area SA3 with block B1",
+  "6": "Move to left and pick up block B1",
+  "7": "Move to special area SA2",
+  "8": "Move to special area SA1 with block B2",
+  "9": "Move to special area SA1 with block B3"
+}

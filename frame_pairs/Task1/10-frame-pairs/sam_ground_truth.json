@@ -1,0 +1,12 @@
+{
+  "1": "Grasp block block B1 (green square)",
+  "10": "Move forward to grasp B1",
+  "2": "Push block B1 (green triangle) half way to the top left",
+  "3": "Push block B1 (the green square) to almost to the top left",
+  "4": "Pull B1 up in the y-direction, about a third of the arena",
+  "5": "Push B1 almost all the way into the top left corner",
+  "6": "Spin around to the right so that B1 moves up by about a third of the arena",
+  "7": "Push triangle B1 all the way into the to left corner",
+  "8": "Move backward into the center of the grid, leaving B1 where it is",
+  "9": "Leave B1 where it is and move backwards about a quarter of the way into the arena"
+}

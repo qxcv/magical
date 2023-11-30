@@ -1,0 +1,12 @@
+{
+  "1": "Move B1 to the top left corner then move yourself back slightly",
+  "10": "Move B1 to the top left corner then leave it there and go back a bit",
+  "2": "Move B1 to the top left corner then move down and to the right slightly, leaving B1 where it is",
+  "3": "Move B1 to the top left corner and then move back by about a quarter of the arena size",
+  "4": "Move B1 to the top left corner then move back a bit",
+  "5": "Move B1 to the top left corner",
+  "6": "Move B1 to the top left corner then move back towards the center",
+  "7": "Move B1 to the top left corner, then move back to the center",
+  "8": "Move B1 to the top left corner, then leave it there and go back to the center",
+  "9": "Move B1 to the top left corner and release it"
+}

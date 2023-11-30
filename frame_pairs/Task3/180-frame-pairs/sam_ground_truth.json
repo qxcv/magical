@@ -1,0 +1,12 @@
+{
+  "1": "Push all blocks into SA3",
+  "10": "Push all blocks into SA3",
+  "2": "Push B1 an B2 into SA3, then reverse back half way along the bottom edge of the screen",
+  "3": "Push all blocks into SA3",
+  "4": "Push all blocks into SA2, then reverse back to SA3",
+  "5": "Push all blocks into SA2",
+  "6": "Push both blocks into SA3 then return robot to original position",
+  "7": "Push all blocks into SA2",
+  "8": "Push all blocks into SA1",
+  "9": "Push all blocks into SA1"
+}

@@ -1,0 +1,12 @@
+{
+  "1": "Push B1 and B2 into SA3",
+  "10": "Rotate 90 degrees right (which nudges B1 slightly)",
+  "2": "Grasp B2 and push it into SA3",
+  "3": "Grasp B5, leaving B1 and B2 in place",
+  "4": "Push B1 into A2",
+  "5": "Push B1 into SA3 and then move robot back to original position",
+  "6": "Grasp B1 then rotate 90 degrees left to face SA3",
+  "7": "PUsh B1, B2, and B5 towards SA2",
+  "8": "Push B2 into SA1 and then release and back off a bit",
+  "9": "Push B3 into SA1 then move back to original position"
+}

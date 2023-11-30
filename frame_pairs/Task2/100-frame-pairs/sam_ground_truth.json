@@ -1,0 +1,12 @@
+{
+  "1": "Push B3 and B4 into SA1",
+  "10": "Move B4 into SA1 and push the blocks outside SA1 to the left a bit",
+  "2": "Push B1 and B2 into SA1, and B3 down to the bottom",
+  "3": "Push B3 into SA1, and B5 and B5 up and to the left",
+  "4": "Push B1 and B2 into SA1, then grab B4 and push it down half way to SA1",
+  "5": "Move B1 into SA1 then move backwards to the left edge of the environment",
+  "6": "Push B3 into SA1, then move back to the middle left edge of the environment",
+  "7": "Push B1 and B4 into SA1, then go down to the bottom/middle of the arena",
+  "8": "Push B4 up and to the left inside SA1, and B2 down and to the right slightly",
+  "9": "Move B4 into SA1"
+}
