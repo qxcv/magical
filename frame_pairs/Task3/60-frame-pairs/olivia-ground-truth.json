@@ -1,0 +1,10 @@
+SUBGOAL: Push blocks B1, B2, and B4 into special area SA3.
+SUBGOAL: Place block B1 in special area SA3.
+SUBGOAL: Put block B4 in special area SA1.
+SUBGOAL: Move block B2 into special area SA2.
+SUBGOAL: Move block B1 into special area SA3.
+SUBGOAL: Push all the blocks inside special area SA3.
+SUBGOAL: Push blocks B1, B2, and B5 towards special area SA2.
+SUBGOAL: Put block B2 in special area SA1.
+SUBGOAL: Put blocks B1 and B3 in special area SA1.
+SUBGOAL: Move block B2 into special area SA2.
