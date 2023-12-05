@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move green square B4 to green special area SA1",
+        "Move to special area SA1 with block B3 and place it into special area",
+        "Push B4 into SA1 (on the left edge) and nudge B2 down and to the right a bit",
+        "Toss block B4 into special area SA1."
+    ],
+    "pred": "Move B4 into SA1.",
+    "cot": "The ground truth goals all specify that block B4 should be moved into special area SA1. The predicted goal also states that B4 should be moved into SA1. Despite differences in phrasing, such as \"toss,\" \"push,\" \"move,\" and \"place,\" all descriptions lead to the same outcome: B4 ending up in SA1. There is no mention of the necessity to move B2 in the predicted goal, but since it is not consistent across all ground truth descriptions, it is not considered essential to the main goal.\n\nTherefore, the predicted goal is (2) Correct, as an agent that tries to achieve the predicted goal will succeed in achieving the real goal.",
+    "sim_level": "Correct"
+}

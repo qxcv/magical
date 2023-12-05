@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move the green triangle B1 to the pink special area SA3.",
+        "Move to special area SA3 with block B1",
+        "Push B1 into SA3",
+        "Move block B1 into special area SA3."
+    ],
+    "pred": "Move B1 to SA3.",
+    "cot": "The predicted goal \"Move B1 to SA3\" is a concise version of the ground truth goals, which all specify moving block B1 to special area SA3, albeit with additional details such as the color of the block or the special area. The predicted goal contains all the necessary information for an agent to achieve the real goal: the block to move (B1) and the target location (SA3). The additional details in the ground truth goals (like the color of the block or the special area) are not necessary for the completion of the goal since the labels B1 and SA3 are unique identifiers.\n\nTherefore, the similarity level is:\n\n(2) Correct: An agent that tries to achieve the predicted goal will succeed in achieving the real goal.",
+    "sim_level": "Correct"
+}

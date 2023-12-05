@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move blocks B1 and B2 into SA3.",
+        "Place the blocks B1, and B2 into special area SA3",
+        "Push B1 an B2 into SA3, then reverse back half way along the bottom edge of the screen",
+        "Move all the blocks into special area SA3."
+    ],
+    "pred": "Move B1 and B2 to SA3.",
+    "cot": "The predicted goal \"Move B1 and B2 to SA3\" is essentially the same as the ground truth goals, which all involve moving blocks B1 and B2 into special area SA3. The predicted goal does not include any additional actions such as reversing back, but since all ground truth descriptions lead to the same outcome of having B1 and B2 in SA3, the predicted goal is sufficient for an agent to achieve the real goal.\n\nThe similarity level is (2) Correct.",
+    "sim_level": "Correct"
+}

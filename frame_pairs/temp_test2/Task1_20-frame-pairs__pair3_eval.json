@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move the green square block B1 to the top left corner.",
+        "Move to top left with block B1",
+        "Push B1 all the way into the top left corner",
+        "Move block B1 to the top-left corner."
+    ],
+    "pred": "Maintain the current position with block B1.",
+    "cot": "The ground truth goals all describe an action where block B1 is moved to the top left corner. The predicted goal, however, states to maintain the current position with block B1, which implies no movement should occur. This is a meaningful difference as the predicted goal would result in a different outcome than the ground truth goals.\n\nThe similarity level is (1) Incorrect.",
+    "sim_level": "Incorrect"
+}

@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move the pink triangle block B1 to the top left corner.",
+        "Move to bottom and pick up block B1 and move to top left with block B1 and place block B1 on top left ",
+        "Move B1 to the top left corner, then move back to the center",
+        "Place block B1 in the top-left corner of the arena."
+    ],
+    "pred": "None of the above. The new subgoal should be: \"Pick up B1 and move it to the top center of the arena.\"",
+    "cot": "The ground truth goals all specify that block B1, which is a pink triangle, should be moved to the top left corner of the arena. The predicted goal, however, states that block B1 should be moved to the top center of the arena. This is a different location than the top left corner. Therefore, an agent following the predicted goal would not achieve the real goal as described in the ground truth goals.\n\nThe similarity level is (1) Incorrect.",
+    "sim_level": "Incorrect"
+}

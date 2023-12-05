@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move blue triangle B2 and pink circle B1 into SA3.",
+        "Move to special area SA3 with block B2 and push the block B1 and block B2 into special area SA3",
+        "Push B1 and B2 into SA3",
+        "Move block B1 and B2 to special area SA3."
+    ],
+    "pred": "Move B1 and B2 into SA3.",
+    "cot": "The ground truth goals specify that the blocks B1 and B2 need to be moved into special area SA3. The predicted goal also states that B1 and B2 should be moved into SA3. The ground truth goals provide additional details about the shapes and colors of the blocks (blue triangle B2 and pink circle B1), but these details do not change the outcome of the goal, which is to move B1 and B2 into SA3.\n\nSince the predicted goal would lead to the same outcome as the ground truth goals, the similarity level is:\n\n(2) Correct: An agent that tries to achieve the predicted goal will succeed in achieving the real goal.",
+    "sim_level": "Correct"
+}

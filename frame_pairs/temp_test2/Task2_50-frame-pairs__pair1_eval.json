@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move green circle B3 to inside special area SA1.",
+        "Move to left to pick up block B3 and move to special area SA1 with block B3 and place it into special area",
+        "Grab B3 and push it into SA1",
+        "Move ball B3 to special area SA1."
+    ],
+    "pred": "Pick up B3.",
+    "cot": "The ground truth goals all specify that the green circle B3 should be moved to a specific location, which is the special area SA1. The predicted goal only mentions picking up B3, without specifying where to move it afterward.\n\nThe predicted goal is incomplete because it does not tell the agent what to do with B3 after picking it up. Therefore, an agent that only tries to achieve the predicted goal might pick up B3 but fail to achieve the real goal since it does not include the crucial step of moving B3 to SA1.\n\nThe similarity level is:\n\n(1) Incorrect: An agent that tries to achieve the predicted goal will fail in achieving the real goal because there is a meaningful difference between the two goals.",
+    "sim_level": "Incorrect"
+}

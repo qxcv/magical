@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move green circle block B1 inside SA3.",
+        "Move to the bottom left and pick up B1 and place it into special area SA3",
+        "Move B1 into SA3 then reverse back to sit near the bottom of the arena",
+        "Place block B1 in special area SA3."
+    ],
+    "pred": "Move B1 to SA3.",
+    "cot": "The ground truth goals all specify that block B1, which is a green circle, should be moved into special area SA3. The predicted goal also states that B1 should be moved to SA3. Despite slight differences in wording, all descriptions lead to the same outcome: B1 being in SA3. Therefore, the predicted goal is correct as it provides the necessary information for the agent to achieve the true goal.\n\nThe similarity level is (2) Correct.",
+    "sim_level": "Correct"
+}

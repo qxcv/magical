@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move the pink square B3 into the special area SA1.",
+        "Move towards special area SA1 with block B3",
+        "Push B3 into SA1",
+        "Move block B3 into special area SA1 right next to the other pink square B2."
+    ],
+    "pred": "Place B3 in front of R.",
+    "cot": "The ground truth goals all specify that the pink square B3 should be moved into the special area SA1. The predicted goal, however, only mentions placing B3 in front of R, with no reference to SA1 or the action of moving B3 into it.\n\nSince the predicted goal does not mention the final required location of B3 (SA1), an agent following the predicted goal would not necessarily achieve the real goal. The predicted goal is therefore meaningfully different from the ground truth goals.\n\nThe similarity level is (1) Incorrect.",
+    "sim_level": "Incorrect"
+}

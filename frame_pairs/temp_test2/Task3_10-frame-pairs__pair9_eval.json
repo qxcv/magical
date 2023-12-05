@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move green square B3 inside SA1 from SA3",
+        "Move to special area SA1 with block B3",
+        "Turn 110 degrees left and move B3 into SA1",
+        "Move block B3 into special area SA1."
+    ],
+    "pred": "None of the above. The correct subgoal should be \"Move towards B3.\"",
+    "cot": "The ground truth goals all specify that block B3, which is a green square, should be moved into special area SA1. The predicted goal, however, only mentions \"Move towards B3,\" which does not specify what should be done with the block once the robot has moved towards it. The predicted goal does not ensure that B3 will end up in SA1, which is the specific outcome described in the ground truth goals.\n\nTherefore, the similarity level is:\n\n(1) Incorrect: An agent that tries to achieve the predicted goal will fail in achieving the real goal because there is a meaningful difference between the two goals.",
+    "sim_level": "Incorrect"
+}

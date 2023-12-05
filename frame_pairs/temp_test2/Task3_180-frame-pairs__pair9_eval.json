@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move blocks B1, B2 and B3 into SA1.",
+        "Place the blocks B1, B2, and B3 into special area SA1",
+        "Push all blocks into SA1",
+        "Put all the blocks inside special area SA1."
+    ],
+    "pred": "Move B1 and B2 into SA1.",
+    "cot": "The ground truth goals all specify that blocks B1, B2, and B3 should be moved into SA1. The predicted goal only mentions moving B1 and B2 into SA1, omitting B3. This means that an agent following the predicted goal would not achieve the real goal because it would not move block B3. Therefore, the predicted goal is incorrect. \n\nThe similarity level is (1) Incorrect.",
+    "sim_level": "Incorrect"
+}

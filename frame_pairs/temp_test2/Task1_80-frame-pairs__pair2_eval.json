@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move the green triangle block B1 to the top left corner.",
+        "Move to bottom and pick up block B1 and move to top left with block B1 and place block B1 on top left ",
+        "Move B1 to the top left corner then move down and to the right slightly, leaving B1 where it is",
+        "Place block B1 in the top-left corner of the arena."
+    ],
+    "pred": "Pick up B1.",
+    "cot": "The ground truth goals all specify that block B1, which is a green triangle, should be moved to the top left corner of the arena. The predicted goal simply states \"Pick up B1,\" without any information about where to move B1 after picking it up.\n\nThe predicted goal does not contain enough information to ensure that the agent would achieve the real goal, as it does not specify the final location for B1. Therefore, an agent following the predicted goal would not necessarily succeed in achieving the real goal.\n\nThe similarity level is:\n\n(1) Incorrect: An agent that tries to achieve the predicted goal will fail in achieving the real goal because there is a meaningful difference between the two goals.",
+    "sim_level": "Incorrect"
+}

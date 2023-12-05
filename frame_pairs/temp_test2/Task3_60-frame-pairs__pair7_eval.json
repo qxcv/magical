@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move B1, B2 and B5 blocks inside SA2 so that all the blocks are inside SA2.",
+        "Place the blocks B5, B2 and B1 into special area SA2",
+        "Push B2, B5 and B1 into SA2",
+        "Push blocks B1, B2, and B5 towards special area SA2."
+    ],
+    "pred": "Move B2 to the center of the arena.",
+    "cot": "The ground truth goals all specify that blocks B1, B2, and B5 need to be moved inside SA2. The predicted goal only mentions moving B2 and does not specify the destination to be SA2, nor does it mention the other blocks B1 and B5. Therefore, an agent that tries to achieve the predicted goal will not succeed in achieving the real goal because it does not include all the necessary actions.\n\nThe similarity level is (1) Incorrect.",
+    "sim_level": "Incorrect"
+}

@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move the blue square block B1 towards the top left corner.",
+        "Move to top left with block B1",
+        "Spin around to face up and a little bit to the left while grasping B1, then push B1 forward so that it's about two thirds of the way to the top of the arena",
+        "Move block B1 to the top-left corner."
+    ],
+    "pred": "Move B1 slightly upward within the central area of the arena.",
+    "cot": "The ground truth goals all specify moving block B1 towards the top left corner or in that direction, implying a significant movement towards a specific area of the arena. The predicted goal, however, only mentions moving B1 slightly upward within the central area of the arena, which does not necessarily align with the direction or destination specified in the ground truth goals. Therefore, the predicted goal is likely to result in a different outcome than the ground truth goals.\n\nThe similarity level is (1) Incorrect.",
+    "sim_level": "Incorrect"
+}

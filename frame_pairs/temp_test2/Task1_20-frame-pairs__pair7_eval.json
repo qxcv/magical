@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Release the pink triangle block B1 in the top left corner.",
+        "Move to top left and place block B1",
+        "Push B1 into the top left then let go and move back a little",
+        "Place block B1 in the top-left corner."
+    ],
+    "pred": "Place B1 to the left side of the arena.",
+    "cot": "The ground truth goals all specify that block B1 should be placed in the top left corner of the arena. The predicted goal, however, only mentions placing B1 on the left side of the arena, without specifying that it should be in the top left corner.\n\nThis difference is meaningful because the left side of the arena could include areas that are not the top left corner. Therefore, an agent following the predicted goal might place B1 somewhere on the left side but not necessarily in the correct location as specified by the ground truth goals.\n\nThe similarity level is:\n\n(1) Incorrect: An agent that tries to achieve the predicted goal will fail in achieving the real goal because there is a meaningful difference between the two goals.",
+    "sim_level": "Incorrect"
+}

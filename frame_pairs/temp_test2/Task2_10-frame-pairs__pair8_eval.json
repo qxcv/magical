@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move the green square B4 into the special area SA1.",
+        "Move towards special area SA1 with block B4 and place it in the special area",
+        "Push B4 into SA1 (so that it's in the middle left)",
+        "Put block B4 into special area SA1."
+    ],
+    "pred": "None of the above.",
+    "cot": "The predicted goal \"None of the above.\" does not align with any of the ground truth goals, which all describe moving block B4 into special area SA1. Therefore, the similarity level is:\n\n(1) Incorrect: An agent that tries to achieve the predicted goal will fail in achieving the real goal because there is a meaningful difference between the two goals.",
+    "sim_level": "Incorrect"
+}

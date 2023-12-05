@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move the green square block B1 to the top left corner.",
+        "Move to bottom and pick up block B1 and move to top left with block B1",
+        "Grab B1 and move it up to the top left corner",
+        "Move block B1 to the top-left corner of the arena."
+    ],
+    "pred": "Move B1 to the top left of the arena.",
+    "cot": "The ground truth goals all specify that block B1, which is a green square block, should be moved to the top left corner of the arena. The predicted goal also instructs to move B1 to the top left of the arena. There are no significant differences in the outcome described by the predicted goal and the ground truth goals. The predicted goal does not specify the color or shape of B1, but since all ground truth descriptions refer to the same block B1, this omission does not lead to a different outcome.\n\nThe similarity level is (2) Correct: An agent that tries to achieve the predicted goal will succeed in achieving the real goal.",
+    "sim_level": "Correct"
+}

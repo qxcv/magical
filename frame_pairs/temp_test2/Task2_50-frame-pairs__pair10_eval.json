@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move green square B5 inside special area SA1.",
+        "Move to special area SA1 with block B5 and place it into special area and move to top left to pick up block B4",
+        "Push B4 into SA1 then move back to almost grasp B4",
+        "Move block B5 into the green special area."
+    ],
+    "pred": "Place B5 in SA2 and move R and B4 to the center left.",
+    "cot": "The ground truth goals all specify that block B5 should be moved into a special area, specifically SA1, which is described as green. They also mention block B4 in the context of being moved to or into SA1.\n\nThe predicted goal, however, states that block B5 should be placed in SA2, which is a different special area than SA1. Additionally, it mentions moving B4 and the robot to the center left, which is not part of the ground truth goals.\n\nGiven this information, the predicted goal is directing the agent to achieve a different outcome than the ground truth goals. Therefore, the similarity level is:\n\n(1) Incorrect: An agent that tries to achieve the predicted goal will fail in achieving the real goal because there is a meaningful difference between the two goals.",
+    "sim_level": "Incorrect"
+}

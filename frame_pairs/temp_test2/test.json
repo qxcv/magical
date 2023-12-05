@@ -1,0 +1,1202 @@
+{
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/10-frame-pairs/pair1": {
+        "ground_truths": [
+            "Move to green square block B1.",
+            "Move to bottom and pick up block B1",
+            "Grasp block block B1 (green square)",
+            "Pick up block B1."
+        ],
+        "prediction": "Pick up B1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/10-frame-pairs/pair6": {
+        "ground_truths": [
+            "Move the blue square block B1 upwards.",
+            "Move to middle with block B1",
+            "Spin around to the right so that B1 moves up by about a third of the arena",
+            "Carry block B1 to the center of the arena."
+        ],
+        "prediction": "Move to the center of the arena while holding B1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/10-frame-pairs/pair8": {
+        "ground_truths": [
+            "Back away from the yellow triangle block B1.",
+            "Move to top left and place block B1",
+            "Move backward into the center of the grid, leaving B1 where it is",
+            "Move to the center of the arena."
+        ],
+        "prediction": " Release B1 at the top left.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/10-frame-pairs/pair9": {
+        "ground_truths": [
+            "Back away from the green square block B1.",
+            "Move to top left and place block B1",
+            "Leave B1 where it is and move backwards about a quarter of the way into the arena",
+            "Release block B1 and move to the center."
+        ],
+        "prediction": "Move R and B1 to the bottom of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/10-frame-pairs/pair7": {
+        "ground_truths": [
+            "Move the pink triangle block B1 to the top left corner.",
+            "Move to top left with block B1",
+            "Push triangle B1 all the way into the to left corner",
+            "Move block B1 to the top-left corner of the arena."
+        ],
+        "prediction": "Maintain current position with B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/10-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move the yellow square block B1 to the top left corner.",
+            "Move to top left with block B1",
+            "Push B1 almost all the way into the top left corner",
+            "Carry block B1 to the top-left corner."
+        ],
+        "prediction": "SUBGOAL: Maintain current position and hold B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/10-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move the green triangle block B1 to the top left corner.",
+            "Move to top left with block B1",
+            "Push block B1 (green triangle) half way to the top left",
+            "Move block B1 to the top-left corner."
+        ],
+        "prediction": "None of the above. The correct subgoal would be: Move R and B1 upwards towards the top of the arena.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/10-frame-pairs/pair3": {
+        "ground_truths": [
+            "Move the green square block B1 to the top left corner.",
+            "Move to top left with block B1",
+            "Push block B1 (the green square) to almost to the top left",
+            "Move block B1 to the top-left corner."
+        ],
+        "prediction": "Maintain position with B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/10-frame-pairs/pair4": {
+        "ground_truths": [
+            "Move the blue square block B1 upwards.",
+            "Move to bottom left and pick up block B1",
+            "Pull B1 up in the y-direction, about a third of the arena",
+            "Move block B1 to the left edge of the arena."
+        ],
+        "prediction": "Move upwards with block B1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/10-frame-pairs/pair10": {
+        "ground_truths": [
+            "Grab the blue square block B1.",
+            "Move to bottom and pick up block B1",
+            "Move forward to grasp B1",
+            "Move to block B1 and pick it up."
+        ],
+        "prediction": "Move R to B1 and interact with it.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/20-frame-pairs/pair1": {
+        "ground_truths": [
+            "Grab the green square block B1.",
+            "Move to bottom and place block B1",
+            "Grasp B1 and then spin around so that you're facing upwards",
+            "Move to block B1 and pick it up."
+        ],
+        "prediction": "Pick up B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/20-frame-pairs/pair6": {
+        "ground_truths": [
+            "Move the blue square block B1 towards the top left corner.",
+            "Move to top left with block B1",
+            "Spin around to face up and a little bit to the left while grasping B1, then push B1 forward so that it's about two thirds of the way to the top of the arena",
+            "Move block B1 to the top-left corner."
+        ],
+        "prediction": "Move B1 slightly upward within the central area of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/20-frame-pairs/pair8": {
+        "ground_truths": [
+            "Back away from the yellow triangle B1 in the top left corner.",
+            "Move to top left and place block B1",
+            "Leave B1 and move back into the center of the arena",
+            "Move away from block B1."
+        ],
+        "prediction": "SUBGOAL: Move R from top left to the center left of the arena and release B1 at the top left.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/20-frame-pairs/pair9": {
+        "ground_truths": [
+            "Release the green square block B1 in the top left corner.",
+            "Move to top left with block B1",
+            "Release B1",
+            "Release block B1."
+        ],
+        "prediction": "Maintain current position with block B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/20-frame-pairs/pair7": {
+        "ground_truths": [
+            "Release the pink triangle block B1 in the top left corner.",
+            "Move to top left and place block B1",
+            "Push B1 into the top left then let go and move back a little",
+            "Place block B1 in the top-left corner."
+        ],
+        "prediction": "Place B1 to the left side of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/20-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move the yellow square block B1 to the top left corner.",
+            "Move to top left with block B1",
+            "Push B1 straight forward into the top left corner",
+            "Move block B1 to the top-left corner of the arena."
+        ],
+        "prediction": "Adjust the position of B1 within the central area of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/20-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move the green triangle block B1 towards the top left corner.",
+            "Move to top left with block B1",
+            "Push B1 all the way into the top left corner",
+            "Move block B1 to the top-left corner of the arena."
+        ],
+        "prediction": "SUBGOAL: Move R and B1 to the top left of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/20-frame-pairs/pair3": {
+        "ground_truths": [
+            "Move the green square block B1 to the top left corner.",
+            "Move to top left with block B1",
+            "Push B1 all the way into the top left corner",
+            "Move block B1 to the top-left corner."
+        ],
+        "prediction": "Maintain the current position with block B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/20-frame-pairs/pair4": {
+        "ground_truths": [
+            "Move the blue square block B1 towards the top left corner.",
+            "Move to top left with block B1",
+            "Spin around and move B1 upwards about two thirds of the way to the top",
+            "Carry block B1 to the top-left corner."
+        ],
+        "prediction": "Move B1 to the top of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/20-frame-pairs/pair10": {
+        "ground_truths": [
+            "Grab the blue square block B1.",
+            "Move to bottom and pick up block B1",
+            "Grab B1 then spin around to face towards the top left",
+            "Move block B1 to the center of the arena."
+        ],
+        "prediction": "Pick up B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/40-frame-pairs/pair1": {
+        "ground_truths": [
+            "Move the green square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1",
+            "Grab B1 and move up to the top left corner",
+            "Move block B1 to the top left of the arena."
+        ],
+        "prediction": "Pick up B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/40-frame-pairs/pair6": {
+        "ground_truths": [
+            "Grab the blue square block B1 and move it towards the top left.",
+            "Move to bottom and pick up block B1 and move to top left with block B1",
+            "Grab B1 and move it two thirds of the way to the top left corner",
+            "Move block B1 to the top-left of the arena."
+        ],
+        "prediction": "Pick up B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/40-frame-pairs/pair8": {
+        "ground_truths": [
+            "Move the yellow triangle block B1 to the top left corner.",
+            "Move to top left with block B1 and place it at top left",
+            "Push B1 to the top left then leave it there and back into the center of the arena",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "Move B1 to the top left of the arena.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/40-frame-pairs/pair9": {
+        "ground_truths": [
+            "Move the green square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1",
+            "Grasp B1 and move it to the top left",
+            "Move block B1 to the top-left corner of the arena."
+        ],
+        "prediction": "Move to the top of the arena while holding block B1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/40-frame-pairs/pair7": {
+        "ground_truths": [
+            "Move the pink triangle block B1 to the top left corner.",
+            "Move to top left with block B1 and place it at top left",
+            "Grab B1, move it to the left edge & almost to the top, then release it and move back a little",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "Move B1 to the top left of the arena.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/40-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move the yellow square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1",
+            "Grab B1 and push it into the top left corner",
+            "Move block B1 to the top-left corner of the arena."
+        ],
+        "prediction": "Move B1 to the top of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/40-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move the green triangle block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1",
+            "Grab B1 and move up to the top left corner",
+            "Move block B1 to the top left corner of the arena."
+        ],
+        "prediction": "SUBGOAL: Move R to the top left while carrying B1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/40-frame-pairs/pair3": {
+        "ground_truths": [
+            "Move the green square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1",
+            "Grab B1 and move it up to the top left corner",
+            "Move block B1 to the top-left corner of the arena."
+        ],
+        "prediction": "Move B1 to the top left of the arena.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/40-frame-pairs/pair4": {
+        "ground_truths": [
+            "Grab the blue square block B1 and move it towards the bottom.",
+            "Move to bottom and pick up block B1",
+            "Grab B1 and then push it along the bottom edge to the left of the screen",
+            "Move block B1 to the bottom-left corner of the arena."
+        ],
+        "prediction": "SUBGOAL: Move R to B1 and pick up B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/40-frame-pairs/pair10": {
+        "ground_truths": [
+            "Move the blue square block B1 to the top left corner.",
+            "Move to top left with block B1 and place block B1 at top left",
+            "Keep holding B1 and move it to the top left, then release",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "Move B1 to the top left of the arena.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/80-frame-pairs/pair1": {
+        "ground_truths": [
+            "Move the green square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1 and place block B1 on top left ",
+            "Move B1 to the top left corner then move yourself back slightly",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "Move B1 to the top of the arena.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/80-frame-pairs/pair6": {
+        "ground_truths": [
+            "Move the blue square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1 and place block B1 on top left ",
+            "Move B1 to the top left corner then move back towards the center",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "Move R to B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/80-frame-pairs/pair8": {
+        "ground_truths": [
+            "Move the yellow triangle block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1 and place block B1 on top left ",
+            "Move B1 to the top left corner, then leave it there and go back to the center",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "Move R to B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/80-frame-pairs/pair9": {
+        "ground_truths": [
+            "Move the green square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1",
+            "Move B1 to the top left corner and release it",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "Move R to B1 and pick up B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/80-frame-pairs/pair7": {
+        "ground_truths": [
+            "Move the pink triangle block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1 and place block B1 on top left ",
+            "Move B1 to the top left corner, then move back to the center",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "None of the above. The new subgoal should be: \"Pick up B1 and move it to the top center of the arena.\"",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/80-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move the yellow square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1",
+            "Move B1 to the top left corner",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "Pick up block B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/80-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move the green triangle block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1 and place block B1 on top left ",
+            "Move B1 to the top left corner then move down and to the right slightly, leaving B1 where it is",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "Pick up B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/80-frame-pairs/pair3": {
+        "ground_truths": [
+            "Move the green square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1 and place block B1 on top left ",
+            "Move B1 to the top left corner and then move back by about a quarter of the arena size",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "SUBGOAL: Move B1 to the top left of the arena.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/80-frame-pairs/pair4": {
+        "ground_truths": [
+            "Move the blue square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1 and place block B1 on top left ",
+            "Move B1 to the top left corner then move back a bit",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "SUBGOAL: Move R to the top center and move B1 to the top left of the arena.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task1/80-frame-pairs/pair10": {
+        "ground_truths": [
+            "Move the blue square block B1 to the top left corner.",
+            "Move to bottom and pick up block B1 and move to top left with block B1 and place block B1 on top left ",
+            "Move B1 to the top left corner then leave it there and go back a bit",
+            "Place block B1 in the top-left corner of the arena."
+        ],
+        "prediction": "SUBGOAL: Move B1 to the top of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/10-frame-pairs/pair1": {
+        "ground_truths": [
+            "Move the robot towards the green circle block B4.",
+            "Move towards block B4 and pick up block B4",
+            "Push B4 forward a bit, so that it's right up against the boundary of SA1",
+            "Push block B4 further down."
+        ],
+        "prediction": "Pick up B4.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/10-frame-pairs/pair6": {
+        "ground_truths": [
+            "Move the pink square B3 into the special area SA1.",
+            "Move towards special area SA1 with block B3",
+            "Push B3 into SA1",
+            "Move block B3 into special area SA1 right next to the other pink square B2."
+        ],
+        "prediction": "Place B3 in front of R.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/10-frame-pairs/pair8": {
+        "ground_truths": [
+            "Move the green square B4 into the special area SA1.",
+            "Move towards special area SA1 with block B4 and place it in the special area",
+            "Push B4 into SA1 (so that it's in the middle left)",
+            "Put block B4 into special area SA1."
+        ],
+        "prediction": "None of the above.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/10-frame-pairs/pair9": {
+        "ground_truths": [
+            "Move the green circle B4 into the special area SA1.",
+            "Move towards special area SA1 with block B4",
+            "Spin around 180 to the right and push B4 into SA1",
+            "Move block B4 into special area SA1."
+        ],
+        "prediction": "Move B4 into SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/10-frame-pairs/pair7": {
+        "ground_truths": [
+            "Back away from the block B1 in the special area SA1.",
+            "Move towards special area SA1 with block B1 and place it in the special area",
+            "Leave B1 in SA1 and move half way back towards the left edge of the screen",
+            "Move away from special area SA1."
+        ],
+        "prediction": "Move R to the left of SA1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/10-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move the blue circle B1 into the special area fully.",
+            "Move towards special area SA1 and place block B1 in SA1",
+            "Push B1 into SA1 (towards the bottom of the region)",
+            "Move block B1 into special area SA1."
+        ],
+        "prediction": "Move B1 within SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/10-frame-pairs/pair2": {
+        "ground_truths": [
+            "Grab the green circle block B1.",
+            "Move towards block B1 and pick up block B1",
+            "Grab B1 and make a eighth turn to the left",
+            "Pick up block B1."
+        ],
+        "prediction": "Pick up B1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/10-frame-pairs/pair3": {
+        "ground_truths": [
+            "Move the green square block B3 to the special area SA1",
+            "Move towards special area SA1 with block B3",
+            "Grab B3 and move it into the top right of SA1",
+            "Move block B3 into special area SA1."
+        ],
+        "prediction": "Move B3 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/10-frame-pairs/pair4": {
+        "ground_truths": [
+            "Move the blue circle block B2 into the special area SA2",
+            "Move towards special area SA1 with block B2 and place it in SA1",
+            "Spin 270 degrees to the right and push B2 into SA1",
+            "Move block B2 into special area SA1."
+        ],
+        "prediction": "Move B2 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/10-frame-pairs/pair10": {
+        "ground_truths": [
+            "Move the green sqaure B5 towards the special area SA1.",
+            "Move towards special area SA1 with block B5",
+            "Push B5 up to SA1 so that it's next to the right edge",
+            "Move block B5 next to the green special area."
+        ],
+        "prediction": "Move B5 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/20-frame-pairs/pair1": {
+        "ground_truths": [
+            "Move green circle B4 to green special area SA1",
+            "Move towards special area SA1 with block B4 and place it in the special area",
+            "Push B4 into SA1 (bottom right) then move backwards out of SA1, towards the bottom of the screen",
+            "Move block B4 to special area SA1."
+        ],
+        "prediction": "Move B4 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/20-frame-pairs/pair6": {
+        "ground_truths": [
+            "Move pink square B3 to pink special area SA1",
+            "Move to special area SA1 with block B3 and place it into special area",
+            "Push B3 into SA1 (on the bottom), then move backwards to the left edge",
+            "Move block B3 into special area SA1."
+        ],
+        "prediction": "Place B3 in SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/20-frame-pairs/pair8": {
+        "ground_truths": [
+            "Move green square B4 to green special area SA1",
+            "Move to special area SA1 with block B3 and place it into special area",
+            "Push B4 into SA1 (on the left edge) and nudge B2 down and to the right a bit",
+            "Toss block B4 into special area SA1."
+        ],
+        "prediction": "Move B4 into SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/20-frame-pairs/pair9": {
+        "ground_truths": [
+            "Move green circle B4 to green special area SA1",
+            "Move to special area SA1 with block B4 and place it into special area",
+            "Grab B4, then spin around and leave it in SA1, before reversing a bit to end up outside of SA1",
+            "Put block B4 int special are SA1."
+        ],
+        "prediction": "The subgoal between the two frames was for the robot R to move slightly lower while still holding B4.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/20-frame-pairs/pair7": {
+        "ground_truths": [
+            "Release pink square B1 inside the pink special area SA1 and back away",
+            "Move to special area SA1 with block B1 and place it into special area and move to bottom right",
+            "Release B1 in SA1 then drive half of the way down towards B4",
+            "Release block B1 and head toward block B4."
+        ],
+        "prediction": "Move R within SA1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/20-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move blue circle B1 to blue special area SA1",
+            "Move to top left and pick up block B1 and place it in the special area",
+            "Nudge b1 to the right so that it ends up inside SA1, but then move backwards to the left edge of the screen",
+            "Move ball B1 fully inside the blue special area."
+        ],
+        "prediction": "None of the above. The correct subgoal is: \"Pick up block B3.\"",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/20-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move green circle B1 to green special area SA1",
+            "Move left and pick up block B1 and move to special area SA1 with block B1 and place it in the special area",
+            "Grasp B1 then turn around and push it into SA1",
+            "Move ball B1 to special area SA1."
+        ],
+        "prediction": "Pick up B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/20-frame-pairs/pair3": {
+        "ground_truths": [
+            "Move green square B3 to green special area SA1",
+            "Move to special area SA1 with block B3 and place it in the special area",
+            "Grasp B3 then move backwards and spin to the left to drop it in SA1",
+            "Put block B3 inside special are a SA1."
+        ],
+        "prediction": "Move B3 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/20-frame-pairs/pair4": {
+        "ground_truths": [
+            "Move blue circle B2 to blue special area SA1",
+            "Move to special area SA1 with block B2 and place it in the special area SA1",
+            "Grab B2 and leave it in SA1, displacing B3 downards slightly (but both are in SA1 at the end), then move to the top left of SA1",
+            "Move balls B2 into special area SA1."
+        ],
+        "prediction": "Place B2 inside SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/20-frame-pairs/pair10": {
+        "ground_truths": [
+            "Move green square B5 to green special area SA1",
+            "Move to special area SA1 with block B5 and place it into special area",
+            "Push B5 into the center of SA1, slightly pushing B2 up and to the left, then release and go back a little (towards the right of the screen)",
+            "Put block B5 into special area SA1."
+        ],
+        "prediction": "Move B5 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/50-frame-pairs/pair1": {
+        "ground_truths": [
+            "Move green circle B3 to inside special area SA1.",
+            "Move to left to pick up block B3 and move to special area SA1 with block B3 and place it into special area",
+            "Grab B3 and push it into SA1",
+            "Move ball B3 to special area SA1."
+        ],
+        "prediction": "Pick up B3.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/50-frame-pairs/pair6": {
+        "ground_truths": [
+            "Move pink square B3 inside special ara SA1.",
+            "Move to special area SA1 with block B3 and place it into special area",
+            "Push B3 into SA1, then move back to the left edge of the arena",
+            "Move block B2 inside special area SA1."
+        ],
+        "prediction": "Place B3 inside SA1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/50-frame-pairs/pair8": {
+        "ground_truths": [
+            "Move green square B4 inside special area SA1.",
+            "Move to bottom right to pick up block B4 and move to special area SA1",
+            "Push B4 into SA1, and B2 down and to the right",
+            "Move block B4 into special area SA1."
+        ],
+        "prediction": "Move B4 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/50-frame-pairs/pair9": {
+        "ground_truths": [
+            "Move green circle B4 inside special area SA1.",
+            "Move to right to pick up block B4 and move to special area SA1 with block B4 and place it into special area",
+            "Push B4 into SA1 then move the robot back to towards the center",
+            "Move ball B4 into special area SA1."
+        ],
+        "prediction": "Move B4 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/50-frame-pairs/pair7": {
+        "ground_truths": [
+            "Move pink square B1 and pink sqaure B4 inside special area SA1.",
+            "Place blocvk B1 into the special aprea and move to bottom left and pick up block B4 and place it into the special area",
+            "Push B1 and B4 into SA1",
+            "Move blocks B1 and B4 into special area SA1."
+        ],
+        "prediction": "Move B4 to SA1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/50-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move blue circle B1 fully inside special area SA1.",
+            "Move to top left to pick up block B1 and move to special area SA1 with block B1 and place it into special area",
+            "Push B1 a little to the right so that it's in SA1, then move backwards to the left edge of the environment",
+            "Move ball B1 fully inside the blue special area."
+        ],
+        "prediction": "Move B1 into SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/50-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move green circle B2 to inside special area SA2 and move blue circle B3 downwards.",
+            "Move to bottom left to pick up block B2 and move to special area SA1 with block B2 and place it into special area",
+            "Push B3 to the bottom of the environment, then push B2 into SA1",
+            "Move ball B2 to special area SA1."
+        ],
+        "prediction": "Move B2 to SA1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/50-frame-pairs/pair3": {
+        "ground_truths": [
+            "Move green square B3 to inside special area SA1.",
+            "Move to top left to pick up block B3 and move to special area SA1 with block B3 and place it into special area",
+            "Grab B3 and put it into SA1, while nudging the two purple triangles up and to the left",
+            "Move block B3 to special area SA1."
+        ],
+        "prediction": "Move B3 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/50-frame-pairs/pair4": {
+        "ground_truths": [
+            "Move blue circle B2 to inside special area SA1 ad grab blue circle B1.",
+            "Move to top left to pick up block B2 and move to special area SA1 with block B2 and place it into special area and move to top left and pick up block B1",
+            "Push B2 into SA1, then go back and grab B1 and spin around to face SA1 again",
+            "Move ball B2 to special area SA1."
+        ],
+        "prediction": "Move B2 to SA1 and pick up B1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/50-frame-pairs/pair10": {
+        "ground_truths": [
+            "Move green square B5 inside special area SA1.",
+            "Move to special area SA1 with block B5 and place it into special area and move to top left to pick up block B4",
+            "Push B4 into SA1 then move back to almost grasp B4",
+            "Move block B5 into the green special area."
+        ],
+        "prediction": "Place B5 in SA2 and move R and B4 to the center left.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/100-frame-pairs/pair1": {
+        "ground_truths": [
+            "Move green circles B3 and B4 inside special area SA1.",
+            "Pick up blocks B3 and B4 and put them into special area SA1",
+            "Push B3 and B4 into SA1",
+            "Move blocks B3 and B4 to special area SA1."
+        ],
+        "prediction": "Move B3 and B4 into SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/100-frame-pairs/pair6": {
+        "ground_truths": [
+            "Move pink square block B3 inside special area SA1.",
+            "Pick up block B3 and put it into special area SA1",
+            "Push B3 into SA1, then move back to the middle left edge of the environment",
+            "Move block B3 inside special area SA1."
+        ],
+        "prediction": "Move B3 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/100-frame-pairs/pair8": {
+        "ground_truths": [
+            "Move green sqaure block B4 inside special area SA1.",
+            "Pick up block B4 and put it into special area SA1",
+            "Push B4 up and to the left inside SA1, and B2 down and to the right slightly",
+            "Move block B4 inside special area SA1."
+        ],
+        "prediction": "Move B4 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/100-frame-pairs/pair9": {
+        "ground_truths": [
+            "Move green circle block B4 inside special area SA1.",
+            "Pick up block B4 and put it into special area SA1",
+            "Move B4 into SA1",
+            "Move block B4 to special area SA1."
+        ],
+        "prediction": "Move B4 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/100-frame-pairs/pair7": {
+        "ground_truths": [
+            "Move pink square block B1 and pink square block B4 inside special area SA1.",
+            "Pick up blocks B1,and B4 and put them into special area SA1",
+            "Push B1 and B4 into SA1, then go down to the bottom/middle of the arena",
+            "Move blocks B1 and B4 inside special area SA1."
+        ],
+        "prediction": "Move B1 to SA1 and move R to the bottom center of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/100-frame-pairs/pair5": {
+        "ground_truths": [
+            "Fully move blue circle B1 inside special area.",
+            "Pick up block B1 and put it into special area SA1",
+            "Move B1 into SA1 then move backwards to the left edge of the environment",
+            "Move ball B1 into the blue special area."
+        ],
+        "prediction": "Move B1 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/100-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move green circle B1 and B2 inside special area SA1.",
+            "Pick up blocks B1 and B2 and put them into special area SA1",
+            "Push B1 and B2 into SA1, and B3 down to the bottom",
+            "Move balls B1 and B2 to special area SA1."
+        ],
+        "prediction": "Move B1 and B2 into SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/100-frame-pairs/pair3": {
+        "ground_truths": [
+            "Move green square B3 inside special area SA1.",
+            "Pick up block B3 and put it into special area SA1",
+            "Push B3 into SA1, and B5 and B5 up and to the left",
+            "Move balls B1 and B2 to special area SA1, and pick up ball B4."
+        ],
+        "prediction": "Move B3 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/100-frame-pairs/pair4": {
+        "ground_truths": [
+            "Move blue circle B2 inside special area SA1 and grab blue circle B1.",
+            "Pick up blocks B1, B2, B3, B4 and put them into special area SA1",
+            "Push B1 and B2 into SA1, then grab B4 and push it down half way to SA1",
+            "Move block B4 to special area SA1."
+        ],
+        "prediction": "Move B4 to the middle left of the arena and place B1 and B2 into SA1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task2/100-frame-pairs/pair10": {
+        "ground_truths": [
+            "Move green square block B5 inside special area SA1.",
+            "Pick up block B5 and put it into special area SA1",
+            "Move B4 into SA1 and push the blocks outside SA1 to the left a bit",
+            "Move ball B5 into special area SA1."
+        ],
+        "prediction": "Move B5 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/10-frame-pairs/pair1": {
+        "ground_truths": [
+            "Move the blue triangle B2 towards the right.",
+            "Pick up block B2 and push block B1 into the special area SA3",
+            "Push B1 and B2 towards SA3",
+            "Push blocks B1 and B2 to the right."
+        ],
+        "prediction": "SUBGOAL: Pick up B1 while holding B2.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/10-frame-pairs/pair6": {
+        "ground_truths": [
+            "Grab the pink triangle block B1 with the robot.",
+            "Move to left and pick up block B1",
+            "Grasp B1",
+            "Pick up block B1."
+        ],
+        "prediction": "Pick up B1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/10-frame-pairs/pair8": {
+        "ground_truths": [
+            "Move blue circle B2 towards SA1.",
+            "Move to special area SA1 with block B2",
+            "Push B2 forward so that it's touching the bottom left corner of SA1",
+            "Move block B2 toward the top-right of the arena."
+        ],
+        "prediction": "Pick up B2.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/10-frame-pairs/pair9": {
+        "ground_truths": [
+            "Move green square B3 inside SA1 from SA3",
+            "Move to special area SA1 with block B3",
+            "Turn 110 degrees left and move B3 into SA1",
+            "Move block B3 into special area SA1."
+        ],
+        "prediction": "None of the above. The correct subgoal should be \"Move towards B3.\"",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/10-frame-pairs/pair7": {
+        "ground_truths": [
+            "Push the blocks B1, B2 and B5 closer to SA2.",
+            "Move to special area SA2",
+            "Move forward, pushing B1, B2 and B5 towards SA2",
+            "Push blocks B1, B2, and B5 upward toward special area SA2."
+        ],
+        "prediction": "Move R to B2.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/10-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move the green triangle B1 to the pink special area SA3.",
+            "Move to special area SA3 with block B1",
+            "Push B1 into SA3",
+            "Move block B1 into special area SA3."
+        ],
+        "prediction": "Move B1 to SA3.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/10-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move the green traingle B2 upwards.",
+            "Pick up block B2 and turn toward bottom right",
+            "Rotate 90 degrees right while holding B2 to face towars SA3",
+            "Move block B2 to the center of the arena."
+        ],
+        "prediction": "Move R with B2 to the left.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/10-frame-pairs/pair3": {
+        "ground_truths": [
+            "Release the pink triangle block B1 and move the robot upwards.",
+            "Move to special area SA1 with block B1 and push block B2 into the special area SA1 and place block B1 into the special area SA1",
+            "Reverse back until level with SA2",
+            "Release block B1 and move away."
+        ],
+        "prediction": "Move R to the top center of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/10-frame-pairs/pair4": {
+        "ground_truths": [
+            "Approach the pink square block B1 with the robot.",
+            "Move to bottom and pick up block B1",
+            "Turn 90 degrees left and drive down to push B1 down slightly",
+            "Go toward block B1."
+        ],
+        "prediction": "None of the above.The proposed subgoal is: \"Move B1 towards SA1.\"",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/10-frame-pairs/pair10": {
+        "ground_truths": [
+            "Turn the robot a bit towards blue circle B1.",
+            "Move to bottom and turn toward the block B1",
+            "Rotate right until you are nudging B1 slightly",
+            "Turn slightly to the right."
+        ],
+        "prediction": "SUBGOAL: The robot is moving to pick up block B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/20-frame-pairs/pair1": {
+        "ground_truths": [
+            "Move blue triangle B2 and pink circle B1 into SA3.",
+            "Move to special area SA3 with block B2 and push the block B1 and block B2 into special area SA3",
+            "Push B1 and B2 into SA3",
+            "Move block B1 and B2 to special area SA3."
+        ],
+        "prediction": "Move B1 and B2 into SA3.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/20-frame-pairs/pair6": {
+        "ground_truths": [
+            "Grab pink triangle B1 with the robot.",
+            "Move to right and pick up the block B1",
+            "Grasp B1 then rotate 90 degrees left to face SA3",
+            "Pickup block B1."
+        ],
+        "prediction": "Pick up B1 and move to the center of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/20-frame-pairs/pair8": {
+        "ground_truths": [
+            "Move blue circle block B2 into SA1.",
+            "Move to special area SA1 with block B2 and place it into special area SA1",
+            "Push B2 into SA1 and then release and back off a bit",
+            "Place block B2 in special area SA1."
+        ],
+        "prediction": "Move R and B2 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/20-frame-pairs/pair9": {
+        "ground_truths": [
+            "Move green square block B3 into SA1.",
+            "Move to special area SA1 with block B3 and place it into special area SA1",
+            "Push B3 into SA1 then move back to original position",
+            "Move block B3 from special area SA3 to special area SA1."
+        ],
+        "prediction": "SUBGOAL: Pick up B3 from SA3.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/20-frame-pairs/pair7": {
+        "ground_truths": [
+            "Push the blocks B1, B2 and B5 closer to SA2.",
+            "Push the blocks B1, B2, B5 to special area SA2",
+            "PUsh B1, B2, and B5 towards SA2",
+            "Push blocks B1, B2, and B5 toward the top-right corner of the arena."
+        ],
+        "prediction": "Move B1 to the middle of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/20-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move green triangle B1 into SA3",
+            "Move to special area SA3 with block B1 and place it into special area SA3",
+            "Push B1 into SA3 and then move robot back to original position",
+            "Place block B1 in special area SA3."
+        ],
+        "prediction": "Move B1 to SA3.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/20-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move green triangle B2 inside special area SA3.",
+            "Move to special area SA3 with block B2",
+            "Grasp B2 and push it into SA3",
+            "Move block B2 to special area SA3."
+        ],
+        "prediction": "Move B2 to SA3.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/20-frame-pairs/pair3": {
+        "ground_truths": [
+            "Grab pink square B5 with the robot.",
+            "Place blocks B1 and B2 in special area SA1 and pick up the block B5",
+            "Grasp B5, leaving B1 and B2 in place",
+            "Drop block B1 and pick up block B5."
+        ],
+        "prediction": "SUBGOAL: Move B3 to SA3.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/20-frame-pairs/pair4": {
+        "ground_truths": [
+            "Move pink square B1 into SA2.",
+            "Move to bottom and pick up the block B1 and place it into special area SA2",
+            "Push B1 into A2",
+            "Place block B1 in special area SA2."
+        ],
+        "prediction": "Move B1 to SA2.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/20-frame-pairs/pair10": {
+        "ground_truths": [
+            "Turn the robot towards blue circle block B1",
+            "Move to bottom toward the block B1",
+            "Rotate 90 degrees right (which nudges B1 slightly)",
+            "Turn to face block B1."
+        ],
+        "prediction": "Move R to B1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/60-frame-pairs/pair1": {
+        "ground_truths": [
+            "Move blocks B1, B2 and B4 inside SA3.",
+            "Push the blocks B2, B1, and B4 into the special area SA3",
+            "Move B1, B2 and B4 into SA3",
+            "Push blocks B1, B2, and B4 into special area SA3."
+        ],
+        "prediction": "Move B4 and place it on top of B2 in SA3.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/60-frame-pairs/pair6": {
+        "ground_truths": [
+            "Move blue triangle B2 and pink triangle B1 inside pink special area SA3.",
+            "Place the blocks B2 and B1 into special area SA3",
+            "Move B1 and B2 into SA3 then reverse back out of SA3",
+            "Push all the blocks inside special area SA3."
+        ],
+        "prediction": "Move B2 to SA3 and place it on top of B1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/60-frame-pairs/pair8": {
+        "ground_truths": [
+            "Move blue circle block B2 inside SA1.",
+            "Place the block B2 to special area SA1",
+            "Push B2 into SA1, then reverse back towards SA2",
+            "Put block B2 in special area SA1."
+        ],
+        "prediction": "Move B2 to SA1.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/60-frame-pairs/pair9": {
+        "ground_truths": [
+            "Move green circle block B1 and green square block B3 inside SA1.",
+            "Place the blocks B3 and B1 into special area SA1",
+            "Push B1 and B3 into SA1",
+            "Put blocks B1 and B3 in special area SA1."
+        ],
+        "prediction": "Move B3 to SA1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/60-frame-pairs/pair7": {
+        "ground_truths": [
+            "Move B1, B2 and B5 blocks inside SA2 so that all the blocks are inside SA2.",
+            "Place the blocks B5, B2 and B1 into special area SA2",
+            "Push B2, B5 and B1 into SA2",
+            "Push blocks B1, B2, and B5 towards special area SA2."
+        ],
+        "prediction": "Move B2 to the center of the arena.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/60-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move green triangle B1 inside special area SA3.",
+            "Move to the bottom and pick up B1 and place it into special area SA3",
+            "Move B1 into SA3 then reverse back out of SA3",
+            "Move block B1 into special area SA3."
+        ],
+        "prediction": "Move B1 to SA3 and introduce B2 to SA3.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/60-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move green circle block B1 inside SA3.",
+            "Move to the bottom left and pick up B1 and place it into special area SA3",
+            "Move B1 into SA3 then reverse back to sit near the bottom of the arena",
+            "Place block B1 in special area SA3."
+        ],
+        "prediction": "Move B1 to SA3.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/60-frame-pairs/pair3": {
+        "ground_truths": [
+            "Move green triangle block B4 inside pink special area SA1.",
+            "Move to the top left and pick up B4 and place it into special area SA1",
+            "Push B4 into SA1 (the red special area)",
+            "Put block B4 in special area SA1."
+        ],
+        "prediction": "SUBGOAL: Move B4 to the bottom right area.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/60-frame-pairs/pair4": {
+        "ground_truths": [
+            "Move green circle block B2 inside pink special area SA2.",
+            "Move to the top and pick up B2 and place it into special area SA2",
+            "Push B2 into SA2 then reverse back to be near SA3",
+            "Move block B2 into special area SA2."
+        ],
+        "prediction": "Move B2 to SA2.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/60-frame-pairs/pair10": {
+        "ground_truths": [
+            "Move blue circle B2 inside SA2.",
+            "Place the block B2 into special area SA2",
+            "Push B2 into SA2",
+            "Move block B2 into special area SA2."
+        ],
+        "prediction": "Move B2 to SA2.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/180-frame-pairs/pair1": {
+        "ground_truths": [
+            "Push block B1, B2, B3, B4 and B5 into pink special area SA3 so that all blocks are in SA3.",
+            "Place the blocks B1, B2, B3, B4, and B5 into special area SA3",
+            "Push all blocks into SA3",
+            "Move all the blocks into special area SA3."
+        ],
+        "prediction": "Move B1, B2, B3, B4, and B5 into SA3.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/180-frame-pairs/pair6": {
+        "ground_truths": [
+            "Move blocks B1 and B2 into SA3.",
+            "Place the blocks B1, B2, B3, B4, and B5 into special area SA2",
+            "Push both blocks into SA3 then return robot to original position",
+            "Put both triangles inside special area SA3."
+        ],
+        "prediction": "Move B1 and B2 to SA3.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/180-frame-pairs/pair8": {
+        "ground_truths": [
+            "Move blocks B1 and B2 into SA1.",
+            "Place the blocks B1, and B2 into special area SA1",
+            "Push all blocks into SA1",
+            "Move all the blocks to special area SA1."
+        ],
+        "prediction": "Move B2 to SA1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/180-frame-pairs/pair9": {
+        "ground_truths": [
+            "Move blocks B1, B2 and B3 into SA1.",
+            "Place the blocks B1, B2, and B3 into special area SA1",
+            "Push all blocks into SA1",
+            "Put all the blocks inside special area SA1."
+        ],
+        "prediction": "Move B1 and B2 into SA1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/180-frame-pairs/pair7": {
+        "ground_truths": [
+            "Push block B1, B2, B3, B4 and B5 into pink special area SA2 so that all blocks are in SA2",
+            "Place the blocks B1, and B2 into special area SA3",
+            "Push all blocks into SA2",
+            "Put all the blocks inside special area SA3."
+        ],
+        "prediction": "Gather all blocks into SA2.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/180-frame-pairs/pair5": {
+        "ground_truths": [
+            "Move blocks B1 and B2 into SA3.",
+            "Place the blocks B1, and B2 into special area SA3",
+            "Push all blocks into SA2",
+            "Put both blocks inside special area SA3."
+        ],
+        "prediction": "Move B1 and B2 to SA3.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/180-frame-pairs/pair2": {
+        "ground_truths": [
+            "Move blocks B1 and B2 into SA3.",
+            "Place the blocks B1, and B2 into special area SA3",
+            "Push B1 an B2 into SA3, then reverse back half way along the bottom edge of the screen",
+            "Move all the blocks into special area SA3."
+        ],
+        "prediction": "Move B1 and B2 to SA3.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/180-frame-pairs/pair3": {
+        "ground_truths": [
+            "Push block B1, B2, B3, B4 and B5 into pink special area SA1 so that all blocks are in SA1.",
+            "Place the blocks B1, B2, B3, B4, and B5 into special area SA1",
+            "Push all blocks into SA3",
+            "Move all the blocks to special area SA1."
+        ],
+        "prediction": "Move B4 to SA1.",
+        "similarity": "Incorrect"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/180-frame-pairs/pair4": {
+        "ground_truths": [
+            "Move blocks B1 and B2 into SA2.",
+            "Place the blocks B1, and B2 into special area SA2",
+            "Push all blocks into SA2, then reverse back to SA3",
+            "Move all the blocks to special area SA2."
+        ],
+        "prediction": "Move B1 and B2 into SA2.",
+        "similarity": "Correct"
+    },
+    "/Users/alexandrasouly/code/chai/magical/frame_pairs/Task3/180-frame-pairs/pair10": {
+        "ground_truths": [
+            "Move blocks B1 and B2 into SA2.",
+            "Place the blocks B1, and B2 into special area SA2",
+            "Push all blocks into SA3",
+            "Move all the blocks to special area SA2."
+        ],
+        "prediction": "Move B1 and B2 to SA2.",
+        "similarity": "Correct"
+    }
+}

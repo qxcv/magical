@@ -1,0 +1,11 @@
+{
+    "truths": [
+        "Move the pink triangle block B1 to the top left corner.",
+        "Move to top left with block B1 and place it at top left",
+        "Grab B1, move it to the left edge & almost to the top, then release it and move back a little",
+        "Place block B1 in the top-left corner of the arena."
+    ],
+    "pred": "Move B1 to the top left of the arena.",
+    "cot": "The ground truth goals all describe the action of moving a specific block, identified as B1, to the top left corner of the arena. They all specify the same block (B1) and the same location (top left corner). The predicted goal also instructs to move B1 to the top left of the arena, which is consistent with the location described in the ground truth goals.\n\nSince the predicted goal matches the outcome described in all the ground truth goals, the similarity level is:\n\n(2) Correct: An agent that tries to achieve the predicted goal will succeed in achieving the real goal.",
+    "sim_level": "Correct"
+}
